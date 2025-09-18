@@ -4,15 +4,21 @@ from urllib.parse import urlencode
 
 import requests
 
-from translate.translate_api_abs import TranslateApiAbs
+from translate.api_abs import TranslateApiAbs
 
 
 class TranslateApiBaidu(TranslateApiAbs):
 
+    lang_map = {
+        "zh": "zh",
+        "en": 'en',
+        "tw": "tw",
+    }
     def translate_image(self, image: bytes, target_lang: str, from_lang: str) -> str:
         pass
 
-    def translate_document(self, document: bytes, target_lang: str, from_lang: str) -> str:
+    def translate_document(self, document: bytes, target_lang: str,
+                           from_lang: str) -> str:
         pass
 
     def usage(self) -> str:
@@ -22,7 +28,8 @@ class TranslateApiBaidu(TranslateApiAbs):
         url = "https://fanyi-api.baidu.com/api/trans/vip/translate"
         salt = random.randint(32768, 65536)
         appid, appkey = self.auth
-        sign = hashlib.md5((appid + text + str(salt) + appkey).encode("utf-8")).hexdigest()
+        sign = hashlib.md5(
+            (appid + text + str(salt) + appkey).encode("utf-8")).hexdigest()
         resp = requests.post(
             url=url,
             headers={"Content-Type": "application/x-www-form-urlencoded"},

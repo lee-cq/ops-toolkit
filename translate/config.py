@@ -9,14 +9,7 @@ from typing import Callable, Any
 
 from pydantic import BaseModel
 
-from translate.translate_api_abs import TranslateApiAbs
-from translate.translate_api_baidu import TranslateApiBaidu
-
-
-def api_factory(api_type: str, auth) -> TranslateApiAbs:
-    if api_type == 'baidu':
-        return TranslateApiBaidu(auth)
-    raise NotImplementedError
+from translate.api_abs import TranslateApiAbs
 
 
 class UsageModel(BaseModel):
@@ -35,11 +28,20 @@ class KeyModel(BaseModel):
     def model_post_init(self, context: Any, /) -> None:
         self._api = self.api_factory()
 
+    @property
+    def api(self):
+        return self._api
+
     def api_factory(self) -> TranslateApiAbs:
         if self.api_type == "baidu":
+            from translate.api_baidu import TranslateApiBaidu
             return TranslateApiBaidu(self.auth)
         elif self.api_type == "aliyun":
-            return TranslateApiBaidu(self.auth)
+            from translate.api_aliyun import TranslateApiAliyun
+            return TranslateApiAliyun(self.auth)
+        elif self.api_type == "tencent":
+            from translate.api_tencent import TranslateApiTencent
+            return TranslateApiTencent(self.auth)
         raise NotImplementedError
 
 
@@ -60,7 +62,12 @@ def load_config(path: str = "") -> Config:
     p = Path(path)
     if not p.exists():
         return Config()
-    return Config.model_validate_json(p.read_text())
+    if p.suffix == '.json':
+        return Config.model_validate_json(p.read_text())
+    if p.suffix == ".toml":
+        from tomllib import load
+        return Config.model_validate(load(p.open("rb")))
+    raise
 
 
 config = load_config()
