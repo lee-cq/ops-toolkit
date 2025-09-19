@@ -8,7 +8,7 @@ from logging import getLogger
 
 import requests
 
-from translate.api_abs import TranslateApiAbs
+from translate.api_abs import TranslateApiAbs, TextResp
 
 logger = getLogger("translate.api.tencent")
 
@@ -111,7 +111,7 @@ class TranslateApiTencent(TranslateApiAbs):
     def ocr(self, image: bytes):
         """OCR"""
 
-    def translate_text(self, text: str, to_lang: str, from_lang: str) -> str:
+    def translate_text(self, text: str, to_lang: str, from_lang: str) -> TextResp:
         resp = tencent_request(
             s_key=self.auth,
             method="POST",
@@ -134,7 +134,22 @@ class TranslateApiTencent(TranslateApiAbs):
                 # ]
             }
         )
-        return resp.text
+
+        print("Resp: %s", resp.text)
+        if resp.status_code != 200:
+            logger.error("HTTP_CODE Error [%d] %s", resp.status_code, resp.text)
+            raise
+
+        resp = resp.json()
+        if resp["Response"].get("UsedAmount") is None:
+            logger.error("翻译失败, resp: %s", resp)
+            raise
+
+        self.meta.usage.text += resp["Response"]["UsedAmount"]
+        return TextResp(
+            src=text,
+            dst=resp.get("Response").get("TargetText"),
+        )
 
     def translate_image(self, image: bytes, target_lang: str, from_lang: str) -> str:
         pass

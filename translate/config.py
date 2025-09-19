@@ -35,13 +35,13 @@ class KeyModel(BaseModel):
     def api_factory(self) -> TranslateApiAbs:
         if self.api_type == "baidu":
             from translate.api_baidu import TranslateApiBaidu
-            return TranslateApiBaidu(self.auth)
+            return TranslateApiBaidu(self.auth, self)
         elif self.api_type == "aliyun":
             from translate.api_aliyun import TranslateApiAliyun
-            return TranslateApiAliyun(self.auth)
+            return TranslateApiAliyun(self.auth, self)
         elif self.api_type == "tencent":
             from translate.api_tencent import TranslateApiTencent
-            return TranslateApiTencent(self.auth)
+            return TranslateApiTencent(self.auth, self)
         raise NotImplementedError
 
 

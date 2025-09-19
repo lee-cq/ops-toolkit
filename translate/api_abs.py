@@ -1,6 +1,10 @@
 import abc
+import typing
 
 from pydantic import BaseModel
+
+if typing.TYPE_CHECKING:
+    from translate.config import KeyModel
 
 
 class TextResp(BaseModel):
@@ -8,15 +12,15 @@ class TextResp(BaseModel):
     dst: str
 
 
-class ImgResp(BaseModel):
+class ImgResp(TextResp):
     """"""
 
 
-class DocumentResp(BaseModel):
+class DocumentResp(TextResp):
     """"""
 
 
-class OcrResp(BaseModel):
+class OcrResp(TextResp):
     """"""
 
 
@@ -27,8 +31,9 @@ class TranslateApiAbs(abc.ABC):
         "tw": "tw",
     }
 
-    def __init__(self, auth):
+    def __init__(self, auth, meta):
         self.auth = auth
+        self.meta: "KeyModel" = meta
 
     def get_lang(self, lang) -> str:
         """重写lan_map
@@ -39,16 +44,19 @@ class TranslateApiAbs(abc.ABC):
         return self.lang_map[lang]
 
     @abc.abstractmethod
-    def translate_text(self, text: str, to_lang: str, from_lang: str) -> str:
+    def translate_text(self, text: str, to_lang: str, from_lang: str) -> TextResp:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def translate_image(self, image: bytes, target_lang: str, from_lang: str) -> str:
+    def translate_image(self, image: bytes, target_lang: str, from_lang: str) -> ImgResp:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def translate_document(self, document: bytes, target_lang: str,
-                           from_lang: str) -> str:
+    def translate_document(self,
+                           document: bytes,
+                           target_lang: str,
+                           from_lang: str
+                           ) -> DocumentResp:
         raise NotImplementedError
 
     @abc.abstractmethod

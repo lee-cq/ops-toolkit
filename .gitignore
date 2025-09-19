@@ -1,4 +1,5 @@
 _lo_*
+.idea/
 
 # Python-generated files
 __pycache__/
