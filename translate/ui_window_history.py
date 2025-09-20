@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+@File Name  : ui_history_window.py
+@Author     : LeeCQ
+@Date-Time  : 2025/9/19 22:03
+"""
+import os
+import tkinter as tk
+from tkinter import ttk, scrolledtext, messagebox
+from datetime import datetime
+
+
+class HistoryWindow:
+    def __init__(self, app):
+        self.app = app
+        self.window = None
+        self.tree = None
+
+    def show(self):
+        """显示历史记录窗口"""
+        # 如果窗口已存在，先销毁
+        if self.window:
+            self.window.destroy()
+
+        # 创建新窗口
+        self.window = tk.Toplevel(self.app.root)
+        self.window.title("翻译历史记录")
+        self.window.geometry("800x500")
+        self.window.resizable(True, True)
+
+        # 创建布局
+        frame = ttk.Frame(self.window, padding="10")
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        # 创建表格
+        columns = ("time", "src", "dst", "src_lang", "dst_lang")
+        self.tree = ttk.Treeview(frame, columns=columns, show="headings")
+
+        # 设置列标题
+        self.tree.heading("time", text="时间")
+        self.tree.heading("src", text="源文本")
+        self.tree.heading("dst", text="翻译结果")
+        self.tree.heading("src_lang", text="源语言")
+        self.tree.heading("dst_lang", text="目标语言")
+
+        # 设置列宽
+        self.tree.column("time", width=150)
+        self.tree.column("src", width=200)
+        self.tree.column("dst", width=200)
+        self.tree.column("src_lang", width=80)
+        self.tree.column("dst_lang", width=80)
+
+        # 添加滚动条
+        scrollbar = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=self.tree.yview)
+        self.tree.configure(yscroll=scrollbar.set)
+
+        # 放置表格和滚动条
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # 填充数据
+        for record in reversed(self.app.history_manager.history):  # 最新的在前面
+            self.tree.insert("", tk.END, values=(
+                record['time'],
+                record['src'][:50] + ("..." if len(record['src']) > 50 else ""),
+                record['dst'][:50] + ("..." if len(record['dst']) > 50 else ""),
+                record['src_lang'],
+                record['dst_lang']
+            ))
+
+        # 双击查看完整内容
+        self.tree.bind("<Double-1>", self.show_full_record)
+
+        # 按钮区域
+        button_frame = ttk.Frame(self.window, padding="10")
+        button_frame.pack(fill=tk.X)
+
+        export_button = ttk.Button(button_frame, text="导出为CSV", command=self.export_history)
+        export_button.pack(side=tk.LEFT, padx=5)
+
+        clear_button = ttk.Button(button_frame, text="清空历史", command=self.clear_history)
+        clear_button.pack(side=tk.RIGHT, padx=5)
+
+    def show_full_record(self, event):
+        """显示选中记录的完整内容"""
+        selected_item = self.tree.selection()[0]
+        values = self.tree.item(selected_item, "values")
+
+        # 查找完整记录
+        full_record = None
+        for record in self.app.history_manager.history:
+            if record['time'] == values[0]:
+                full_record = record
+                break
+
+        if full_record:
+            # 创建详情窗口
+            detail_window = tk.Toplevel(self.window)
+            detail_window.title("翻译详情")
+            detail_window.geometry("600x400")
+
+            frame = ttk.Frame(detail_window, padding="10")
+            frame.pack(fill=tk.BOTH, expand=True)
+
+            ttk.Label(frame, text=f"时间: {full_record['time']}").pack(anchor=tk.W, pady=(0, 10))
+            ttk.Label(frame, text=f"语言: {full_record['src_lang']} → {full_record['dst_lang']}").pack(anchor=tk.W,
+                                                                                                       pady=(0, 10))
+
+            ttk.Label(frame, text="源文本:").pack(anchor=tk.W)
+            src_text = scrolledtext.ScrolledText(frame, wrap=tk.WORD, height=6)
+            src_text.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+            src_text.insert(tk.END, full_record['src'])
+            src_text.configure(state="disabled")
+
+            ttk.Label(frame, text="翻译结果:").pack(anchor=tk.W)
+            dst_text = scrolledtext.ScrolledText(frame, wrap=tk.WORD, height=6)
+            dst_text.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+            dst_text.insert(tk.END, full_record['dst'])
+            dst_text.configure(state="disabled")
+
+    def export_history(self):
+        """导出历史记录为CSV"""
+        if not self.app.history_manager.history:
+            messagebox.showinfo("提示", "没有翻译记录可导出")
+            return
+
+        # 导出到用户桌面
+        desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
+        file_name = f"translation_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        file_path = os.path.join(desktop_path, file_name)
+
+        if self.app.history_manager.export_to_csv(file_path):
+            messagebox.showinfo("成功", f"历史记录已导出到:\n{file_path}")
+        else:
+            messagebox.showerror("错误", "导出历史记录失败")
+
+    def clear_history(self):
+        """清空历史记录"""
+        if not self.app.history_manager.history:
+            messagebox.showinfo("提示", "翻译记录已为空")
+            return
+
+        if messagebox.askyesno("确认", "确定要清空所有翻译记录吗？此操作不可恢复。"):
+            self.app.history_manager.clear_history()
+            # 刷新表格
+            for item in self.tree.get_children():
+                self.tree.delete(item)
+            messagebox.showinfo("成功", "翻译记录已清空")

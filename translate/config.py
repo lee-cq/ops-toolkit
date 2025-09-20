@@ -5,7 +5,7 @@
 2. API秘钥
 """
 from pathlib import Path
-from typing import Callable, Any
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -47,9 +47,23 @@ class KeyModel(BaseModel):
 
 class Config(BaseModel):
     apis: list[KeyModel] = []
+    app_name: str = "translate"
+    data_dir: Path = Path.cwd() / f".{app_name.lower()}"
+    translation_history_path: Path = data_dir / "translation_history.json"
+    log_path: Path = data_dir / f"{app_name.lower()}.log"
+    hotkey: str = '<ctrl>+<alt>+d'
+    config_path: Path
 
     def save(self):
         raise NotImplementedError()
+
+    def model_post_init(self, context: Any, /) -> None:
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+
+    @property
+    def api(self):
+        """"""
+        return self.apis[0].api
 
 
 def load_config(path: str = "") -> Config:
@@ -63,10 +77,15 @@ def load_config(path: str = "") -> Config:
     if not p.exists():
         return Config()
     if p.suffix == '.json':
-        return Config.model_validate_json(p.read_text())
+        from json import load
+        val = load(p.open("rb"))
+        val['config_path'] = p
+        return Config.model_validate(val)
     if p.suffix == ".toml":
         from tomllib import load
-        return Config.model_validate(load(p.open("rb")))
+        val = load(p.open("rb"))
+        val['config_path'] = p
+        return Config.model_validate(val)
     raise
 
 

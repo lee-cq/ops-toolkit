@@ -62,7 +62,7 @@ def tencent_request(
         f"{signed_headers}\n"  # need sign keys
         f"{hashlib.sha256(payload.encode('utf-8')).hexdigest()}"  # signed body
     )
-    print(f">>> canonical_request: \n{canonical_request}\n", "*" * 50)
+    logger.debug(f">>> canonical_request: \n{canonical_request}\n", "*" * 50)
     credential_scope = date + "/" + service + "/" + "tc3_request"
     hashed_canonical_request = hashlib.sha256(
         canonical_request.encode("utf-8")
@@ -73,14 +73,14 @@ def tencent_request(
         f"{credential_scope}\n"
         f"{hashed_canonical_request}"
     )
-    print(f">>> string_to_sign: \n{string_to_sign}\n", "*" * 50)
+    logger.debug(f">>> string_to_sign: \n{string_to_sign}\n", "*" * 50)
     secret_date = sign(("TC3" + secret_key).encode("utf-8"), date)
     secret_service = sign(secret_date, service)
     secret_signing = sign(secret_service, "tc3_request")
     signature = hmac.new(
         secret_signing, string_to_sign.encode("utf-8"), hashlib.sha256
     ).hexdigest()
-    print(f">>> signature: \n{signature}\n", "*" * 50)
+    logger.debug(f">>> signature: \n{signature}\n", "*" * 50)
     headers["Authorization"] = (
         f"{algorithm} "
         f"Credential={secret_id}/{credential_scope}, "
@@ -135,7 +135,7 @@ class TranslateApiTencent(TranslateApiAbs):
             }
         )
 
-        print("Resp: %s", resp.text)
+        logger.debug("Resp: %s", resp.text)
         if resp.status_code != 200:
             logger.error("HTTP_CODE Error [%d] %s", resp.status_code, resp.text)
             raise
