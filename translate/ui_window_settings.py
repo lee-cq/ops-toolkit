@@ -54,22 +54,6 @@ class SettingsWindow:
         self.hotkey_entry.insert(0, self.app.config.hotkey)
         ttk.Label(frame, text="提示: 格式如 '<ctrl>+<alt>+t'", foreground="gray").pack(anchor=tk.W, pady=(0, 10))
 
-        # 源语言设置
-        ttk.Label(frame, text="默认源语言:").pack(anchor=tk.W, pady=(10, 5))
-        self.source_lang_combobox = ttk.Combobox(frame, values=list(self.languages.values()))
-        self.source_lang_combobox.pack(fill=tk.X, pady=(0, 15))
-        # 查找当前源语言对应的显示文本
-        source_lang_name = self.languages.get(self.app.config.source_lang, "自动检测")
-        self.source_lang_combobox.current(list(self.languages.values()).index(source_lang_name))
-
-        # 目标语言设置
-        ttk.Label(frame, text="默认目标语言:").pack(anchor=tk.W, pady=(10, 5))
-        self.target_lang_combobox = ttk.Combobox(frame, values=list(self.languages.values()))
-        self.target_lang_combobox.pack(fill=tk.X, pady=(0, 15))
-        # 查找当前目标语言对应的显示文本
-        target_lang_name = self.languages.get(self.app.config.target_lang, "中文")
-        self.target_lang_combobox.current(list(self.languages.values()).index(target_lang_name))
-
         # 按钮区域
         button_frame = ttk.Frame(frame)
         button_frame.pack(fill=tk.X, pady=10)
