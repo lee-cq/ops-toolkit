@@ -1,6 +1,6 @@
 [project]
 name = "translate"
-version = "0.1.0"
+version = "0.1.4"
 description = "翻译工具包"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -14,12 +14,21 @@ dependencies = [
     "requests>=2.32.5",
 ]
 
-[[tool.uv.index]]
-name = "huawei"
-url = "https://mirrors.huaweicloud.com/repository/pypi/simple"
-
 [dependency-groups]
 dev = [
     "ipython>=9.5.0",
     "pytest>=8.4.2",
 ]
+
+[project.gui-scripts]
+translate = "translate.__main__:main"
+
+[[tool.uv.index]]
+name = "huawei"
+url = "https://mirrors.huaweicloud.com/repository/pypi/simple"
+
+[tool.uv.build-backend]
+source-include = [
+    "translate/fonts/**"
+]
+

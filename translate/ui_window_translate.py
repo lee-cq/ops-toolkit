@@ -5,18 +5,21 @@
 @Author     : LeeCQ
 @Date-Time  : 2025/9/19 22:06
 """
-
+import os
 import tkinter as tk
 from pathlib import Path
 from tkinter import font as tk_font, messagebox
 import pyperclip
 import logging
+import gzip
+import pyglet
 
 logger = logging.getLogger("translate.ui.overlay")
 
+font_dir = Path(__file__).parent.joinpath("fonts")
 
-en_font = ('霞鹜文楷等宽 屏幕阅读版', 13,)
-zn_font = ('霞鹜文楷等宽 屏幕阅读版', 12,)
+en_font = ('霞鹜文楷等宽 Medium', 13,)
+zn_font = ('霞鹜文楷等宽 Medium', 12,)
 
 
 class TranslationWindow:
@@ -25,6 +28,14 @@ class TranslationWindow:
         self.window = None
         self.source_text_widget = None
         self.result_text_widget = None
+
+        if not [i for i in tk_font.families() if i == "霞鹜文楷等宽 Medium"]:
+            from lzma import decompress
+            font_dir.joinpath("LXGWWenKaiMono-Medium.ttf").write_bytes(
+                decompress(font_dir.joinpath("LXGWWenKaiMono-Medium.ttf.lzma.py").read_bytes())
+            )
+            tk.messagebox.showinfo("安装字体", "点击确定后开始安装字体，完成后手动关闭字体窗口继续。")
+            os.system(font_dir.joinpath("LXGWWenKaiMono-Medium.ttf").absolute().__str__())
 
     def show(self, source_text, translated_text, src_lang, dst_lang):
         """显示翻译结果窗口"""
@@ -108,15 +119,32 @@ class TranslationWindow:
 
 if __name__ == '__main__':
     import threading, time
+    from tkinter import ttk
 
 
     class TmpApp:
         def __init__(self, _root):
             self.root = _root
 
+            # 按钮区域
+            button_frame = ttk.Frame(_root)
+            button_frame.pack(fill=tk.X, pady=10)
+
+            save_button = ttk.Button(button_frame, text="show", command=show)
+            save_button.pack(side=tk.RIGHT, padx=5)
+
+
+    def show(s: str = None):
+        window.show(
+            "你好",
+            str(Path(__file__).parent.joinpath("fonts/LXGWWenKaiMono-Medium.ttf").exists()),
+            'zh',
+            'en'
+        )
+
 
     _app = TmpApp(tk.Tk())
     window = TranslationWindow(_app)
-    window.show("你好", "Hello", 'zh', 'en')
-    threading.Thread(target=lambda: (time.sleep(5), _app.root.destroy())).start()
+    show()
+    # threading.Thread(target=lambda: (time.sleep(5), _app.root.destroy())).start()
     _app.root.mainloop()
