@@ -11,8 +11,8 @@ from pathlib import Path
 from tkinter import font as tk_font, messagebox
 import pyperclip
 import logging
-import gzip
-import pyglet
+
+from win11toast import toast
 
 logger = logging.getLogger("translate.ui.overlay")
 
@@ -26,8 +26,7 @@ class TranslationWindow:
     def __init__(self, app):
         self.app = app
         self.window = None
-        self.source_text_widget = None
-        self.result_text_widget = None
+        self.dst_text = None
 
         if not [i for i in tk_font.families() if i == "霞鹜文楷等宽 Medium"]:
             from lzma import decompress
@@ -45,10 +44,11 @@ class TranslationWindow:
         self.window.overrideredirect(True)  # 无边框
         self.window.attributes("-topmost", True)  # 窗口置顶
         self.window.configure(bg='black')
-
+        self.dst_text = translated_text
         # 绑定ESC键关闭窗口
         self.window.bind("<Escape>", lambda e: self.window.destroy())
-
+        # 绑定双击事件执行copy_result
+        self.window.bind("<Double-1>", lambda e: self.copy_result())
         # 创建布局
         frame = tk.Frame(self.window, bg='black')
         frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -111,10 +111,11 @@ class TranslationWindow:
 
     def copy_result(self):
         """复制翻译结果到剪贴板"""
-        if self.result_text_widget:
-            result = self.result_text_widget.get(1.0, tk.END).strip()
-            pyperclip.copy(result)
-            messagebox.showinfo("成功", "翻译结果已复制到剪贴板")
+        logger.info("双击事件触发：复制翻译结果到剪贴板")
+        if self.dst_text:
+            pyperclip.copy(self.dst_text)
+            toast(title="翻译结果已复制到剪贴板", body=self.dst_text, app_id=self.app.config.app_name)
+            # messagebox.showinfo("成功", "翻译结果已复制到剪贴板")
 
 
 if __name__ == '__main__':
