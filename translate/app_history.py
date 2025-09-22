@@ -53,6 +53,10 @@ class HistoryManager:
         self.save_history()
         return record
 
+    def remove_record(self, record):
+        self.history.remove(record)
+        self.save_history()
+
     def clear_history(self):
         self.history = []
         self.save_history()

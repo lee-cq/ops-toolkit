@@ -60,15 +60,7 @@ class HistoryWindow:
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         # 填充数据
-        for record in reversed(self.app.history_manager.history):  # 最新的在前面
-            self.tree.insert("", tk.END, values=(
-                record['time'],
-                record['src'][:50] + ("..." if len(record['src']) > 50 else ""),
-                record['dst'][:50] + ("..." if len(record['dst']) > 50 else ""),
-                record['src_lang'],
-                record['dst_lang']
-            ))
-
+        self.update_data()
         # 双击查看完整内容
         self.tree.bind("<Double-1>", self.show_full_record)
 
@@ -81,6 +73,20 @@ class HistoryWindow:
 
         clear_button = ttk.Button(button_frame, text="清空历史", command=self.clear_history)
         clear_button.pack(side=tk.RIGHT, padx=5)
+
+    def update_data(self):
+        # 刷新主窗口的表格
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        for record in reversed(self.app.history_manager.history):
+            self.tree.insert("", tk.END, values=(
+                record['time'],
+                record['src'][:50] + ("..." if len(record['src']) > 50 else ""),
+                record['dst'][:50] + ("..." if len(record['dst']) > 50 else ""),
+                record['src_lang'],
+                record['dst_lang']
+            ))
+
 
     def show_full_record(self, event):
         """显示选中记录的完整内容"""
@@ -118,6 +124,19 @@ class HistoryWindow:
             dst_text.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
             dst_text.insert(tk.END, full_record['dst'])
             dst_text.configure(state="disabled")
+
+            def remove_record():
+                if messagebox.askyesno("确认", "确定要删除这条翻译记录吗？此操作不可恢复。"):
+                    # 从历史记录中删除
+                    self.app.history_manager.remove_record(full_record)
+                    detail_window.destroy()
+                    self.update_data()
+
+            # 添加删除按钮
+            button_frame = ttk.Frame(frame)
+            button_frame.pack(fill=tk.X, pady=(10, 0))
+            delete_button = ttk.Button(button_frame, text="删除记录", command=remove_record)
+            delete_button.pack(side=tk.RIGHT)
 
     def export_history(self):
         """导出历史记录为CSV"""
