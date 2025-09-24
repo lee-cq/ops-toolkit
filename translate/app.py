@@ -90,21 +90,27 @@ class TranslationApp:
                 tk.messagebox.showinfo("提示", "剪贴板为空，无法进行翻译")
                 return
             src_lang, dst_lang = trans_lang(source_text)
-            # 调用翻译API
-            translated_text = config.api.translate_text(
-                source_text,
-                to_lang=dst_lang,
-                from_lang=src_lang,
-            )
-            dst_text = translated_text.dst
+            # 查询该src是否有翻译记录，如果有走历史记录。
+            dst_text = self.history_manager.get_record_by_src(source_text).get("dst")
+            if dst_text is None:
+                logger.info("NOT Found src from history.")
+                # 调用翻译API
+                translated_text = config.api.translate_text(
+                    source_text,
+                    to_lang=dst_lang,
+                    from_lang=src_lang,
+                )
+                dst_text = translated_text.dst
 
-            # 记录翻译结果
-            self.history_manager.add_record(
-                source_text,
-                dst_text,
-                src_lang,
-                dst_lang
-            )
+                # 记录翻译结果
+                self.history_manager.add_record(
+                    source_text,
+                    dst_text,
+                    src_lang,
+                    dst_lang
+                )
+            else:
+                logger.info(f"Found src from history. / Use History.")
 
             # 显示翻译结果
             TranslationWindow(self).show(

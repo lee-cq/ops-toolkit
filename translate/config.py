@@ -49,7 +49,7 @@ class Config(BaseModel):
     apis: list[KeyModel] = []
     app_name: str = "translate"
     data_dir: Path = Path.cwd() / f".{app_name.lower()}"
-    translation_history_path: Path = data_dir / "translation_history.json"
+    translation_history_path: Path = data_dir / "translation_history.db"
     log_path: Path = data_dir / f"{app_name.lower()}.log"
     hotkey: str = '<ctrl>+<alt>+d'
     config_path: Path
@@ -86,7 +86,7 @@ def load_config(path: str = "") -> Config:
         val = load(p.open("rb"))
         val['config_path'] = p
         return Config.model_validate(val)
-    raise
+    raise ValueError(f"config file format error, {p=}")
 
 
 config = load_config()

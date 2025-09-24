@@ -5,78 +5,196 @@
 @Author     : LeeCQ
 @Date-Time  : 2025/9/19 22:18
 """
-import json
 import csv
-import os
+from pathlib import Path
 from datetime import datetime
 from logging import getLogger
-
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text
+from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.exc import SQLAlchemyError
 
 logger = getLogger("translate.app.history")
+
+Base = declarative_base()
+
+
+class TranslationRecord(Base):
+    __tablename__ = 'translation_history'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    time = Column(DateTime, default=datetime.now)
+    src = Column(Text)
+    dst = Column(Text)
+    src_lang = Column(String(10))
+    dst_lang = Column(String(10))
 
 
 class HistoryManager:
     def __init__(self, config):
         self.config = config
-        self.history = []
-        self.load_history()
+        self.engine = None
+        self.Session = None
+        self._initialize_database()
 
-    def load_history(self):
+    def _initialize_database(self):
+        """初始化数据库连接"""
         try:
-            if self.config.translation_history_path and \
-                    os.path.exists(self.config.translation_history_path):
-                with open(self.config.translation_history_path, 'r', encoding='utf-8') as f:
-                    self.history = json.load(f)
-                logger.info(f"Loaded {len(self.history)} translation records")
-        except Exception as e:
-            logger.error(f"Error loading translation history: {e}")
-            self.history = []
+            db_path = Path(self.config.translation_history_path or 'translation_history.db')
+            # 确保路径存在
+            db_path.parent.mkdir(parents=True, exist_ok=True)
 
-    def save_history(self):
+            self.engine = create_engine(f'sqlite:///{db_path.as_posix()}')
+            Base.metadata.create_all(self.engine)
+            self.Session = sessionmaker(bind=self.engine)
+            logger.info("Database initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing database: {e}")
+            raise
+
+    def close(self):
+        """关闭数据库连接"""
+        if self.engine:
+            self.engine.dispose()
+            self.engine = None
+            self.Session = None
+            logger.info("Database connection closed")
+
+    def _get_session(self):
+        """获取数据库会话"""
+        return self.Session()
+
+    def add_record(self, src: str, dst: str, src_lang: str, dst_lang: str, record_time: datetime = None):
+        """添加翻译记录"""
+        session = self._get_session()
         try:
-            if self.config.translation_history_path:
-                with open(self.config.translation_history_path, 'w', encoding='utf-8') as f:
-                    json.dump(self.history, f, ensure_ascii=False, indent=2)
-                logger.info(f"Saved {len(self.history)} translation records")
-        except Exception as e:
-            logger.error(f"Error saving translation history: {e}")
+            record = TranslationRecord(
+                time=record_time or datetime.now(),
+                src=src,
+                dst=dst,
+                src_lang=src_lang,
+                dst_lang=dst_lang
+            )
+            session.add(record)
+            session.commit()
+            logger.info("Translation record added successfully")
+            return {
+                'id': record.id,
+                'time': record.time.isoformat(),
+                'src': record.src,
+                'dst': record.dst,
+                'src_lang': record.src_lang,
+                'dst_lang': record.dst_lang
+            }
+        except SQLAlchemyError as e:
+            session.rollback()
+            logger.error(f"Error adding translation record: {e}")
+            raise
+        finally:
+            session.close()
 
-    def add_record(self, source_text, translated_text, source_lang, target_lang):
-        record = {
-            'time': datetime.now().isoformat(),
-            'src': source_text,
-            'dst': translated_text,
-            'src_lang': source_lang,
-            'dst_lang': target_lang
-        }
-        self.history.append(record)
-        self.save_history()
-        return record
+    def get_all_records(self):
+        """获取所有翻译记录"""
+        session = self._get_session()
+        try:
+            records = session.query(TranslationRecord).order_by(TranslationRecord.time.desc()).all()
+            return [{
+                'id': record.id,
+                'time': record.time.isoformat(),
+                'src': record.src,
+                'dst': record.dst,
+                'src_lang': record.src_lang,
+                'dst_lang': record.dst_lang
+            } for record in records]
+        except SQLAlchemyError as e:
+            logger.error(f"Error retrieving translation records: {e}")
+            return []
+        finally:
+            session.close()
 
-    def remove_record(self, record):
-        self.history.remove(record)
-        self.save_history()
+    def get_record_by_src(self, src: str) -> dict:
+        """根据源文本获取记录"""
+        session = self._get_session()
+        try:
+            record = session.query(TranslationRecord).filter(TranslationRecord.src == src).first()
+            if record:
+                return {
+                    'id': record.id,
+                    'time': record.time.isoformat(),
+                    'src': record.src,
+                    'dst': record.dst,
+                    'src_lang': record.src_lang,
+                    'dst_lang': record.dst_lang
+                }
+            else:
+                logger.warning(f"Record with source text {src} not found")
+                return {}
+        except SQLAlchemyError as e:
+            logger.error(f"Error retrieving translation record by source text: {e}")
+            return {}
+        finally:
+            session.close()
+
+    def remove_record(self, record_id):
+        """根据ID删除记录"""
+        session = self._get_session()
+        try:
+            record = session.query(TranslationRecord).filter(TranslationRecord.id == record_id).first()
+            if record:
+                session.delete(record)
+                session.commit()
+                logger.info(f"Record {record_id} removed successfully")
+                return True
+            else:
+                logger.warning(f"Record {record_id} not found")
+                return False
+        except SQLAlchemyError as e:
+            session.rollback()
+            logger.error(f"Error removing translation record: {e}")
+            return False
+        finally:
+            session.close()
 
     def clear_history(self):
-        self.history = []
-        self.save_history()
-        logger.info("Translation history cleared")
+        """清空所有历史记录"""
+        session = self._get_session()
+        try:
+            session.query(TranslationRecord).delete()
+            session.commit()
+            logger.info("Translation history cleared")
+        except SQLAlchemyError as e:
+            session.rollback()
+            logger.error(f"Error clearing translation history: {e}")
+        finally:
+            session.close()
 
     def export_to_csv(self, file_path):
+        """导出记录到CSV文件"""
         try:
+            records = self.get_all_records()
             with open(file_path, 'w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
-                writer.writerow(['time', 'src', 'dst', 'src_lang', 'dst_lang'])
-                for record in self.history:
+                writer.writerow(['id', 'time', 'src', 'dst', 'src_lang', 'dst_lang'])
+                for record in records:
                     writer.writerow([
+                        record['id'],
                         record['time'],
                         record['src'],
                         record['dst'],
                         record['src_lang'],
                         record['dst_lang']
                     ])
-            logger.info(f"Exported {len(self.history)} records to {file_path}")
+            logger.info(f"Exported {len(records)} records to {file_path}")
             return True
         except Exception as e:
             logger.error(f"Error exporting to CSV: {e}")
             return False
+
+
+if __name__ == '__main__':
+    import logging
+    from translate.config import config as _c
+
+    logging.basicConfig(level=logging.DEBUG)
+
+    history_manager = HistoryManager(_c)
+    history_manager.export_to_csv('translation_history.csv')

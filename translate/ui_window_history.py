@@ -78,7 +78,7 @@ class HistoryWindow:
         # 刷新主窗口的表格
         for item in self.tree.get_children():
             self.tree.delete(item)
-        for record in reversed(self.app.history_manager.history):
+        for record in reversed(self.app.history_manager.get_all_records()):
             self.tree.insert("", tk.END, values=(
                 record['time'],
                 record['src'][:50] + ("..." if len(record['src']) > 50 else ""),
@@ -87,7 +87,6 @@ class HistoryWindow:
                 record['dst_lang']
             ))
 
-
     def show_full_record(self, event):
         """显示选中记录的完整内容"""
         selected_item = self.tree.selection()[0]
@@ -95,7 +94,7 @@ class HistoryWindow:
 
         # 查找完整记录
         full_record = None
-        for record in self.app.history_manager.history:
+        for record in self.app.history_manager.get_all_records():
             if record['time'] == values[0]:
                 full_record = record
                 break
@@ -128,7 +127,7 @@ class HistoryWindow:
             def remove_record():
                 if messagebox.askyesno("确认", "确定要删除这条翻译记录吗？此操作不可恢复。"):
                     # 从历史记录中删除
-                    self.app.history_manager.remove_record(full_record)
+                    self.app.history_manager.remove_record(full_record['id'])
                     detail_window.destroy()
                     self.update_data()
 
@@ -140,7 +139,7 @@ class HistoryWindow:
 
     def export_history(self):
         """导出历史记录为CSV"""
-        if not self.app.history_manager.history:
+        if not self.app.history_manager.get_all_records():
             messagebox.showinfo("提示", "没有翻译记录可导出")
             return
 
@@ -156,7 +155,7 @@ class HistoryWindow:
 
     def clear_history(self):
         """清空历史记录"""
-        if not self.app.history_manager.history:
+        if not self.app.history_manager.get_all_records():
             messagebox.showinfo("提示", "翻译记录已为空")
             return
 
