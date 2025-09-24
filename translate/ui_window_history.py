@@ -28,6 +28,8 @@ class HistoryWindow:
         self.window.title("翻译历史记录")
         self.window.geometry("800x500")
         self.window.resizable(True, True)
+        # 绑定ESC键关闭窗口
+        self.window.bind("<Escape>", lambda e: self.window.destroy())
 
         # 创建布局
         frame = ttk.Frame(self.window, padding="10")
@@ -104,6 +106,9 @@ class HistoryWindow:
             detail_window = tk.Toplevel(self.window)
             detail_window.title("翻译详情")
             detail_window.geometry("600x400")
+
+            # 绑定ESC键关闭窗口
+            detail_window.bind("<Escape>", lambda e: detail_window.destroy())
 
             frame = ttk.Frame(detail_window, padding="10")
             frame.pack(fill=tk.BOTH, expand=True)

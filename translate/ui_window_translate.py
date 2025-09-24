@@ -24,6 +24,8 @@ zn_font = ('霞鹜文楷等宽 Medium', 12,)
 
 class TranslationWindow:
     def __init__(self, app):
+        self.y1 = None
+        self.x1 = None
         self.app = app
         self.window = None
         self.dst_text = None
