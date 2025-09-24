@@ -66,12 +66,45 @@ class Config(BaseModel):
         return self.apis[0].api
 
 
+def find_config_path() -> Path:
+    """查找配置文件路径
+    1. 环境变量 TRANSLATE_CONFIG_PATH
+    2. 当前用户主目录下的 .translate_config.toml 或 .translate_config.json
+    3. 当前目录下的 translate_config.toml 或 translate_config.json
+    4. 当前目录下的 _lo_config.toml 或 _lo_config.json
+    5. 在当前目录下创建 translate_config.toml 或 translate_config.json
+    """
+    import os
+    from pathlib import Path
+
+    # 1. 检查环境变量
+    env_path = os.getenv("TRANSLATE_CONFIG_PATH")
+    if env_path:
+        return Path(env_path)
+
+    # 2. 检查用户主目录
+    home_dir = Path.home()
+    for filename in [".translate_config.toml", ".translate_config.json"]:
+        config_path = home_dir / filename
+        if config_path.exists():
+            return config_path
+
+    # 3. 检查当前目录下的 translate_config 文件
+    current_dir = Path.cwd()
+    for filename in ["translate_config.toml", "translate_config.json", "_lo_config.toml", "_lo_config.json"]:
+        config_path = current_dir / filename
+        if config_path.exists():
+            return config_path
+
+    # 5. 在当前目录下创建默认配置文件 (使用toml格式)
+    default_config = current_dir / "translate_config.toml"
+    default_config.touch()
+    return default_config
+
+
 def load_config(path: str = "") -> Config:
     if not path:
-        from os import getenv
-        path = getenv("TRANSLATE_CONFIG_PATH")
-        if not path:
-            raise ValueError(f"path is empty, {path=}")
+        path = find_config_path()
 
     p = Path(path)
     if not p.exists():

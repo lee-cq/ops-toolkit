@@ -14,7 +14,7 @@ class TranslateApiBaidu(TranslateApiAbs):
     lang_map = {
         "zh": "zh",
         "en": 'en',
-        "tw": "tw",
+        "tw": "cht",
     }
 
     def translate_image(self, image: bytes, target_lang: str, from_lang: str) -> str:
