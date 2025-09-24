@@ -41,7 +41,8 @@ def init_logger():
                     'class': 'logging.FileHandler',  # 文件输出
                     'filename': config.log_path,  # 日志文件名
                     'formatter': 'translate_formatter',
-                    'level': 'INFO'  # 日志级别（DEBUG/INFO/WARNING/ERROR/CRITICAL）
+                    'level': 'INFO',  # 日志级别（DEBUG/INFO/WARNING/ERROR/CRITICAL）
+                    "encoding": "utf-8"
                 }
             },
             "filters": {},

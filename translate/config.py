@@ -6,23 +6,20 @@
 """
 from pathlib import Path
 from typing import Any
+from logging import getLogger
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 
 from translate.api_abs import TranslateApiAbs
 
-
-class UsageModel(BaseModel):
-    text: int = 0
-    image: int = 0
+logger = getLogger("translate.config")
 
 
 class KeyModel(BaseModel):
     api_type: str
-    text: int = 0
-    image: int = 0
+    text: list[int, int] = [0, 0]
+    image: list[int, int] = [0, 0]
     auth: tuple[str, str]
-    usage: UsageModel = UsageModel()
 
     # noinspection PyAttributeOutsideInit
     def model_post_init(self, context: Any, /) -> None:
@@ -48,16 +45,43 @@ class KeyModel(BaseModel):
 class Config(BaseModel):
     apis: list[KeyModel] = []
     app_name: str = "translate"
-    data_dir: Path = Path.cwd() / f".{app_name.lower()}"
-    translation_history_path: Path = data_dir / "translation_history.db"
-    log_path: Path = data_dir / f"{app_name.lower()}.log"
     hotkey: str = '<ctrl>+<alt>+d'
+
     config_path: Path
+    data_dir: Path = None
+    translation_history_path: Path = None
+    log_path: Path = None
+
+    @field_serializer("data_dir", "translation_history_path", "log_path", "config_path")
+    def serialize_path(self, v: Path) -> str:
+        return v.as_posix()
 
     def save(self):
-        raise NotImplementedError()
+        with self.config_path.open("w") as f:
+            if self.config_path.suffix == ".json":
+                from json import dump
+                dump(self.model_dump(), f, ensure_ascii=False, indent=2)
+            elif self.config_path.suffix == ".toml":
+                from toml import dump
+                dump(self.model_dump(), f)
+            else:
+                raise ValueError(f"config file format error, {self.config_path=}")
 
     def model_post_init(self, context: Any, /) -> None:
+        if self.data_dir is None:
+            self.data_dir = self.config_path.parent
+
+        if self.translation_history_path is None:
+            self.translation_history_path = self.data_dir.joinpath("translation_history.db")
+
+        if self.log_path is None:
+            self.log_path = self.data_dir.joinpath(f"{self.app_name.lower()}.log")
+
+        self.config_path = self.config_path.absolute()
+        self.data_dir = self.data_dir.absolute()
+        self.translation_history_path = self.translation_history_path.absolute()
+        self.log_path = self.log_path.absolute()
+
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
     @property
@@ -84,20 +108,21 @@ def find_config_path() -> Path:
 
     # 2. 检查用户主目录
     home_dir = Path.home()
-    for filename in [".translate_config.toml", ".translate_config.json"]:
+    for filename in [".config/translate/config.toml", ".config/translate/config.json"]:
         config_path = home_dir / filename
         if config_path.exists():
             return config_path
 
     # 3. 检查当前目录下的 translate_config 文件
     current_dir = Path.cwd()
-    for filename in ["translate_config.toml", "translate_config.json", "_lo_config.toml", "_lo_config.json"]:
+    for filename in ["translate/config.toml", "translate/config.json", "_lo_config.toml", "_lo_config.json"]:
         config_path = current_dir / filename
         if config_path.exists():
             return config_path
 
     # 5. 在当前目录下创建默认配置文件 (使用toml格式)
-    default_config = current_dir / "translate_config.toml"
+    default_config = home_dir / ".config/translate/config.toml"
+    default_config.parent.mkdir(parents=True, exist_ok=True)
     default_config.touch()
     return default_config
 
@@ -106,6 +131,8 @@ def load_config(path: str = "") -> Config:
     if not path:
         path = find_config_path()
 
+    logger.info(f"load config from {path=}")
+    print(f"load config from {path}")
     p = Path(path)
     if not p.exists():
         return Config()
@@ -123,3 +150,6 @@ def load_config(path: str = "") -> Config:
 
 
 config = load_config()
+
+if __name__ == '__main__':
+    print(config.model_dump_json(indent=2))

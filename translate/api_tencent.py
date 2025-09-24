@@ -145,7 +145,7 @@ class TranslateApiTencent(TranslateApiAbs):
             logger.error("翻译失败, resp: %s", resp)
             raise
 
-        self.meta.usage.text += resp["Response"]["UsedAmount"]
+        self.meta.text[0] += resp["Response"]["UsedAmount"]
         return TextResp(
             src=text,
             dst=resp.get("Response").get("TargetText"),

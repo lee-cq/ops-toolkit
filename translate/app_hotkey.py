@@ -23,7 +23,7 @@ class HotkeyListener:
 
     def on_activate(self):
         """快捷键激活时的处理函数"""
-        logger.info("Hotkey activated")
+        logger.info("Hotkey activated: %s", self.hotkey)
 
         # 在主线程中执行GUI操作
         self.app.root.after(0, self.app.perform_translation)
