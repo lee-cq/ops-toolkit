@@ -18,15 +18,16 @@ def main():
     parser = argparse.ArgumentParser(description='翻译工具')
     parser.add_argument(
         '--config',
-        default='config.toml',
-        help='指定配置文件路径，默认为 config.toml'
+        default='',
+        help='指定配置文件路径，默认为 ~/.config/translate/config.toml'
     )
 
     # 解析命令行参数
     args = parser.parse_args()
 
     # 设置环境变量
-    os.environ["TRANSLATE_CONFIG_PATH"] = args.config
+    if args.config:
+        os.environ["TRANSLATE_CONFIG_PATH"] = args.config
 
     # 导入应用类
     from translate.app import TranslationApp

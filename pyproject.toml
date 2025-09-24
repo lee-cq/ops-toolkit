@@ -12,6 +12,7 @@ dependencies = [
     "pyperclip>=1.10.0",
     "pystray>=0.19.5",
     "requests>=2.32.5",
+    "sqlalchemy>=2.0.43",
     "toml>=0.10.2",
     "win11toast>=0.35",
 ]

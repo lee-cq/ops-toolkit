@@ -124,29 +124,34 @@ def find_config_path() -> Path:
     default_config = home_dir / ".config/translate/config.toml"
     default_config.parent.mkdir(parents=True, exist_ok=True)
     default_config.touch()
-    return default_config
+    return default_config.absolute()
 
 
 def load_config(path: str = "") -> Config:
     if not path:
         path = find_config_path()
 
-    logger.info(f"load config from {path=}")
-    print(f"load config from {path}")
     p = Path(path)
+    logger.info(f"load config from {p=}")
+    print(f"load config from {p.absolute()}")
+
+    _config = {"config_path": p}
     if not p.exists():
-        return Config()
+        print(f"config file not exists, create at {p}")
+        _c = Config.model_validate(_config)
+        _c.save()
+        return _c
+
     if p.suffix == '.json':
         from json import load
-        val = load(p.open("rb"))
-        val['config_path'] = p
-        return Config.model_validate(val)
-    if p.suffix == ".toml":
+        _config.update(load(p.open("rb")))
+    elif p.suffix == ".toml":
         from tomllib import load
-        val = load(p.open("rb"))
-        val['config_path'] = p
-        return Config.model_validate(val)
-    raise ValueError(f"config file format error, {p=}")
+        _config.update(load(p.open("rb")))
+    else:
+        raise ValueError(f"config file format error, {p=}")
+
+    return Config.model_validate(_config)
 
 
 config = load_config()
