@@ -3,6 +3,9 @@ import sys
 import threading
 import tkinter as tk
 from logging import getLogger
+from pathlib import Path
+
+from PIL import Image, ImageTk
 
 from translate.config import config
 from translate.app_history import HistoryManager
@@ -66,6 +69,10 @@ class TranslationApp:
         # 初始化GUI
         self.root = tk.Tk()
         self.root.withdraw()  # 隐藏主窗口
+
+        _img= Image.open(Path(__file__).parent.joinpath("resources/app-icon.png.py").open("rb"))
+        self.img = ImageTk.PhotoImage(_img)
+        self.root.iconphoto(True, self.img)
 
         # 初始化组件
         self.history_manager = HistoryManager(self.config)

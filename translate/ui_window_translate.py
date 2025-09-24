@@ -16,7 +16,7 @@ from win11toast import toast
 
 logger = logging.getLogger("translate.ui.overlay")
 
-font_dir = Path(__file__).parent.joinpath("fonts")
+font_dir = Path(__file__).parent.joinpath("resources")
 
 en_font = ('霞鹜文楷等宽 Medium', 13,)
 zn_font = ('霞鹜文楷等宽 Medium', 12,)
@@ -140,7 +140,7 @@ if __name__ == '__main__':
     def show(s: str = None):
         window.show(
             "你好",
-            str(Path(__file__).parent.joinpath("fonts/LXGWWenKaiMono-Medium.ttf").exists()),
+            str(Path(__file__).parent.joinpath("resources/LXGWWenKaiMono-Medium.ttf").exists()),
             'zh',
             'en'
         )

@@ -5,8 +5,10 @@
 @Author     : LeeCQ
 @Date-Time  : 2025/9/19 22:13
 """
+from pathlib import Path
+
 import pystray
-from PIL import Image, ImageDraw
+from PIL import Image
 
 
 class SystemTray:
@@ -20,9 +22,7 @@ class SystemTray:
     def create_icon(self):
         """创建系统托盘图标"""
         # 创建一个简单的图标
-        image = Image.new('RGB', (64, 64), color='blue')
-        draw = ImageDraw.Draw(image)
-        draw.text((10, 20), "T", fill='white')  # 简单的"T"表示翻译
+        image = Image.open(Path(__file__).parent.joinpath("resources/app-icon.png.py").open("rb"))
 
         # 创建菜单
         menu = pystray.Menu(
