@@ -51,6 +51,9 @@ class LogWindow:
         refresh_button = ttk.Button(button_frame, text="刷新", command=self.load_logs)
         refresh_button.pack(side=tk.LEFT, padx=5)
 
+        dir_butten = ttk.Button(button_frame, text="打开所在文件夹", command=self.open_log_dir)
+        dir_butten.pack(side=tk.LEFT, padx=5)
+
         clear_button = ttk.Button(button_frame, text="清空日志", command=self.clear_logs)
         clear_button.pack(side=tk.RIGHT, padx=5)
 
@@ -89,3 +92,7 @@ class LogWindow:
             except Exception as e:
                 logger.error(f"Error clearing logs: {e}")
                 messagebox.showerror("错误", "清空日志失败")
+
+    def open_log_dir(self):
+        import os
+        os.startfile(self.app.config.log_path.parent)

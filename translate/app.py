@@ -8,6 +8,7 @@ from pathlib import Path
 from PIL import Image, ImageTk
 
 from translate.config import config
+from translate.log import init_logger
 from translate.app_history import HistoryManager
 from translate.tools import trans_lang
 from translate.ui_window_translate import TranslationWindow
@@ -20,44 +21,6 @@ from translate.app_tray import SystemTray
 from translate.app_analyzer import TextAnalyzer
 
 logger = getLogger("translate.app.main")
-
-
-def init_logger():
-    """初始化日志配置"""
-    logging.config.dictConfig(
-        {
-            'version': 1,
-            # 'disable_existing_loggers': False,
-            'formatters': {
-                'translate_formatter': {
-                    'format': '%(asctime)s - %(filename)s - [%(levelname)s] - %(message)s',  # 包含时间、logname、等级、msg
-                    'datefmt': '%Y-%m-%d %H:%M:%S'  # 时间格式
-                }
-            },
-            'handlers': {
-                'console_handler': {
-                    'class': 'logging.StreamHandler',  # 控制台输出
-                    'formatter': 'translate_formatter',
-                    'level': 'DEBUG'  # 日志级别（DEBUG/INFO/WARNING/ERROR/CRITICAL）
-                },
-                'file_handler': {
-                    'class': 'logging.FileHandler',  # 文件输出
-                    'filename': config.log_path,  # 日志文件名
-                    'formatter': 'translate_formatter',
-                    'level': 'INFO',  # 日志级别（DEBUG/INFO/WARNING/ERROR/CRITICAL）
-                    "encoding": "utf-8"
-                }
-            },
-            "filters": {},
-            'loggers': {
-                'translate': {  # 指定translate日志器
-                    'handlers': ['console_handler', 'file_handler'],
-                    'level': 'DEBUG',
-                    'propagate': False  # 不向上传播日志
-                }
-            }
-        }
-    )
 
 
 class TranslationApp:
