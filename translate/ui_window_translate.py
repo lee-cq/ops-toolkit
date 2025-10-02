@@ -85,8 +85,9 @@ class TranslationWindow:
         self.window.update_idletasks()  # 更新布局以获取准确尺寸
         min_width = min(frame.winfo_reqwidth(), 400) + 20
         min_height = frame.winfo_reqheight() + 20
+        if min_height > min_width * 1.3:
+            min_width = 820
 
-        # 计算正方形尺寸，取宽高中的较大值，且不小于400像素
         x = self.app.root.winfo_pointerx()
         y = self.app.root.winfo_pointery()
         self.window.geometry(f"{min_width}x{min_height}+{x}+{y}")
