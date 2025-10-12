@@ -9,7 +9,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from pathlib import Path
-from translate.config import KeyModel
+from translate.config import TranslateApiModel
 
 
 class SettingsWindow:

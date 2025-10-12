@@ -15,10 +15,10 @@ from translate.api_abs import TranslateApiAbs
 logger = getLogger("translate.config")
 
 
-class KeyModel(BaseModel):
+class TranslateApiModel(BaseModel):
     api_type: str
-    text: list[int, int] = [0, 0]
-    image: list[int, int] = [0, 0]
+    text: tuple[int, int] = [0, 0]
+    image: tuple[int, int] = [0, 0]
     auth: tuple[str, str]
 
     # noinspection PyAttributeOutsideInit

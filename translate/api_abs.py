@@ -4,7 +4,7 @@ import typing
 from pydantic import BaseModel
 
 if typing.TYPE_CHECKING:
-    from translate.config import KeyModel
+    from translate.config import TranslateApiModel
 
 
 class TextResp(BaseModel):
@@ -33,7 +33,7 @@ class TranslateApiAbs(abc.ABC):
 
     def __init__(self, auth, meta):
         self.auth = auth
-        self.meta: "KeyModel" = meta
+        self.meta: "TranslateApiModel" = meta
 
     def get_lang(self, lang) -> str:
         """重写lan_map
