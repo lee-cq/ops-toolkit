@@ -1,24 +1,25 @@
-import logging.config
 import sys
 import threading
 import tkinter as tk
 from logging import getLogger
 from pathlib import Path
+from tkinter import messagebox
 
-from PIL import Image, ImageTk
+from PIL import Image
+from PIL import ImageTk
 
+from translate.app_analyzer import TextAnalyzer
+from translate.app_history import HistoryManager
+from translate.app_hotkey import HotkeyListener
+from translate.app_tray import SystemTray
 from translate.config import config
 from translate.log import init_logger
-from translate.app_history import HistoryManager
 from translate.tools import trans_lang
-from translate.ui_window_translate import TranslationWindow
+from translate.ui_window_analysis import WordAnalysisWindow
 from translate.ui_window_history import HistoryWindow
 from translate.ui_window_log import LogWindow
 from translate.ui_window_settings import SettingsWindow
-from translate.ui_window_analysis import WordAnalysisWindow
-from translate.app_hotkey import HotkeyListener
-from translate.app_tray import SystemTray
-from translate.app_analyzer import TextAnalyzer
+from translate.ui_window_translate import TranslationWindow
 
 logger = getLogger("translate.app.main")
 
@@ -27,14 +28,16 @@ class TranslationApp:
     def __init__(self):
         init_logger()
         # 初始化配置
+        logger.info("APP Initialing ...")
         self.config = config
 
         # 初始化GUI
         self.root = tk.Tk()
         self.root.withdraw()  # 隐藏主窗口
 
-        _img= Image.open(Path(__file__).parent.joinpath("resources/app-icon.png.py").open("rb"))
+        _img = Image.open(Path(__file__).parent.joinpath("resources/app-icon.png.py").open("rb"))
         self.img = ImageTk.PhotoImage(_img)
+        # noinspection PyTypeChecker
         self.root.iconphoto(True, self.img)
 
         # 初始化组件
@@ -47,7 +50,7 @@ class TranslationApp:
         self.word_analysis_window = WordAnalysisWindow(self)
         self.hotkey_listener = HotkeyListener(self)
         self.system_tray = SystemTray(self)
-
+        self.export_to_feishu_every_hour()
         logger.info(f"{self.config.app_name} started successfully")
 
     def perform_translation(self):
@@ -58,7 +61,7 @@ class TranslationApp:
             source_text = pyperclip.paste().strip()
 
             if not source_text:
-                tk.messagebox.showinfo("提示", "剪贴板为空，无法进行翻译")
+                messagebox.showinfo("提示", "剪贴板为空，无法进行翻译")
                 return
             src_lang, dst_lang = trans_lang(source_text)
             # 查询该src是否有翻译记录，如果有走历史记录。
@@ -93,7 +96,7 @@ class TranslationApp:
 
         except Exception as _e:
             logger.error(f"Error during translation: {_e}", exc_info=_e)
-            tk.messagebox.showerror("错误", f"翻译过程中发生错误:\n{str(_e)}")
+            messagebox.showerror("错误", f"翻译过程中发生错误:\n{str(_e)}")
 
     def show_history_window(self):
         """显示历史记录窗口"""
@@ -110,6 +113,21 @@ class TranslationApp:
     def show_word_analysis_window(self):
         """显示词汇分析窗口"""
         self.word_analysis_window.show()
+
+    # noinspection PyTypeChecker
+    def export_to_feishu_every_hour(self):
+        """导出历史记录到飞书"""
+        try:
+            msg = self.history_manager.export_feishu()
+            if msg != "没有新的记录":
+                messagebox.showinfo("导出到飞书成功", msg)
+        except Exception as _e:
+            logger.error(f"Error during export: {_e}", exc_info=_e)
+            msg = f"Error during export: {_e}"
+            messagebox.showerror("导出到飞书失败", msg)
+
+        finally:
+            self.root.after(60 * 60 * 1000, self.export_to_feishu_every_hour)
 
     def run(self):
         """运行应用程序"""

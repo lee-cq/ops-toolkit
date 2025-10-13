@@ -55,7 +55,7 @@ class HistoryWindow:
 
         # 添加滚动条
         scrollbar = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=self.tree.yview)
-        self.tree.configure(yscroll=scrollbar.set)
+        self.tree.configure(yscrollcommand=scrollbar.set)
 
         # 放置表格和滚动条
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -70,7 +70,10 @@ class HistoryWindow:
         button_frame = ttk.Frame(self.window, padding="10")
         button_frame.pack(fill=tk.X)
 
-        export_button = ttk.Button(button_frame, text="导出为CSV", command=self.export_history)
+        export_button = ttk.Button(button_frame, text="导出为CSV", command=self.export_to_cvs)
+        export_button.pack(side=tk.LEFT, padx=5)
+
+        export_button = ttk.Button(button_frame, text="导出到飞书", command=self.export_to_feishu)
         export_button.pack(side=tk.LEFT, padx=5)
 
         clear_button = ttk.Button(button_frame, text="清空历史", command=self.clear_history)
@@ -142,7 +145,7 @@ class HistoryWindow:
             delete_button = ttk.Button(button_frame, text="删除记录", command=remove_record)
             delete_button.pack(side=tk.RIGHT)
 
-    def export_history(self):
+    def export_to_cvs(self):
         """导出历史记录为CSV"""
         if not self.app.history_manager.get_all_records():
             messagebox.showinfo("提示", "没有翻译记录可导出")
@@ -157,6 +160,15 @@ class HistoryWindow:
             messagebox.showinfo("成功", f"历史记录已导出到:\n{file_path}")
         else:
             messagebox.showerror("错误", "导出历史记录失败")
+
+    def export_to_feishu(self):
+        """导出到飞书"""
+        title = "Translation History Export to Feishu"
+        try:
+            msg = self.app.history_manager.export_feishu()
+            messagebox.showinfo(title, msg)
+        except (PermissionError, ValueError) as e:
+            messagebox.showerror(title, str(e))
 
     def clear_history(self):
         """清空历史记录"""

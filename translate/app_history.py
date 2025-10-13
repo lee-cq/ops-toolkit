@@ -6,9 +6,12 @@
 @Date-Time  : 2025/9/19 22:18
 """
 import csv
+import platform
 from pathlib import Path
 from datetime import datetime
 from logging import getLogger
+
+import requests
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.exc import SQLAlchemyError
@@ -33,7 +36,7 @@ class HistoryManager:
     def __init__(self, config):
         self.config = config
         self.engine = None
-        self.Session = None
+        self.Session: sessionmaker
         self._initialize_database()
 
     def _initialize_database(self):
@@ -56,7 +59,7 @@ class HistoryManager:
         if self.engine:
             self.engine.dispose()
             self.engine = None
-            self.Session = None
+            del self.Session
             logger.info("Database connection closed")
 
     def _get_session(self):
@@ -78,10 +81,10 @@ class HistoryManager:
             session.commit()
             logger.info("Translation record added successfully")
             return {
-                'id': record.id,
-                'time': record.time.isoformat(),
-                'src': record.src,
-                'dst': record.dst,
+                'id':       record.id,
+                'time':     record.time.isoformat(),
+                'src':      record.src,
+                'dst':      record.dst,
                 'src_lang': record.src_lang,
                 'dst_lang': record.dst_lang
             }
@@ -98,16 +101,23 @@ class HistoryManager:
         try:
             records = session.query(TranslationRecord).order_by(TranslationRecord.time.desc()).all()
             return [{
-                'id': record.id,
-                'time': record.time.isoformat(),
-                'src': record.src,
-                'dst': record.dst,
+                'id':       record.id,
+                'time':     record.time.isoformat(),
+                'src':      record.src,
+                'dst':      record.dst,
                 'src_lang': record.src_lang,
                 'dst_lang': record.dst_lang
             } for record in records]
         except SQLAlchemyError as e:
             logger.error(f"Error retrieving translation records: {e}")
             return []
+        finally:
+            session.close()
+
+    def query_by_id(self, record_id: int) -> list[type[TranslationRecord]]:
+        session = self._get_session()
+        try:
+            return session.query(TranslationRecord).where(TranslationRecord.id > record_id).all()
         finally:
             session.close()
 
@@ -118,10 +128,10 @@ class HistoryManager:
             record = session.query(TranslationRecord).filter(TranslationRecord.src == src).first()
             if record:
                 return {
-                    'id': record.id,
-                    'time': record.time.isoformat(),
-                    'src': record.src,
-                    'dst': record.dst,
+                    'id':       record.id,
+                    'time':     record.time.isoformat(),
+                    'src':      record.src,
+                    'dst':      record.dst,
                     'src_lang': record.src_lang,
                     'dst_lang': record.dst_lang
                 }
@@ -189,6 +199,58 @@ class HistoryManager:
             logger.error(f"Error exporting to CSV: {e}")
             return False
 
+    def export_feishu(self) -> str:
+        """"""
+        feishu_meta = self.config.feishu
+        _r_id, records = 0, []
+        for record in self.query_by_id(feishu_meta.last_post_id):
+            en, cn = (record.src, record.dst) if record.src_lang == "en" else (record.dst, record.src)
+            records.append({"fields": {
+                "Hostname": platform.node(),
+                "Host-ID":  record.id,
+                "EN":       en,
+                "CN":       cn
+            }})
+            _r_id = max(int(record.id), _r_id)
+
+        if not records:
+            logger.info(f"No records found for {feishu_meta.last_post_id}")
+            return "没有新的记录"
+
+        logger.info(f"将向飞书推送{len(records)}条记录。")
+
+        resp = requests.post(
+            url="https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
+            json={"app_id": feishu_meta.app_id, "app_secret": feishu_meta.app_secret, }
+        )
+        if resp.status_code != 200 or resp.json()["code"] != 0:
+            emsg = f"获取Access Token Error. [H{resp.status_code}]{resp.text}]"
+            logger.error(emsg)
+            raise PermissionError(emsg)
+        access_token = resp.json()["tenant_access_token"]
+        logger.info(f"GET Feishu Access Token: {access_token}")
+
+        url = (f"https://open.feishu.cn/open-apis/bitable/v1"
+               f"/apps/{feishu_meta.app_token}"
+               f"/tables/{feishu_meta.table_id}/records/batch_create")
+
+        resp = requests.post(
+            url,
+            headers={"Authorization": f"Bearer {access_token}"},
+            json={"records": records})
+        if resp.status_code != 200 or resp.json()["code"] != 0:
+            emsg = f"上传飞书表格失败：[H {resp.status_code}]{resp.text}]"
+            logger.error(emsg)
+            import json
+            print(json.dumps({"records": records}, indent=2, ensure_ascii=False))
+            raise ValueError(emsg)
+        logger.info(f"upload record {len(records)} records.")
+
+        feishu_meta.last_post_id = _r_id
+        self.config.save()
+        logger.info(f"config.feishu.last_post_id: {feishu_meta.last_post_id} 已记录")
+        return f"upload record {len(records)} records."
+
 
 if __name__ == '__main__':
     import logging
@@ -197,4 +259,4 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
     history_manager = HistoryManager(_c)
-    history_manager.export_to_csv('translation_history.csv')
+    history_manager.export_feishu()

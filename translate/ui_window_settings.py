@@ -254,7 +254,7 @@ class SettingsWindow:
                 self.app.config.apis[api_index].auth = (user, passkey)
             else:
                 # 添加新API
-                new_api = KeyModel(
+                new_api = TranslateApiModel(
                     api_type=api_type,
                     auth=(user, passkey),
 

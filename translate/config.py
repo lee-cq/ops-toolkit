@@ -42,8 +42,20 @@ class TranslateApiModel(BaseModel):
         raise NotImplementedError
 
 
+class FeishuApiModel(BaseModel):
+    """"""
+    app_id: str
+    app_secret: str
+
+    app_token: str  # 多维表格ID
+    table_id: str
+
+    last_post_id: int = 0
+
+
 class Config(BaseModel):
-    apis: list[KeyModel] = []
+    apis: list[TranslateApiModel] = []
+    feishu: FeishuApiModel | None
     app_name: str = "translate"
     hotkey: str = '<ctrl>+<alt>+d'
 
