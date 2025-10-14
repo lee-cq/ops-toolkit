@@ -32,6 +32,14 @@ class SettingsWindow:
         self.api_tree = None
         self.api_types = ["baidu", "aliyun", "tencent"]
 
+        # 飞书设置控件
+        self.feishu_frame = None
+        self.feishu_app_id_entry = None
+        self.feishu_app_secret_entry = None
+        self.feishu_app_token_entry = None
+        self.feishu_table_id_entry = None
+        self.feishu_last_post_id_entry = None
+
     def show(self):
         """显示设置窗口"""
         # 如果窗口已存在，先销毁
@@ -131,7 +139,7 @@ class SettingsWindow:
 
         # 添加滚动条 (新增)
         api_scrollbar = ttk.Scrollbar(api_frame, orient=tk.VERTICAL, command=self.api_tree.yview)
-        self.api_tree.configure(yscroll=api_scrollbar.set)
+        self.api_tree.configure(yscrollcommand=api_scrollbar.set)
 
         # 放置树状图和滚动条 (新增)
         self.api_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -142,6 +150,39 @@ class SettingsWindow:
 
         # 加载API数据 (新增)
         self.load_api_data()
+
+        # ==================== 飞书设置标签页 (新增) ====================
+        feishu_frame = ttk.Frame(self.notebook, padding=10)
+        self.notebook.add(feishu_frame, text="飞书设置")
+        feishu_frame.columnconfigure(1, weight=1, minsize=300)
+        self.feishu_frame = feishu_frame
+
+        # 飞书应用ID (新增)
+        ttk.Label(feishu_frame, text="飞书应用ID:").grid(row=0, column=0, sticky=tk.W, pady=(10, 5))
+        self.feishu_app_id_entry = ttk.Entry(feishu_frame)
+        self.feishu_app_id_entry.grid(row=0, column=1, sticky=tk.EW, pady=(10, 5))
+        self.feishu_app_id_entry.insert(0, self.app.config.feishu.app_id)
+        # 飞书应用密钥 (新增)
+        ttk.Label(feishu_frame, text="飞书应用密钥:").grid(row=1, column=0, sticky=tk.W, pady=(10, 5))
+        self.feishu_app_secret_entry = ttk.Entry(feishu_frame)
+        self.feishu_app_secret_entry.grid(row=1, column=1, sticky=tk.EW, pady=(10, 5))
+        self.feishu_app_secret_entry.insert(0, self.app.config.feishu.app_secret)
+
+        # 飞书多维表格ID (新增)
+        ttk.Label(feishu_frame, text="飞书多维表格ID:").grid(row=2, column=0, sticky=tk.W, pady=(10, 5))
+        self.feishu_app_token_entry = ttk.Entry(feishu_frame)
+        self.feishu_app_token_entry.grid(row=2, column=1, sticky=tk.EW, pady=(10, 5))
+        self.feishu_app_token_entry.insert(0, self.app.config.feishu.app_token)
+        # 飞书多维表格表格ID (新增)
+        ttk.Label(feishu_frame, text="飞书多维表格表格ID:").grid(row=3, column=0, sticky=tk.W, pady=(10, 5))
+        self.feishu_table_id_entry = ttk.Entry(feishu_frame)
+        self.feishu_table_id_entry.grid(row=3, column=1, sticky=tk.EW, pady=(10, 5))
+        self.feishu_table_id_entry.insert(0, self.app.config.feishu.table_id)
+        # 飞书最后一次发送的消息ID (新增)
+        ttk.Label(feishu_frame, text="飞书最后一次发送的消息ID:").grid(row=4, column=0, sticky=tk.W, pady=(10, 5))
+        self.feishu_last_post_id_entry = ttk.Entry(feishu_frame)
+        self.feishu_last_post_id_entry.grid(row=4, column=1, sticky=tk.EW, pady=(10, 5))
+        self.feishu_last_post_id_entry.insert(0, str(self.app.config.feishu.last_post_id))
 
         # 按钮区域
         button_frame = ttk.Frame(self.window)
@@ -302,9 +343,31 @@ class SettingsWindow:
         self.app.config.translation_history_path = new_history_path
         self.app.config.log_path = new_log_path
 
+        if self.feishu_frame and self.feishu_frame.winfo_viewable():
+            # 获取飞书设置 (新增)
+            feishu_app_id = self.feishu_app_id_entry.get().strip()
+            feishu_app_secret = self.feishu_app_secret_entry.get().strip()
+            feishu_app_token = self.feishu_app_token_entry.get().strip()
+            feishu_table_id = self.feishu_table_id_entry.get().strip()
+            feishu_last_post_id = self.feishu_last_post_id_entry.get().strip()
+            # 验证飞书设置 (新增)
+            if not feishu_app_id or not feishu_app_secret or not feishu_app_token or not feishu_table_id:
+                messagebox.showerror("错误", "请填写完整的飞书设置")
+                return
+            try:
+                feishu_last_post_id = int(feishu_last_post_id)
+            except ValueError:
+                messagebox.showerror("错误", "飞书最后一次发送的消息ID必须是整数")
+                return
+            self.app.config.feishu.last_post_id = feishu_last_post_id
+            self.app.config.feishu.app_id = feishu_app_id
+            self.app.config.feishu.app_secret = feishu_app_secret
+            self.app.config.feishu.app_token = feishu_app_token
+            self.app.config.feishu.table_id = feishu_table_id
+
         # 保存配置并更新快捷键
         self.app.config.save()
         self.app.hotkey_listener.update_hotkey(new_hotkey)
 
-        messagebox.showinfo("成功", "设置已保存")
+        messagebox.showinfo("成功", "设置已保存到")
         self.window.destroy()

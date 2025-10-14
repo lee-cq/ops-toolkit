@@ -77,7 +77,9 @@ class Config(BaseModel):
                 from toml import dump
                 dump(self.model_dump(), f)
             else:
+                logger.error("config file format error, %s", self.config_path)
                 raise ValueError(f"config file format error, {self.config_path=}")
+            logger.info("save config to %s", self.config_path)
 
     def model_post_init(self, context: Any, /) -> None:
         if self.data_dir is None:
