@@ -5,14 +5,15 @@
 @Author     : LeeCQ
 @Date-Time  : 2025/9/19 22:06
 """
+import logging
 import os
 import tkinter as tk
 from pathlib import Path
-from tkinter import font as tk_font, messagebox
-import pyperclip
-import logging
+from tkinter import font as tk_font
+from tkinter import messagebox
 
-from win11toast import toast
+import pyperclip
+from win11toast import notify
 
 logger = logging.getLogger("translate.ui.overlay")
 
@@ -41,7 +42,6 @@ class TranslationWindow:
     def show(self, source_text, translated_text, src_lang, dst_lang):
         """显示翻译结果窗口"""
         # 创建新窗口
-
         self.window = tk.Toplevel(self.app.root)
         self.window.overrideredirect(True)  # 无边框
         self.window.attributes("-topmost", True)  # 窗口置顶
@@ -53,7 +53,7 @@ class TranslationWindow:
         self.window.bind("<Double-1>", lambda e: self.copy_result())
         # 创建布局
         frame = tk.Frame(self.window, bg='black')
-        frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        frame.pack(fill="both", expand=True, padx=5, pady=5)
 
         source_frame = tk.Frame(frame, bg='black')
         source_frame.grid(row=0, column=0, sticky='w', pady=2)
@@ -64,9 +64,9 @@ class TranslationWindow:
             fg='orange',
             font=en_font if src_lang == 'en' else zn_font,
             wraplength=300,  # 设置换行宽度（像素）
-            justify=tk.LEFT,  # 文本左对
+            justify="left",  # 文本左对
         )
-        label.pack(side=tk.LEFT)
+        label.pack(side="left")
 
         result_frame = tk.Frame(frame, bg='black')
         result_frame.grid(row=1, column=0, sticky='w', pady=2)
@@ -77,9 +77,9 @@ class TranslationWindow:
             fg='yellow',
             font=en_font if dst_lang == 'en' else zn_font,
             wraplength=300,  # 设置换行宽度（像素）
-            justify=tk.LEFT,  # 文本左对
+            justify="left",  # 文本左对
         )
-        label.pack(side=tk.LEFT)
+        label.pack(side="left")
 
         # 计算窗口大小
         self.window.update_idletasks()  # 更新布局以获取准确尺寸
@@ -117,12 +117,11 @@ class TranslationWindow:
         logger.info("双击事件触发：复制翻译结果到剪贴板")
         if self.dst_text:
             pyperclip.copy(self.dst_text)
-            toast(title="翻译结果已复制到剪贴板", body=self.dst_text, app_id=self.app.config.app_name)
+            notify("翻译结果已复制到剪贴板", self.dst_text, app_id=self.app.config.app_name)
             # messagebox.showinfo("成功", "翻译结果已复制到剪贴板")
 
 
 if __name__ == '__main__':
-    import threading, time
     from tkinter import ttk
 
 
@@ -132,13 +131,13 @@ if __name__ == '__main__':
 
             # 按钮区域
             button_frame = ttk.Frame(_root)
-            button_frame.pack(fill=tk.X, pady=10)
+            button_frame.pack(fill="x", pady=10)
 
             save_button = ttk.Button(button_frame, text="show", command=show)
-            save_button.pack(side=tk.RIGHT, padx=5)
+            save_button.pack(side="right", padx=5)
 
 
-    def show(s: str = None):
+    def show():
         window.show(
             "你好",
             str(Path(__file__).parent.joinpath("resources/LXGWWenKaiMono-Medium.ttf").exists()),
