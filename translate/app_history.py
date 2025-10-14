@@ -201,6 +201,10 @@ class HistoryManager:
 
     def export_feishu(self) -> str:
         """"""
+        if not (self.config.feishu.app_id and self.config.feishu.app_secret):
+            logger.error("飞书配置未完成, 请在设置中配置app_id和app_secret")
+            return "飞书配置未完成"
+
         feishu_meta = self.config.feishu
         _r_id, records = 0, []
         for record in self.query_by_id(feishu_meta.last_post_id):
@@ -211,7 +215,8 @@ class HistoryManager:
                 "EN":       en,
                 "CN":       cn
             }})
-            _r_id = max(int(record.id), _r_id)
+            # noinspection PyTypeChecker
+            _r_id = max(record.id, _r_id)
 
         if not records:
             logger.info(f"No records found for {feishu_meta.last_post_id}")

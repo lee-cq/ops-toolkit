@@ -4,11 +4,12 @@
 1. 公开配置
 2. API秘钥
 """
+from logging import getLogger
 from pathlib import Path
 from typing import Any
-from logging import getLogger
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel
+from pydantic import field_serializer
 
 from translate.api_abs import TranslateApiAbs
 
@@ -44,11 +45,11 @@ class TranslateApiModel(BaseModel):
 
 class FeishuApiModel(BaseModel):
     """"""
-    app_id: str
-    app_secret: str
+    app_id: str = ""
+    app_secret: str = ""
 
-    app_token: str  # 多维表格ID
-    table_id: str
+    app_token: str = ""  # 飞书多维表格Token
+    table_id: str = ""
 
     last_post_id: int = 0
 
