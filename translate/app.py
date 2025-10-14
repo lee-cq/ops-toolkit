@@ -20,6 +20,8 @@ from translate.ui_window_history import HistoryWindow
 from translate.ui_window_log import LogWindow
 from translate.ui_window_settings import SettingsWindow
 from translate.ui_window_translate import TranslationWindow
+from translate import VERSION
+
 
 logger = getLogger("translate.app.main")
 
@@ -28,7 +30,7 @@ class TranslationApp:
     def __init__(self):
         init_logger()
         # 初始化配置
-        logger.info("APP Initialing ...")
+        logger.info(f"APP Start @ {VERSION} ...")
         self.config = config
 
         # 初始化GUI

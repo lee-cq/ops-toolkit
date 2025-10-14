@@ -1,6 +1,10 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "translate"
-version = "0.1.8"
+#version = {attr = "translate.VERSION"}
 description = "翻译工具包"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -16,6 +20,10 @@ dependencies = [
     "toml>=0.10.2",
     "win11toast>=0.36",
 ]
+dynamic = ["version"]
+
+[tool.setuptools.dynamic]
+version = { attr = "translate.VERSION" }
 
 [dependency-groups]
 dev = [

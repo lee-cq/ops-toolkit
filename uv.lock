@@ -776,8 +776,7 @@ wheels = [
 
 [[package]]
 name = "translate"
-version = "0.1.7"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "nltk" },
     { name = "pillow" },
