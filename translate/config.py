@@ -4,6 +4,7 @@
 1. 公开配置
 2. API秘钥
 """
+import os
 from logging import getLogger
 from pathlib import Path
 from typing import Any
@@ -98,6 +99,7 @@ class Config(BaseModel):
         self.log_path = self.log_path.absolute()
 
         self.data_dir.mkdir(parents=True, exist_ok=True)
+        os.chdir(self.data_dir)
 
     @property
     def api(self):

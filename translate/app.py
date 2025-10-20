@@ -4,34 +4,38 @@ import tkinter as tk
 from logging import getLogger
 from pathlib import Path
 from tkinter import messagebox
+from typing import TYPE_CHECKING
 
 from PIL import Image
 from PIL import ImageTk
+from win11toast import notify
 
+import translate
+from translate import VERSION
 from translate.app_analyzer import TextAnalyzer
 from translate.app_history import HistoryManager
 from translate.app_hotkey import HotkeyListener
 from translate.app_tray import SystemTray
 from translate.config import config
-from translate.log import init_logger
 from translate.tools import trans_lang
 from translate.ui_window_analysis import WordAnalysisWindow
 from translate.ui_window_history import HistoryWindow
 from translate.ui_window_log import LogWindow
 from translate.ui_window_settings import SettingsWindow
 from translate.ui_window_translate import TranslationWindow
-from translate import VERSION
 
+if TYPE_CHECKING:
+    from translate.config import Config
 
 logger = getLogger("translate.app.main")
 
 
 class TranslationApp:
     def __init__(self):
-        init_logger()
+
         # 初始化配置
         logger.info(f"APP Start @ {VERSION} ...")
-        self.config = config
+        self.config: "Config" = config
 
         # 初始化GUI
         self.root = tk.Tk()
@@ -54,6 +58,7 @@ class TranslationApp:
         self.system_tray = SystemTray(self)
         self.export_to_feishu_every_hour()
         logger.info(f"{self.config.app_name} started successfully")
+        notify(f"{self.config.app_name} @ {translate.VERSION} started successfully")
 
     def perform_translation(self):
         """执行翻译操作"""
