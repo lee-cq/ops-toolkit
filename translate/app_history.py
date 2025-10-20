@@ -7,6 +7,7 @@
 """
 import csv
 import platform
+import time
 from pathlib import Path
 from datetime import datetime
 from logging import getLogger
@@ -100,14 +101,7 @@ class HistoryManager:
         session = self._get_session()
         try:
             records = session.query(TranslationRecord).order_by(TranslationRecord.time.desc()).all()
-            return [{
-                'id':       record.id,
-                'time':     record.time.isoformat(),
-                'src':      record.src,
-                'dst':      record.dst,
-                'src_lang': record.src_lang,
-                'dst_lang': record.dst_lang
-            } for record in records]
+            return records
         except SQLAlchemyError as e:
             logger.error(f"Error retrieving translation records: {e}")
             return []
@@ -186,12 +180,12 @@ class HistoryManager:
                 writer.writerow(['id', 'time', 'src', 'dst', 'src_lang', 'dst_lang'])
                 for record in records:
                     writer.writerow([
-                        record['id'],
-                        record['time'],
-                        record['src'],
-                        record['dst'],
-                        record['src_lang'],
-                        record['dst_lang']
+                        record.id,
+                        record.time.isoformat(),
+                        record.src,
+                        record.dst,
+                        record.src_lang,
+                        record.dst_lang
                     ])
             logger.info(f"Exported {len(records)} records to {file_path}")
             return True
@@ -210,6 +204,7 @@ class HistoryManager:
         for record in self.query_by_id(feishu_meta.last_post_id):
             en, cn = (record.src, record.dst) if record.src_lang == "en" else (record.dst, record.src)
             records.append({"fields": {
+                "Time":     int(time.mktime(record.time.timetuple())),
                 "Hostname": platform.node(),
                 "Host-ID":  record.id,
                 "EN":       en,

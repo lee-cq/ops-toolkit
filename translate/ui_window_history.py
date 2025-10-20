@@ -7,8 +7,10 @@
 """
 import os
 import tkinter as tk
-from tkinter import ttk, scrolledtext, messagebox
 from datetime import datetime
+from tkinter import messagebox
+from tkinter import scrolledtext
+from tkinter import ttk
 
 
 class HistoryWindow:
@@ -33,20 +35,22 @@ class HistoryWindow:
 
         # 创建布局
         frame = ttk.Frame(self.window, padding="10")
-        frame.pack(fill=tk.BOTH, expand=True)
+        frame.pack(fill="both", expand=True)
 
         # 创建表格
-        columns = ("time", "src", "dst", "src_lang", "dst_lang")
+        columns = ("id", "time", "src", "dst", "src_lang", "dst_lang")
         self.tree = ttk.Treeview(frame, columns=columns, show="headings")
 
         # 设置列标题
+        self.tree.heading("id", text="ID")
         self.tree.heading("time", text="时间")
         self.tree.heading("src", text="源文本")
         self.tree.heading("dst", text="翻译结果")
         self.tree.heading("src_lang", text="源语言")
         self.tree.heading("dst_lang", text="目标语言")
 
-        # 设置列宽
+        # 设置列宽度
+        self.tree.column("id", width=10)
         self.tree.column("time", width=150)
         self.tree.column("src", width=200)
         self.tree.column("dst", width=200)
@@ -54,12 +58,12 @@ class HistoryWindow:
         self.tree.column("dst_lang", width=80)
 
         # 添加滚动条
-        scrollbar = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=self.tree.yview)
+        scrollbar = ttk.Scrollbar(frame, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=scrollbar.set)
 
         # 放置表格和滚动条
-        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.tree.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
 
         # 填充数据
         self.update_data()
@@ -68,16 +72,16 @@ class HistoryWindow:
 
         # 按钮区域
         button_frame = ttk.Frame(self.window, padding="10")
-        button_frame.pack(fill=tk.X)
+        button_frame.pack(fill="x")
 
         export_button = ttk.Button(button_frame, text="导出为CSV", command=self.export_to_cvs)
-        export_button.pack(side=tk.LEFT, padx=5)
+        export_button.pack(side="left", padx=5)
 
         export_button = ttk.Button(button_frame, text="导出到飞书", command=self.export_to_feishu)
-        export_button.pack(side=tk.LEFT, padx=5)
+        export_button.pack(side="left", padx=5)
 
         clear_button = ttk.Button(button_frame, text="清空历史", command=self.clear_history)
-        clear_button.pack(side=tk.RIGHT, padx=5)
+        clear_button.pack(side="right", padx=5)
 
     def update_data(self):
         # 刷新主窗口的表格
@@ -85,11 +89,12 @@ class HistoryWindow:
             self.tree.delete(item)
         for record in reversed(self.app.history_manager.get_all_records()):
             self.tree.insert("", tk.END, values=(
-                record['time'],
-                record['src'][:50] + ("..." if len(record['src']) > 50 else ""),
-                record['dst'][:50] + ("..." if len(record['dst']) > 50 else ""),
-                record['src_lang'],
-                record['dst_lang']
+                record.id,
+                record.time.isoformat(),
+                record.src[:50] + ("..." if len(record.src) > 50 else ""),
+                record.dst[:50] + ("..." if len(record.dst) > 50 else ""),
+                record.src_lang,
+                record.dst_lang
             ))
 
     def show_full_record(self, event):
@@ -100,7 +105,7 @@ class HistoryWindow:
         # 查找完整记录
         full_record = None
         for record in self.app.history_manager.get_all_records():
-            if record['time'] == values[0]:
+            if record.time.isoformat() == values[0]:
                 full_record = record
                 break
 
@@ -114,15 +119,14 @@ class HistoryWindow:
             detail_window.bind("<Escape>", lambda e: detail_window.destroy())
 
             frame = ttk.Frame(detail_window, padding="10")
-            frame.pack(fill=tk.BOTH, expand=True)
+            frame.pack(fill="both", expand=True)
 
-            ttk.Label(frame, text=f"时间: {full_record['time']}").pack(anchor=tk.W, pady=(0, 10))
-            ttk.Label(frame, text=f"语言: {full_record['src_lang']} → {full_record['dst_lang']}").pack(anchor=tk.W,
-                                                                                                       pady=(0, 10))
-
-            ttk.Label(frame, text="源文本:").pack(anchor=tk.W)
-            src_text = scrolledtext.ScrolledText(frame, wrap=tk.WORD, height=6)
-            src_text.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+            ttk.Label(frame, text=f"时间: {full_record['time']}").pack(anchor="w", pady=(0, 10))
+            ttk.Label(frame, text=f"语言: {full_record['src_lang']} → {full_record['dst_lang']}").pack(anchor="w",
+                pady=(0, 10))
+            ttk.Label(frame, text="源文本:").pack(anchor="w")
+            src_text = scrolledtext.ScrolledText(frame, wrap="word", height=6)
+            src_text.pack(fill="both", expand=True, pady=(0, 10))
             src_text.insert(tk.END, full_record['src'])
             src_text.configure(state="disabled")
 
