@@ -49,6 +49,10 @@ class TranslateApiBaidu(TranslateApiAbs):
             logger.error("HTTP Code not 200 [%s] %s", resp.status_code, resp.text)
             raise Exception(resp.text)
 
+        if not resp.json().get("trans_result"):
+            logger.error("Can not get trans result. [%s] %s", resp.status_code, resp.text)
+            raise Exception(resp.text)
+
         rst = resp.json().get("trans_result")
         "\n".join([l.get("dst") for l in rst])
 
