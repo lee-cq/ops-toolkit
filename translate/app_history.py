@@ -204,7 +204,7 @@ class HistoryManager:
         for record in self.query_by_id(feishu_meta.last_post_id):
             en, cn = (record.src, record.dst) if record.src_lang == "en" else (record.dst, record.src)
             records.append({"fields": {
-                "Time":     int(time.mktime(record.time.timetuple())),
+                "Time":     int(time.mktime(record.time.timetuple()) * 1000),
                 "Hostname": platform.node(),
                 "Host-ID":  record.id,
                 "EN":       en,
