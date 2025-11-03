@@ -7,6 +7,7 @@
 """
 import logging
 import os
+import time
 import tkinter as tk
 from pathlib import Path
 from tkinter import font as tk_font
@@ -128,7 +129,8 @@ class TranslationWindow:
         if self.dst_text:
             pyperclip.copy(self.dst_text)
             notify("翻译结果已复制到剪贴板", self.dst_text, app_id=self.app.config.app_name)
-            # messagebox.showinfo("成功", "翻译结果已复制到剪贴板")
+            time.sleep(0.5)
+            self.window.destroy()
 
 
 if __name__ == '__main__':
