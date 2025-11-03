@@ -6,4 +6,8 @@
 @Date-Time  : 2025/10/14 22:23
 """
 
-VERSION = "0.1.10"
+VERSION = "1.0.0"
+
+UPDATE_LOG = """
+1.0.0
+"""
