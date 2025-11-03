@@ -39,8 +39,11 @@ class TranslationWindow:
             tk.messagebox.showinfo("安装字体", "点击确定后开始安装字体，完成后手动关闭字体窗口继续。")
             os.system(font_dir.joinpath("LXGWWenKaiMono-Medium.ttf").absolute().__str__())
 
-    def show(self, source_text, translated_text, src_lang, dst_lang):
+    def show(self, source_text, translated_text, src_lang, dst_lang, width=300):
         """显示翻译结果窗口"""
+        if self.window:
+            self.window.destroy()
+
         # 创建新窗口
         self.window = tk.Toplevel(self.app.root)
         self.window.overrideredirect(True)  # 无边框
@@ -51,6 +54,10 @@ class TranslationWindow:
         self.window.bind("<Escape>", lambda e: self.window.destroy())
         # 绑定双击事件执行copy_result
         self.window.bind("<Double-1>", lambda e: self.copy_result())
+        # 允许拖动窗口
+        self.window.bind("<Button-1>", self.start_drag)
+        self.window.bind("<B1-Motion>", self.on_drag_overlay1)
+
         # 创建布局
         frame = tk.Frame(self.window, bg='black')
         frame.pack(fill="both", expand=True, padx=5, pady=5)
@@ -63,7 +70,7 @@ class TranslationWindow:
             bg='black',
             fg='orange',
             font=en_font if src_lang == 'en' else zn_font,
-            wraplength=300,  # 设置换行宽度（像素）
+            wraplength=width,  # 设置换行宽度（像素）
             justify="left",  # 文本左对
         )
         label.pack(side="left")
@@ -76,29 +83,32 @@ class TranslationWindow:
             bg='black',
             fg='yellow',
             font=en_font if dst_lang == 'en' else zn_font,
-            wraplength=300,  # 设置换行宽度（像素）
+            wraplength=width,  # 设置换行宽度（像素）
             justify="left",  # 文本左对
         )
         label.pack(side="left")
 
         # 计算窗口大小
         self.window.update_idletasks()  # 更新布局以获取准确尺寸
-        min_width = min(frame.winfo_reqwidth(), 400) + 20
+        min_width = min(frame.winfo_reqwidth(), width) + 20
         min_height = frame.winfo_reqheight() + 20
         if min_height > min_width * 1.3:
-            min_width = 820
+            return self.show(
+                source_text,
+                translated_text,
+                src_lang,
+                dst_lang,
+                width=800, )
 
         x = self.app.root.winfo_pointerx()
         y = self.app.root.winfo_pointery()
+        logger.debug(f"windowSize = {min_width}x{min_height}+{x}+{y}")
         self.window.geometry(f"{min_width}x{min_height}+{x}+{y}")
         self.window.resizable(True, True)
 
-        # 允许拖动窗口
-        self.window.bind("<Button-1>", self.start_drag)
-        self.window.bind("<B1-Motion>", self.on_drag_overlay1)
-
         # 确保窗口获得焦点
         self.window.focus_force()
+        return None
 
     def start_drag(self, event):
         """开始拖动浮窗1"""
