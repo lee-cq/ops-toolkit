@@ -12,13 +12,12 @@ from win11toast import notify
 
 import translate
 from translate import VERSION
-from translate.app_analyzer import TextAnalyzer
 from translate.app_history import HistoryManager
 from translate.app_hotkey import HotkeyListener
 from translate.app_tray import SystemTray
 from translate.config import config
 from translate.tools import trans_lang
-from translate.ui_window_analysis import WordAnalysisWindow
+# from translate.ui_window_analysis import WordAnalysisWindow
 from translate.ui_window_history import HistoryWindow
 from translate.ui_window_log import LogWindow
 from translate.ui_window_settings import SettingsWindow
@@ -48,12 +47,12 @@ class TranslationApp:
 
         # 初始化组件
         self.history_manager = HistoryManager(self.config)
-        self.analyzer = TextAnalyzer(self.history_manager)
+        # self.analyzer = TextAnalyzer(self.history_manager)
         # self.translation_window = TranslationWindow(self)
         self.history_window = HistoryWindow(self)
         self.log_window = LogWindow(self)
         self.settings_window = SettingsWindow(self)
-        self.word_analysis_window = WordAnalysisWindow(self)
+        # self.word_analysis_window = WordAnalysisWindow(self)
         self.hotkey_listener = HotkeyListener(self)
         self.system_tray = SystemTray(self)
         self.export_to_feishu_every_hour()
@@ -117,9 +116,9 @@ class TranslationApp:
         """显示设置窗口"""
         self.settings_window.show()
 
-    def show_word_analysis_window(self):
-        """显示词汇分析窗口"""
-        self.word_analysis_window.show()
+    # def show_word_analysis_window(self):
+    #     """显示词汇分析窗口"""
+    #     self.word_analysis_window.show()
 
     # noinspection PyTypeChecker
     def export_to_feishu_every_hour(self):

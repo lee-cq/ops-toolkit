@@ -27,7 +27,7 @@ class SystemTray:
         # 创建菜单
         menu = pystray.Menu(
             pystray.MenuItem("翻译记录", self.show_history),
-            pystray.MenuItem("词汇分析", self.show_word_analysis),
+            # pystray.MenuItem("词汇分析", self.show_word_analysis),
             pystray.MenuItem("运行日志", self.show_logs),
             pystray.MenuItem("设置", self.show_settings),
             pystray.MenuItem("退出", self.exit_app)
@@ -45,9 +45,9 @@ class SystemTray:
         """显示翻译历史"""
         self.app.root.after(0, self.app.show_history_window)
 
-    def show_word_analysis(self, icon, item):
-        """显示词汇分析"""
-        self.app.root.after(0, self.app.show_word_analysis_window)
+    # def show_word_analysis(self, icon, item):
+    #     """显示词汇分析"""
+    #     self.app.root.after(0, self.app.show_word_analysis_window)
 
     def show_logs(self, icon, item):
         """显示运行日志"""
