@@ -93,7 +93,7 @@ class TranslationWindow:
         self.window.update_idletasks()  # 更新布局以获取准确尺寸
         min_width = min(frame.winfo_reqwidth(), width) + 20
         min_height = frame.winfo_reqheight() + 20
-        if min_height > min_width * 1.3:
+        if min_height > min_width * 1.3 and width != 800:
             return self.show(
                 source_text,
                 translated_text,
