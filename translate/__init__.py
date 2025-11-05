@@ -9,5 +9,8 @@
 VERSION = "1.0.0"
 
 UPDATE_LOG = """
+1.1.0
+1. 添加ROW REQUEST日志方便分析Translate API的原始记录
+
 1.0.0
 """
