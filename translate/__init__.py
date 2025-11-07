@@ -18,6 +18,7 @@ UPDATE_LOG = """
 1. 添加ROW REQUEST日志方便分析Translate API的原始记录
 2. 防止调整translate窗口时的无限递归
 3. 更新版本号生成机制
+4. api_abs 中添加Response使用字符串提示类型
 
 1.0.0
 """
