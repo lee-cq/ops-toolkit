@@ -48,7 +48,7 @@ class TranslateApiAbs(abc.ABC):
         return self.lang_map[lang]
 
     @staticmethod
-    def debugger(response: Response, req_body: str) -> None:
+    def debugger(response: "Response", req_body: str) -> None:
         row_request_logger.info(
             f"=============== ROW Request ==============\n"
             f"{response.request.method} {response.request.url}\n"
