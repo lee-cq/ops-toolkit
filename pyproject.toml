@@ -33,6 +33,9 @@ dev = [
 [project.gui-scripts]
 translate = "translate.__main__:main"
 
+[project.scripts]
+translate-cli = "translate.__main__:main"
+
 [[tool.uv.index]]
 name = "huawei"
 url = "https://mirrors.huaweicloud.com/repository/pypi/simple"
