@@ -96,12 +96,6 @@ wheels = [
 ]
 
 [[package]]
-name = "convert"
-version = "0.1.2"
-source = { registry = "https://mirrors.huaweicloud.com/repository/pypi/simple" }
-sdist = { url = "https://mirrors.huaweicloud.com/repository/pypi/packages/ce/9f/9e92423717513600e6c797a9e0d4a4582e9bff0b3a9615a2d4099435438e/convert-0.1.2.tar.gz", hash = "sha256:61f2d399d31f2031cc00041832a35d9b487742e83cb5c788fcbe0ba3f6a03d55" }
-
-[[package]]
 name = "decorator"
 version = "5.2.1"
 source = { registry = "https://mirrors.huaweicloud.com/repository/pypi/simple" }
@@ -707,7 +701,6 @@ wheels = [
 name = "translate"
 source = { editable = "." }
 dependencies = [
-    { name = "convert" },
     { name = "pillow" },
     { name = "pydantic" },
     { name = "pynput" },
@@ -727,7 +720,6 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "convert", specifier = ">=0.1.2" },
     { name = "pillow", specifier = ">=11.3.0" },
     { name = "pydantic", specifier = ">=2.11.9" },
     { name = "pynput", specifier = ">=1.8.1" },
