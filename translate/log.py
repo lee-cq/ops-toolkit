@@ -35,44 +35,68 @@ def init_logger():
                 }
             },
             'handlers':   {
-                'console_handler':     {
+                'console_handler':         {
                     'class':     'logging.StreamHandler',  # 控制台输出
                     'formatter': 'translate_formatter',
                     'level':     'DEBUG'  # 日志级别（DEBUG/INFO/WARNING/ERROR/CRITICAL）
                 },
-                'file_handler':        {
+                'file_handler':            {
                     'class':     'logging.FileHandler',  # 文件输出
                     'filename':  config.log_path,  # 日志文件名
                     'formatter': 'translate_formatter',
                     'level':     'INFO',  # 日志级别（DEBUG/INFO/WARNING/ERROR/CRITICAL）
                     "encoding":  "utf-8"
                 },
-                "file_debug_handler":  {
+                "file_debug_handler":      {
                     'class':     'logging.FileHandler',
                     'formatter': 'translate_formatter',
                     'level':     'DEBUG',
                     "encoding":  "utf-8",
                     'filename':  f"{config.log_path.with_suffix('.debug.log')}"
                 },
-                "row_request_handler": {
+                "row_request_handler":     {
                     'class':     'logging.handlers.RotatingFileHandler',
                     'formatter': 'row_request',
                     'level':     'DEBUG',
                     'filename':  f"{config.log_path.with_suffix('.row_request.log')}",
+                },
+                "keepalive_handler":       {
+                    'class':     'logging.FileHandler',
+                    'formatter': 'translate_formatter',
+                    'level':     'DEBUG',
+                    "encoding":  "utf-8",
+                    'filename':  f"{config.log_path.with_suffix('.keepalive.log')}"
+                },
+                "hourly_reminder_handler": {
+                    'class':     'logging.FileHandler',
+                    'formatter': 'translate_formatter',
+                    'level':     'DEBUG',
+                    "encoding":  "utf-8",
+                    'filename':  f"{config.log_path.with_suffix('.hourly_reminder.log')}"
                 }
             },
             "filters":    {},
             'loggers':    {
-                'translate':             {  # 指定translate日志器
+                'translate':                 {  # 指定translate日志器
                     'handlers':  ['console_handler', 'file_handler', "file_debug_handler"],
                     'level':     'DEBUG',
                     'propagate': False  # 不向上传播日志
                 },
-                'translate.row_request': {
+                'translate.row_request':     {
                     'handlers':  ['row_request_handler', 'console_handler'],
                     'level':     'DEBUG',
                     'propagate': False
                 },
+                'translate.keepalive':       {
+                    'handlers':  ['console_handler', 'keepalive_handler'],
+                    'level':     'DEBUG',
+                    'propagate': False,
+                },
+                'translate.hourly_reminder': {
+                    'handlers':  ['console_handler', 'hourly_reminder_handler'],
+                    'level':     'DEBUG',
+                    'propagate': False,
+                }
             }
         }
     )

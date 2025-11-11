@@ -14,6 +14,11 @@ def get_version():
 
 
 UPDATE_LOG = """
+1.2
+1. 添加translate-cli
+2. 添加other_tools.keepalive.py，用于保持电脑活跃
+3. 添加other_tools.hourly_reminder.py，用于每小时提醒
+
 1.1
 1. 添加ROW REQUEST日志方便分析Translate API的原始记录
 2. 防止调整translate窗口时的无限递归

@@ -6,22 +6,23 @@ from pathlib import Path
 from tkinter import messagebox
 from typing import TYPE_CHECKING
 
+import pyperclip
 from PIL import Image
 from PIL import ImageTk
 from win11toast import notify
 
-import translate
 from translate import VERSION
 from translate.app_history import HistoryManager
 from translate.app_hotkey import HotkeyListener
 from translate.app_tray import SystemTray
 from translate.config import config
+from translate.other_tools.hourly_reminder import HourlyReminder
 from translate.tools import trans_lang
-# from translate.ui_window_analysis import WordAnalysisWindow
 from translate.ui_window_history import HistoryWindow
 from translate.ui_window_log import LogWindow
 from translate.ui_window_settings import SettingsWindow
 from translate.ui_window_translate import TranslationWindow
+from translate.other_tools.keepalive import Keepalive
 
 if TYPE_CHECKING:
     from translate.config import Config
@@ -46,24 +47,23 @@ class TranslationApp:
         self.root.iconphoto(True, self.img)
 
         # 初始化组件
+        self.keepalive = Keepalive()
+        self.hourly_reminder = HourlyReminder(self)
         self.history_manager = HistoryManager(self.config)
-        # self.analyzer = TextAnalyzer(self.history_manager)
         # self.translation_window = TranslationWindow(self)
         self.history_window = HistoryWindow(self)
         self.log_window = LogWindow(self)
         self.settings_window = SettingsWindow(self)
-        # self.word_analysis_window = WordAnalysisWindow(self)
         self.hotkey_listener = HotkeyListener(self)
         self.system_tray = SystemTray(self)
         self.export_to_feishu_every_hour()
         logger.info(f"{self.config.app_name} started successfully")
-        notify(f"{self.config.app_name} @ {translate.VERSION} started successfully")
+        notify(f"{self.config.app_name} @ {VERSION} started successfully")
 
     def perform_translation(self):
         """执行翻译操作"""
         try:
             # 读取剪贴板内容
-            import pyperclip
             source_text = pyperclip.paste().strip()
 
             if not source_text:
