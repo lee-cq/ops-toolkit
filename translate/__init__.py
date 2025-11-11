@@ -18,6 +18,7 @@ UPDATE_LOG = """
 1. 添加translate-cli
 2. 添加other_tools.keepalive.py，用于保持电脑活跃
 3. 添加other_tools.hourly_reminder.py，用于每小时提醒
+4. fix: zhconv导入失败
 
 1.1
 1. 添加ROW REQUEST日志方便分析Translate API的原始记录

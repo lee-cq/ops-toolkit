@@ -9,7 +9,7 @@ import re
 import tempfile
 from pathlib import Path
 
-from zhconv import convert
+from translate.zhconv import convert
 
 
 def auto_lang(text: str) -> str:
