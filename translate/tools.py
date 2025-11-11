@@ -9,6 +9,8 @@ import re
 import tempfile
 from pathlib import Path
 
+from zhconv import convert
+
 
 def auto_lang(text: str) -> str:
     """自动识别语言
@@ -17,26 +19,28 @@ def auto_lang(text: str) -> str:
     :return:
     """
     # 定义各语言字符范围的正则模式（扩展繁体中文匹配范围，包含常见繁体字符）
-    traditional_pattern = re.compile(r'[\u3400-\u4db5\u7e00-\u9fef\uf900-\ufa2d]')
-    simplified_pattern = re.compile(r'[\u4e00-\u9fa5]')
+    no_ascii_pattern = re.compile(r'[\u4e00-\u9fa5\u3400-\u4db5\u7e00-\u9fef\uf900-\ufa2d]')
 
-    en_count = 0
-    zh_cn_count = 0
-    zh_tw_count = 0
+    en_map = {
+        ".":  " ",
+        "'":  "",
+        "\"": "",
+        ",":  " ",
+        "?":  " ",
+        "!":  " ",
+        ":":  " ",
+        ";":  " ",
+    }
 
-    for c in text:
-        if traditional_pattern.match(c):
-            zh_tw_count += 1
-        elif simplified_pattern.match(c):
-            zh_cn_count += 1
-        elif ord(c) < 128:
-            en_count += 1
+    text = convert(text, "zh-cn")
+
+    en_text = "".join((_ for _ in text if ord(_) < 128)).translate(str.maketrans(en_map))
+    en_count = len([word for word in en_text.split() if word])
+    zh_count = len([1 for _ in text if no_ascii_pattern.match(_)])
 
     # 根据字符计数判断主要语言
-    if en_count > zh_cn_count + zh_tw_count:
+    if en_count > zh_count:
         return 'en'
-    elif zh_tw_count >= zh_cn_count:
-        return 'tw'
     else:
         return 'zh'
 
