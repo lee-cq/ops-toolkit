@@ -20,6 +20,7 @@ UPDATE_LOG = """
 3. 添加other_tools.hourly_reminder.py，用于每小时提醒
 4. fix: zhconv导入失败
 5. fix: json依赖未被包含
+6. 优化:pytray MENU 的更新逻辑
 
 1.1
 1. 添加ROW REQUEST日志方便分析Translate API的原始记录
