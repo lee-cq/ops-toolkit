@@ -30,6 +30,14 @@ dev = [
     "pytest>=8.4.2",
 ]
 
+[tool.setuptools.package-data]
+"translate.zhconv" = ["zhcdict.json"]
+"translate" = [
+    "resources/LXGWWenKaiMono-Medium.ttf.lzma",
+    "resources/app-icon.png"
+]
+
+
 [project.gui-scripts]
 translate = "translate.__main__:main"
 

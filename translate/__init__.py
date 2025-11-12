@@ -19,6 +19,7 @@ UPDATE_LOG = """
 2. 添加other_tools.keepalive.py，用于保持电脑活跃
 3. 添加other_tools.hourly_reminder.py，用于每小时提醒
 4. fix: zhconv导入失败
+5. fix: json依赖未被包含
 
 1.1
 1. 添加ROW REQUEST日志方便分析Translate API的原始记录
