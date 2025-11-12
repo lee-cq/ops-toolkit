@@ -149,6 +149,7 @@ class TranslationApp:
         logger.info(f"{self.config.app_name} is exiting")
         self.hotkey_listener.stop()
         self.root.destroy()
+        logger.info(f"{self.config.app_name} is exited.")
         sys.exit(0)
 
 

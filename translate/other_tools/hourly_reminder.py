@@ -23,10 +23,10 @@ class HourlyReminder(object):
         self.timer: Timer | None = None
         self.next_hour: str = ""
 
-    def _get_seconds_to_next_hour(self):
+    def _get_seconds_to_next_hour(self, after=1):
         # 计算当前时间到下一个整点的秒数
         now = datetime.now()
-        next_hour = (now + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+        next_hour = (now + timedelta(hours=after)).replace(minute=0, second=0, microsecond=0)
         self.next_hour = next_hour.strftime("%H:%M")
         return (next_hour - now).total_seconds()
 
@@ -47,18 +47,20 @@ class HourlyReminder(object):
         finally:
             self.start()
 
-    def start(self):
+    def start(self, after=1):
         """启动一个计时器"""
         self.is_active = True
         if self.timer is not None:
             self.timer.cancel()
-        self.timer = Timer(self._get_seconds_to_next_hour(), self.run)
+        self.timer = Timer(self._get_seconds_to_next_hour(after), self.run)
         self.timer.start()
-        logger.info("HourlyReminder started.")
+        logger.info(f"HourlyReminder started. {after=} {self.next_hour=}")
 
     def stop(self):
+        """停止计时器"""
         self.is_active = False
-        self.timer.cancel()
-        self.timer = None
         self.next_hour = ""
-        logger.info("HourlyReminder stopped.")
+        if self.timer:
+            self.timer.cancel()
+            self.timer = None
+            logger.info("HourlyReminder stopped.")

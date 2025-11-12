@@ -41,15 +41,21 @@ class SystemTray:
                 ),
                 pystray.MenuItem(
                     lambda ic: f"整点通知({self.app.hourly_reminder.is_active}): {self.app.hourly_reminder.next_hour}",
-                    self.hourly_reminder,
-                    checked=lambda ic: self.app.hourly_reminder.is_active
+                    checked=lambda ic: self.app.hourly_reminder.is_active,
+                    action=pystray.Menu(
+                        pystray.MenuItem("取消", lambda: self.hourly_reminder(0)),
+                        pystray.MenuItem("1小时后", lambda: self.hourly_reminder(1)),
+                        pystray.MenuItem("2小时后", lambda: self.hourly_reminder(2)),
+                        pystray.MenuItem("3小时后", lambda: self.hourly_reminder(3)),
+                        pystray.MenuItem("4小时后", lambda: self.hourly_reminder(4)),
+                    )
                 ),
                 pystray.Menu.SEPARATOR,  # 分隔线
                 pystray.MenuItem("设置", self.show_settings),
                 pystray.MenuItem("退出", self.exit_app)
             )
         )
-        self.update_thread = threading.Thread(target=self.update_menu)
+        self.update_thread = threading.Thread(target=self.update_menu, daemon=True)
         self.update_thread.start()
 
     def update_menu(self):
@@ -83,12 +89,14 @@ class SystemTray:
                     break
         logger.info(f"Keepalive is_running: {self.app.keepalive.is_running()}")
 
-    def hourly_reminder(self):
+    def hourly_reminder(self, after=1):
         """开一个子线程保持活跃"""
-        if self.app.hourly_reminder.is_active:
+        if after == 0:
             self.app.hourly_reminder.stop()
+            return
         else:
-            self.app.hourly_reminder.start()
+            self.app.hourly_reminder.stop()
+            self.app.hourly_reminder.start(after)
         logger.info(f"HourlyReminder is_active: {self.app.hourly_reminder.is_active}")
 
     def show_history(self, icon, item):
@@ -105,5 +113,6 @@ class SystemTray:
 
     def exit_app(self, icon, item):
         """退出应用程序"""
+        logger.info(f"Exit app_tray")
         self.icon.stop()
         self.app.root.after(0, self.app.quit)
