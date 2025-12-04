@@ -22,6 +22,7 @@ UPDATE_LOG = """
 5. fix: json依赖未被包含
 6. 优化:pytray MENU 的更新逻辑
 7. hourly_reminder支持在最长4小时后开始提醒
+8. config.py Config.Feishu 添加空默认值，确认无配置启动
 
 1.1
 1. 添加ROW REQUEST日志方便分析Translate API的原始记录

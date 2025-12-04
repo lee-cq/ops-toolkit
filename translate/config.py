@@ -57,7 +57,7 @@ class FeishuApiModel(BaseModel):
 
 class Config(BaseModel):
     apis: list[TranslateApiModel] = []
-    feishu: FeishuApiModel | None
+    feishu: FeishuApiModel | None = FeishuApiModel()
     app_name: str = "translate"
     hotkey: str = '<ctrl>+<alt>+d'
 
