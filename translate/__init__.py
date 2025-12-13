@@ -10,10 +10,13 @@
 def get_version():
     _main_split = UPDATE_LOG.strip().split('\n\n')[0].split('\n')
     _m, _fix_log = _main_split[0], _main_split[-1]
-    return f"{_m}.{_fix_log.split('.')[0]}"
+    return f"{_m.strip()}.{_fix_log.split('.')[0]}"
 
 
 UPDATE_LOG = """
+1.3 
+1. 更改baidu翻译API接口为aiTextTranslate
+
 1.2
 1. 添加translate-cli
 2. 添加other_tools.keepalive.py，用于保持电脑活跃

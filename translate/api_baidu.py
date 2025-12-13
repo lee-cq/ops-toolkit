@@ -28,7 +28,7 @@ class TranslateApiBaidu(TranslateApiAbs):
         pass
 
     def translate_text(self, text, to_lang, from_lang, ) -> TextResp:
-        url = "https://fanyi-api.baidu.com/api/trans/vip/translate"
+        url = "https://fanyi-api.baidu.com/ait/api/aiTextTranslate"
         salt = random.randint(32768, 65536)
         appid, appkey = self.auth
         sign = hashlib.md5(
