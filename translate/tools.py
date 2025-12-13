@@ -1,15 +1,46 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
-# !/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import re
 import tempfile
 from pathlib import Path
 
 from translate.zhconv import convert
+from typing import Union
+
+import PIL.BmpImagePlugin
+import PIL.ImageGrab
+import pyperclip
+
+
+def get_clipboard_content() -> tuple[str, Union[str, list[str], PIL.BmpImagePlugin.BmpImageFile, None]]:
+    """
+    获取剪切板数据，返回内容类型和数据
+
+    Returns:
+      Tuple[str, Union[str, bytes, List[str], None]]:
+          - 第一个元素是内容类型: "text", "image", "files", "empty", "error"
+          - 第二个元素是实际数据:
+              * 文本内容 (str) 当类型为 "text"
+              * 图像数据 (bytes) 当类型为 "image"
+              * 文件路径列表 (List[str]) 当类型为 "files"
+              * None 当类型为 "empty" 或 "error"
+    """
+    try:
+        text = pyperclip.paste()
+        if text:
+            return "text", text
+
+        image = PIL.ImageGrab.grabclipboard()
+        if isinstance(image, PIL.BmpImagePlugin.BmpImageFile):
+            return "image", image
+
+        if isinstance(image, list):
+            return "files", image
+
+        return "empty", None
+    except Exception as e:
+        return "error", f"剪切板内容获取失败: {str(e)}"
 
 
 def auto_lang(text: str) -> str:

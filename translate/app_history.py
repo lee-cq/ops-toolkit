@@ -53,7 +53,7 @@ class HistoryManager:
             logger.info("Database initialized successfully")
         except Exception as e:
             logger.error(f"Error initializing database: {e}")
-            raise
+            raise e
 
     def close(self):
         """关闭数据库连接"""

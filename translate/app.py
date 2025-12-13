@@ -17,11 +17,13 @@ from translate.app_hotkey import HotkeyListener
 from translate.app_tray import SystemTray
 from translate.config import config
 from translate.other_tools.hourly_reminder import HourlyReminder
+from translate.other_tools.monitor_clipboard import MonitorClipboard
 from translate.tools import trans_lang
 from translate.ui_window_history import HistoryWindow
 from translate.ui_window_log import LogWindow
 from translate.ui_window_settings import SettingsWindow
 from translate.ui_window_translate import TranslationWindow
+from translate.ui_window_clipboard import ClipboardWindow
 from translate.other_tools.keepalive import Keepalive
 
 if TYPE_CHECKING:
@@ -49,9 +51,12 @@ class TranslationApp:
         # 初始化组件
         self.keepalive = Keepalive()
         self.hourly_reminder = HourlyReminder(self)
+        self.monitor_clipboard = MonitorClipboard(self)
+        self.clipboard_window = ClipboardWindow(self)
+
         self.history_manager = HistoryManager(self.config)
-        # self.translation_window = TranslationWindow(self)
         self.history_window = HistoryWindow(self)
+
         self.log_window = LogWindow(self)
         self.settings_window = SettingsWindow(self)
         self.hotkey_listener = HotkeyListener(self)
@@ -115,6 +120,10 @@ class TranslationApp:
     def show_settings_window(self):
         """显示设置窗口"""
         self.settings_window.show()
+
+    def show_clipboard_history_window(self):
+        """显示剪贴板窗口"""
+        self.clipboard_window.show()
 
     # def show_word_analysis_window(self):
     #     """显示词汇分析窗口"""

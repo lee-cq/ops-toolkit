@@ -34,6 +34,9 @@ class SystemTray:
             self.app.config.app_name, image, self.app.config.app_name, pystray.Menu(
                 pystray.MenuItem("翻译记录", self.show_history),
                 pystray.MenuItem("运行日志", self.show_logs),
+                pystray.MenuItem("剪切板记录", self.show_clipboard_history),
+                pystray.Menu.SEPARATOR,  # 分隔线
+
                 pystray.MenuItem(
                     lambda _ic: f"保持活跃({self.app.keepalive.is_running()}): {self.app.keepalive.ctrl_press_count}",
                     self.keepalive,
@@ -50,6 +53,10 @@ class SystemTray:
                         pystray.MenuItem("4小时后", lambda: self.hourly_reminder(4)),
                     )
                 ),
+                pystray.MenuItem(lambda _ic: f"记录剪切板({self.app.monitor_clipboard.is_running()})",
+                                 self.monitor_clipboard,
+                                 checked=lambda ic: self.app.monitor_clipboard.is_running(),
+                                 ),
                 pystray.Menu.SEPARATOR,  # 分隔线
                 pystray.MenuItem("设置", self.show_settings),
                 pystray.MenuItem("退出", self.exit_app)
@@ -89,6 +96,22 @@ class SystemTray:
                     break
         logger.info(f"Keepalive is_running: {self.app.keepalive.is_running()}")
 
+    def monitor_clipboard(self):
+        """开一个子线程监控剪切板"""
+        if self.app.monitor_clipboard.is_running():
+            self.app.monitor_clipboard.stop()
+        else:
+            self.app.monitor_clipboard.start()
+            n = 0
+            while not self.app.monitor_clipboard.is_running():
+                time.sleep(1)
+                n += 1
+                if n > 3:
+                    logger.error(f"MonitorClipboard start failed")
+                    self.app.monitor_clipboard.stop()
+                    break
+        logger.info(f"MonitorClipboard is_running: {self.app.monitor_clipboard.is_running()}")
+
     def hourly_reminder(self, after=1):
         """开一个子线程保持活跃"""
         if after == 0:
@@ -102,6 +125,10 @@ class SystemTray:
     def show_history(self, icon, item):
         """显示翻译历史"""
         self.app.root.after(0, self.app.show_history_window)
+
+    def show_clipboard_history(self, icon, item):
+        """显示剪切板历史"""
+        self.app.root.after(0, self.app.show_clipboard_history_window)
 
     def show_logs(self, icon, item):
         """显示运行日志"""
