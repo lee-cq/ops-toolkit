@@ -21,6 +21,7 @@ class SettingsWindow:
         # 基本设置控件
         self.app_name_entry = None
         self.hotkey_entry = None
+        self.startup_var = None
 
         # 路径设置控件
         self.config_path_entry = None
@@ -74,6 +75,11 @@ class SettingsWindow:
         self.hotkey_entry.insert(0, self.app.config.hotkey)
         ttk.Label(basic_frame, text="提示: 格式如 '<ctrl>+<alt>+t'", foreground="gray").grid(row=2, column=1,
                                                                                              sticky=tk.W)
+
+        # 开机自启 (新增)
+        ttk.Label(basic_frame, text="开机自启:").grid(row=3, column=0, sticky=tk.W, pady=(10, 5))
+        self.startup_var = tk.BooleanVar(value=self.app.config.startup)
+        ttk.Checkbutton(basic_frame, variable=self.startup_var).grid(row=3, column=1, sticky=tk.W, pady=(10, 5))
 
         # ==================== 路径设置标签页 (新增) ====================
         path_frame = ttk.Frame(self.notebook, padding=10)
@@ -319,6 +325,7 @@ class SettingsWindow:
         # 获取基本设置 (修改)
         new_app_name = self.app_name_entry.get().strip()
         new_hotkey = self.hotkey_entry.get().strip()
+        new_startup = self.startup_var.get()
 
         # 获取路径设置 (新增)
         new_config_path = Path(self.config_path_entry.get().strip())
@@ -338,6 +345,7 @@ class SettingsWindow:
         # 更新配置 (修改)
         self.app.config.app_name = new_app_name
         self.app.config.hotkey = new_hotkey
+        self.app.config.startup = new_startup
         self.app.config.config_path = new_config_path
         self.app.config.data_dir = new_data_dir
         self.app.config.translation_history_path = new_history_path

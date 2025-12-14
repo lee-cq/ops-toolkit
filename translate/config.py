@@ -5,6 +5,8 @@
 2. API秘钥
 """
 import os
+import sys
+import winreg
 from logging import getLogger
 from pathlib import Path
 from typing import Any
@@ -59,6 +61,7 @@ class Config(BaseModel):
     apis: list[TranslateApiModel] = []
     feishu: FeishuApiModel | None = FeishuApiModel()
     app_name: str = "translate"
+    startup: bool = False
     hotkey: str = '<ctrl>+<alt>+d'
 
     config_path: Path
@@ -71,6 +74,7 @@ class Config(BaseModel):
         return v.as_posix()
 
     def save(self):
+        self.set_startup()
         with self.config_path.open("w") as f:
             if self.config_path.suffix == ".json":
                 from json import dump
@@ -93,6 +97,9 @@ class Config(BaseModel):
         if self.log_path is None:
             self.log_path = self.data_dir.joinpath(f"{self.app_name.lower()}.log")
 
+        if self.startup:
+            self.set_startup()
+
         self.config_path = self.config_path.absolute()
         self.data_dir = self.data_dir.absolute()
         self.translation_history_path = self.translation_history_path.absolute()
@@ -100,6 +107,22 @@ class Config(BaseModel):
 
         self.data_dir.mkdir(parents=True, exist_ok=True)
         os.chdir(self.data_dir)
+
+    def set_startup(self):
+        """设置开机自启"""
+
+        try:
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0,
+                                 winreg.KEY_SET_VALUE)
+            if self.startup:
+                winreg.SetValueEx(key, self.app_name, 0, winreg.REG_SZ, f"{sys.executable} {sys.argv[0]}")
+                logger.info(f"设置开机自启成功: {self.app_name}")
+            else:
+                winreg.DeleteValue(key, self.app_name)
+                logger.info(f"删除开机自启成功: {self.app_name}")
+            winreg.CloseKey(key)
+        except Exception as e:
+            logger.error(f"设置开机自启失败: {e}")
 
     @property
     def api(self):

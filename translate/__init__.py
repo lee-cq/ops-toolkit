@@ -18,6 +18,7 @@ UPDATE_LOG = """
 1. 更改baidu翻译API接口为aiTextTranslate
 2. 新增clipboard_monitor.py，用于监听剪切板内容变化
 3. 新增clipboard窗口，用于展示剪切板内容
+4. 新增开机自启配置项
 
 1.2
 1. 添加translate-cli
