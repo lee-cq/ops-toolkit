@@ -115,8 +115,12 @@ class Config(BaseModel):
             key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0,
                                  winreg.KEY_SET_VALUE)
             if self.startup:
-                winreg.SetValueEx(key, self.app_name, 0, winreg.REG_SZ, f"{sys.executable} {sys.argv[0]}")
-                logger.info(f"设置开机自启成功: {self.app_name}")
+                if sys.argv[0].endswith(".exe"):
+                    winreg.SetValueEx(key, self.app_name, 0, winreg.REG_SZ, f"{sys.argv[0]}")
+                    logger.info(f"设置开机自启成功[exe]: {self.app_name}: {sys.argv[0]}")
+                else:
+                    winreg.SetValueEx(key, self.app_name, 0, winreg.REG_SZ, f"{sys.executable} {sys.argv[0]}")
+                    logger.info(f"设置开机自启成功[py]: {self.app_name}: {sys.executable} {sys.argv[0]}")
             else:
                 winreg.DeleteValue(key, self.app_name)
                 logger.info(f"删除开机自启成功: {self.app_name}")

@@ -19,6 +19,7 @@ UPDATE_LOG = """
 2. 新增clipboard_monitor.py，用于监听剪切板内容变化
 3. 新增clipboard窗口，用于展示剪切板内容
 4. 新增开机自启配置项
+5. 修复开机自启配置错误的程序路径
 
 1.2
 1. 添加translate-cli
