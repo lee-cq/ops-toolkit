@@ -11,6 +11,7 @@ import io
 import logging
 import threading
 import time
+import re
 import typing
 from datetime import datetime
 from pathlib import Path
@@ -28,6 +29,7 @@ from sqlalchemy.orm import sessionmaker
 from PIL import BmpImagePlugin
 
 from translate.tools import get_clipboard_content
+from translate.ui_window_sls_split import SlsSplitWindow
 
 if typing.TYPE_CHECKING:
     from translate.app import TranslationApp
@@ -35,6 +37,8 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger("translate.other_tools.monitor_clipboard")
 
 Base = declarative_base()
+
+re_aliyun_sls = re.compile(r"https://sls-downloaded-logs-sg\..*?aliyuncs\.com/.*?\.json\.gz")
 
 
 class ClipboardRecord(Base):
@@ -54,6 +58,7 @@ class MonitorClipboard:
         self.started = False
         self.thread = None
         self._last_content = None
+        self.auto_sls_split = False
 
         self._init_database()
 
@@ -105,6 +110,10 @@ class MonitorClipboard:
             return
 
         logger.info(f"Clipboard content changed: {typ} {data}")
+
+        if self.auto_sls_split and typ == "text" and data.startswith("https://sls-downloaded-logs-sg"):
+            SlsSplitWindow(self.app, data).show()
+
         if typ == "text":
             self.add_record(typ, data)
         elif typ == "files":
@@ -127,6 +136,7 @@ class MonitorClipboard:
     @staticmethod
     def hash_content(typ, data):
         """计算内容哈希值"""
+
         if typ == "text":
             return adler32(data.encode("utf-8"))
         elif typ == "files":
@@ -151,6 +161,7 @@ class MonitorClipboard:
             if clipboard_data[0] == "error":
                 logger.error(f"Error during get clipboard content: {clipboard_data[1]}")
                 continue
+
             self.on_clipboard_change(*clipboard_data)
 
     def start(self):
@@ -217,3 +228,7 @@ class MonitorClipboard:
             raise e
         finally:
             session.close()
+
+    def set_auto_sls_split(self, auto_sls_split: bool):
+        """设置是否自动切割日志"""
+        self.auto_sls_split = auto_sls_split

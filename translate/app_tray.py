@@ -13,6 +13,8 @@ from pathlib import Path
 import pystray
 from PIL import Image
 
+from translate.ui_window_sls_split import SlsSplitWindow
+
 logger = logging.getLogger("translate.app_tray")
 
 
@@ -35,6 +37,7 @@ class SystemTray:
                 pystray.MenuItem("翻译记录", self.show_history),
                 pystray.MenuItem("运行日志", self.show_logs),
                 pystray.MenuItem("剪切板记录", self.show_clipboard_history),
+                pystray.MenuItem("Aliyun SLS 日志切割", self.show_log_split),
                 pystray.Menu.SEPARATOR,  # 分隔线
 
                 pystray.MenuItem(
@@ -56,6 +59,10 @@ class SystemTray:
                 pystray.MenuItem(lambda _ic: f"记录剪切板({self.app.monitor_clipboard.is_running()})",
                                  self.monitor_clipboard,
                                  checked=lambda ic: self.app.monitor_clipboard.is_running(),
+                                 ),
+                pystray.MenuItem(lambda _ic: f"Aliyun自动日志分割({self.app.monitor_clipboard.auto_sls_split})",
+                                 self.auto_sls_split,
+                                 checked=lambda ic: self.app.monitor_clipboard.auto_sls_split,
                                  ),
                 pystray.Menu.SEPARATOR,  # 分隔线
                 pystray.MenuItem("设置", self.show_settings),
@@ -112,6 +119,14 @@ class SystemTray:
                     break
         logger.info(f"MonitorClipboard is_running: {self.app.monitor_clipboard.is_running()}")
 
+    def auto_sls_split(self):
+        """设置是否自动切割日志"""
+        if not self.app.monitor_clipboard.is_running():
+            logger.warning(f"MonitorClipboard is not running, can not set auto_sls_split")
+            self.monitor_clipboard()
+        self.app.monitor_clipboard.set_auto_sls_split(not self.app.monitor_clipboard.auto_sls_split)
+        logger.info(f"Auto SLS Split: {self.app.monitor_clipboard.auto_sls_split}")
+
     def hourly_reminder(self, after=1):
         """开一个子线程保持活跃"""
         if after == 0:
@@ -125,6 +140,10 @@ class SystemTray:
     def show_history(self, icon, item):
         """显示翻译历史"""
         self.app.root.after(0, self.app.show_history_window)
+
+    def show_log_split(self, icon, item):
+        """显示日志切割窗口"""
+        self.app.root.after(0, SlsSplitWindow(self.app, "").show)
 
     def show_clipboard_history(self, icon, item):
         """显示剪切板历史"""

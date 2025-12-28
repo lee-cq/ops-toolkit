@@ -14,6 +14,11 @@ def get_version():
 
 
 UPDATE_LOG = """
+1.4
+1. 新增aliyun_sls_split.py，用于切割阿里云日志下载文件
+2. 新增UI到托盘，打开下载窗口
+3. 新增自动识别aliyun SLS链接，自动弹出窗口
+
 1.3 
 1. 更改baidu翻译API接口为aiTextTranslate
 2. 新增clipboard_monitor.py，用于监听剪切板内容变化
