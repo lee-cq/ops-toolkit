@@ -114,7 +114,7 @@ class LogSplit:
             finally:
                 pass
 
-    def join_file_name(self, name, hostname):
+    def join_file_name(self, name, hostname, ip=""):
         filename_l = []
         if self.diff_path:
             if self.remove_path_num:
@@ -123,7 +123,9 @@ class LogSplit:
                 filename_l.append(Path(name).stem)
 
         if self.diff_hostname:
-            filename_l.append(hostname)
+            filename_l.append(hostname.split(".")[0])
+            if ip:
+                filename_l.append(ip)
 
         filename = "_".join(filename_l)
         if filename in self.log_files:
@@ -142,14 +144,17 @@ class LogSplit:
         self.setup_time(date=js["__time__"])
         if self.single_file and "content" in js:
             self.join_file_name(
-                "single_file", ""
-            ).write(js["content"] + "\n")
+                "single_file", "", ""
+            ).write(
+                "|||".join((js["__source__"], Path(js["__tag__:__path__"]).name, js["content"])) + "\n"
+            )
 
         if {"__tag__:__path__", "__tag__:__hostname__", "content"}.issubset(js):
             self.total_line += 1
             self.join_file_name(
                 js["__tag__:__path__"],
                 js["__tag__:__hostname__"],
+                js["__source__"],
             ).write(js["content"] + "\n")
         else:
             self.gui_logs.put(f"key not in logs, source: \n {js.keys()}")
@@ -157,7 +162,8 @@ class LogSplit:
 
     def rename_log_file(self):
         self.status = "rename"
-        self.gui_logs.put(f"开始重命名日志文件: {self.source_name}, min_time: {self.min_time}, max_time: {self.max_time}")
+        self.gui_logs.put(
+            f"开始重命名日志文件: {self.source_name}, min_time: {self.min_time}, max_time: {self.max_time}")
         logger.info(f"重命名日志文件: {self.source_name}, min_time: {self.min_time}, max_time: {self.max_time}")
         self.logs_close()
         t_max = datetime.datetime.fromtimestamp(self.max_time).strftime("%Y%m%d-%H%M%S")
@@ -200,5 +206,4 @@ class LogSplit:
 
 if __name__ == "__main__":
     logging.basicConfig(level="DEBUG")
-    __s = LogSplit(uri="https://sls-downloaded-logs-sg.oss-ap-southeast-1.aliyuncs.com/f4123caf-6212-49fb-ba07-3962451f4aca.json.gz?Expires=1767491761&OSSAccessKeyId=LTAI5t63U7FMVyQTMfrxWsxU&Signature=T3OwR2MeILgsaN1BYDLI%2Ftl8etU%3D")
-    __s.run()
+
