@@ -20,6 +20,7 @@ UPDATE_LOG = """
 3. 新增自动识别aliyun SLS链接，自动弹出窗口
 4. 优化Hostname的处理，移除域名
 5. 单一文件中添加source, path, content三列，用|||分隔
+6. 优化ui_window_sls_split.py，打开工作目录选择默认值
 
 1.3 
 1. 更改baidu翻译API接口为aiTextTranslate

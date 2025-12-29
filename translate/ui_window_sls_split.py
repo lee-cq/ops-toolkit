@@ -20,6 +20,7 @@ from tkinter import messagebox
 from translate.other_tools.aliyun_sls_split import LogSplit
 
 logger = logging.getLogger("translate.ui.window_sls_split")
+default_workdir = Path(os.environ.get("USERPROFILE")).joinpath("Downloads", "aliyun_sls_download")
 
 
 class SlsSplitWindow:
@@ -88,9 +89,9 @@ class SlsSplitWindow:
         # 第三行：三个复选框，平均分布
         check_frame = ttk.Frame(main_frame)
         check_frame.grid(row=2, column=0, columnspan=3, pady=(10, 15))
-        # check_frame.columnconfigure(0, weight=1)
-        # check_frame.columnconfigure(1, weight=1)
-        # check_frame.columnconfigure(2, weight=1)
+        check_frame.columnconfigure(0, weight=1)
+        check_frame.columnconfigure(1, weight=1)
+        check_frame.columnconfigure(2, weight=1)
 
         # 按Path拆分文件复选框
         self.split_by_path_var = tk.BooleanVar(value=True)
@@ -227,7 +228,7 @@ class SlsSplitWindow:
 
     def open_logdir(self):
         if self.log_split is None:
-            messagebox.showwarning("警告", "需要先开始下载")
+            os.system(f"explorer \"{self.workdir_var.get()}\"")
             return
 
         os.system(f'explorer "{self.log_split.workdir}"')
