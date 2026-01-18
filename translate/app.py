@@ -24,6 +24,7 @@ from translate.ui_window_log import LogWindow
 from translate.ui_window_settings import SettingsWindow
 from translate.ui_window_translate import TranslationWindow
 from translate.ui_window_clipboard import ClipboardWindow
+from translate.ui_windows_teams_notifications import TeamsNotificationsListenerWindow
 from translate.other_tools.keepalive import Keepalive
 
 if TYPE_CHECKING:
@@ -61,6 +62,7 @@ class TranslationApp:
         self.settings_window = SettingsWindow(self)
         self.hotkey_listener = HotkeyListener(self)
         self.system_tray = SystemTray(self)
+        self.notification_monitor_window = TeamsNotificationsListenerWindow(self)
         self.export_to_feishu_every_hour()
         logger.info(f"{self.config.app_name} started successfully")
         notify(f"{self.config.app_name} @ {VERSION} started successfully")

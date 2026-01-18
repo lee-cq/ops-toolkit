@@ -9,7 +9,10 @@ description = "翻译工具包"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "numpy>=2.4.1",
+    "opencv-python>=4.13.0.90",
     "pillow>=11.3.0", # 处理图片的库
+    "psutil>=7.2.1",
     "pydantic>=2.11.9", # 模型校验
     "pynput>=1.8.1", # 快捷键监听
     "pyperclip>=1.10.0", # 剪切板读写
@@ -17,12 +20,17 @@ dependencies = [
     "requests>=2.32.5", # HTTP请求
     "sqlalchemy>=2.0.43", # 数据库读写
     "toml>=0.10.2", # toml读写
-    "win11toast>=0.36", # 系统通知
+    "win11toast>=0.36.3", # 系统通知
 ]
 dynamic = ["version"]
 
 [tool.setuptools.dynamic]
 version = { attr = "translate.VERSION" }
+
+[[tool.uv.index]]
+name = "huawei"
+url = "https://mirrors.huaweicloud.com/repository/pypi/simple"
+default = true
 
 [dependency-groups]
 dev = [
@@ -43,10 +51,6 @@ translate = "translate.__main__:main"
 
 [project.scripts]
 translate-cli = "translate.__main__:main"
-
-[[tool.uv.index]]
-name = "huawei"
-url = "https://mirrors.huaweicloud.com/repository/pypi/simple"
 
 [tool.uv.build-backend]
 source-include = [

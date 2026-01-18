@@ -38,6 +38,7 @@ class SystemTray:
                 pystray.MenuItem("运行日志", self.show_logs),
                 pystray.MenuItem("剪切板记录", self.show_clipboard_history),
                 pystray.MenuItem("Aliyun SLS 日志切割", self.show_log_split),
+                pystray.MenuItem("Teams 通知监控", self.show_notification_monitor),
                 pystray.Menu.SEPARATOR,  # 分隔线
 
                 pystray.MenuItem(
@@ -102,6 +103,10 @@ class SystemTray:
                     self.app.keepalive.stop()
                     break
         logger.info(f"Keepalive is_running: {self.app.keepalive.is_running()}")
+
+    def show_notification_monitor(self):
+        """显示Teams通知监控窗口"""
+        self.app.root.after(0, self.app.notification_monitor_window.show)
 
     def monitor_clipboard(self):
         """开一个子线程监控剪切板"""
