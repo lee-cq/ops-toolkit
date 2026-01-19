@@ -30,6 +30,7 @@ UPDATE_LOG = """
 3. 更新依赖
 4. trams监控添加了配置项
 5. trams监控添加了GUI日志
+6. 完善README.md，添加使用说明
 
 ### 1.4
 1. 新增aliyun_sls_split.py，用于切割阿里云日志下载文件
