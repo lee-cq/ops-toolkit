@@ -1,5 +1,10 @@
 # 翻译工具包
 
+## 安装
+
+1. 从Git源码安装(最新版本)：`pip install git+https://cnb.cool/leecq/translate.git`
+2. 从PyPI安装(稳定版本)：`pip install translate-toolkit`
+
 ## 主要功能：
 
 1. 翻译
@@ -41,6 +46,9 @@
 
 ## CHANGELOG
 
+### 1.6
+1. 移除飞书相关代码
+
 ### 1.5
 1. 新增teams通知监控
 2. 变更CHANGELOG位置到README.md
@@ -72,7 +80,6 @@
 5. fix: json依赖未被包含
 6. 优化:pytray MENU 的更新逻辑
 7. hourly_reminder支持在最长4小时后开始提醒
-8. config.py Config.Feishu 添加空默认值，确认无配置启动
 
 ### 1.1
 1. 添加ROW REQUEST日志方便分析Translate API的原始记录

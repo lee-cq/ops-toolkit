@@ -5,7 +5,7 @@
 @Author     : LeeCQ
 @Date-Time  : 2025/12/6 01:06
 
-监听剪切板，并将内容上传到feishu
+监听剪切板
 """
 import io
 import logging

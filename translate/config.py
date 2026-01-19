@@ -46,17 +46,6 @@ class TranslateApiModel(BaseModel):
         raise NotImplementedError
 
 
-class FeishuApiModel(BaseModel):
-    """"""
-    app_id: str = ""
-    app_secret: str = ""
-
-    app_token: str = ""  # 飞书多维表格Token
-    table_id: str = ""
-
-    last_post_id: int = 0
-
-
 class TeamsModel(BaseModel):
     activity: str = ""
     chat: str = ""
@@ -67,7 +56,6 @@ class TeamsModel(BaseModel):
 
 class Config(BaseModel):
     apis: list[TranslateApiModel] = []
-    feishu: FeishuApiModel | None = FeishuApiModel()
     teams: TeamsModel | None = TeamsModel()
     app_name: str = "translate"
     startup: bool = False

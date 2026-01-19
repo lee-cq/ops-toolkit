@@ -77,9 +77,6 @@ class HistoryWindow:
         export_button = ttk.Button(button_frame, text="导出为CSV", command=self.export_to_cvs)
         export_button.pack(side="left", padx=5)
 
-        export_button = ttk.Button(button_frame, text="导出到飞书", command=self.export_to_feishu)
-        export_button.pack(side="left", padx=5)
-
         clear_button = ttk.Button(button_frame, text="清空历史", command=self.clear_history)
         clear_button.pack(side="right", padx=5)
 
@@ -97,7 +94,7 @@ class HistoryWindow:
                 record.dst_lang
             ))
 
-    def show_full_record(self, event):
+    def show_full_record(self, _event):
         """显示选中记录的完整内容"""
         selected_item = self.tree.selection()[0]
         values = self.tree.item(selected_item, "values")
@@ -122,17 +119,17 @@ class HistoryWindow:
             frame.pack(fill="both", expand=True)
 
             ttk.Label(frame, text=f"时间: {full_record['time']}").pack(anchor="w", pady=(0, 10))
-            ttk.Label(frame, text=f"语言: {full_record['src_lang']} → {full_record['dst_lang']}").pack(anchor="w",
-                pady=(0, 10))
+            ttk.Label(frame, text=f"语言: {full_record['src_lang']} → {full_record['dst_lang']}"). \
+                pack(anchor="w", pady=(0, 10))
             ttk.Label(frame, text="源文本:").pack(anchor="w")
             src_text = scrolledtext.ScrolledText(frame, wrap="word", height=6)
             src_text.pack(fill="both", expand=True, pady=(0, 10))
             src_text.insert(tk.END, full_record['src'])
             src_text.configure(state="disabled")
 
-            ttk.Label(frame, text="翻译结果:").pack(anchor=tk.W)
-            dst_text = scrolledtext.ScrolledText(frame, wrap=tk.WORD, height=6)
-            dst_text.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+            ttk.Label(frame, text="翻译结果:").pack(anchor="w")
+            dst_text = scrolledtext.ScrolledText(frame, wrap="word", height=6)
+            dst_text.pack(fill="both", expand=True, pady=(0, 10))
             dst_text.insert(tk.END, full_record['dst'])
             dst_text.configure(state="disabled")
 
@@ -145,9 +142,9 @@ class HistoryWindow:
 
             # 添加删除按钮
             button_frame = ttk.Frame(frame)
-            button_frame.pack(fill=tk.X, pady=(10, 0))
+            button_frame.pack(fill="x", pady=(10, 0))
             delete_button = ttk.Button(button_frame, text="删除记录", command=remove_record)
-            delete_button.pack(side=tk.RIGHT)
+            delete_button.pack(side="right")
 
     def export_to_cvs(self):
         """导出历史记录为CSV"""
@@ -164,15 +161,6 @@ class HistoryWindow:
             messagebox.showinfo("成功", f"历史记录已导出到:\n{file_path}")
         else:
             messagebox.showerror("错误", "导出历史记录失败")
-
-    def export_to_feishu(self):
-        """导出到飞书"""
-        title = "Translation History Export to Feishu"
-        try:
-            msg = self.app.history_manager.export_feishu()
-            messagebox.showinfo(title, msg)
-        except (PermissionError, ValueError) as e:
-            messagebox.showerror(title, str(e))
 
     def clear_history(self):
         """清空历史记录"""

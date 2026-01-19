@@ -41,14 +41,6 @@ class SettingsWindow:
         self.teams_team_entry = None
         self.teams_interval_entry = None
 
-        # 飞书设置控件
-        self.feishu_frame = None
-        self.feishu_app_id_entry = None
-        self.feishu_app_secret_entry = None
-        self.feishu_app_token_entry = None
-        self.feishu_table_id_entry = None
-        self.feishu_last_post_id_entry = None
-
     def show(self, callback_close=None):
         """显示设置窗口"""
 
@@ -91,8 +83,8 @@ class SettingsWindow:
         self.hotkey_entry = ttk.Entry(basic_frame)
         self.hotkey_entry.grid(row=1, column=1, sticky=tk.EW, pady=(10, 5))
         self.hotkey_entry.insert(0, self.app.config.hotkey)
-        ttk.Label(basic_frame, text="提示: 格式如 '<ctrl>+<alt>+t'", foreground="gray").grid(row=2, column=1,
-                                                                                             sticky=tk.W)
+        ttk.Label(basic_frame, text="提示: 格式如 '<ctrl>+<alt>+t'", foreground="gray"). \
+            grid(row=2, column=1, sticky=tk.W)
 
         # 开机自启 (新增)
         ttk.Label(basic_frame, text="开机自启:").grid(row=3, column=0, sticky=tk.W, pady=(10, 5))
@@ -227,39 +219,6 @@ class SettingsWindow:
                   ).grid(
             row=5, column=0, columnspan=self.teams_frame.grid_size()[0], sticky='ew')
 
-        # ==================== 飞书设置标签页 (新增) ====================
-        feishu_frame = ttk.Frame(self.notebook, padding=10)
-        self.notebook.add(feishu_frame, text="飞书设置")
-        feishu_frame.columnconfigure(1, weight=1, minsize=300)
-        self.feishu_frame = feishu_frame
-
-        # 飞书应用ID (新增)
-        ttk.Label(feishu_frame, text="飞书应用ID:").grid(row=0, column=0, sticky=tk.W, pady=(10, 5))
-        self.feishu_app_id_entry = ttk.Entry(feishu_frame)
-        self.feishu_app_id_entry.grid(row=0, column=1, sticky=tk.EW, pady=(10, 5))
-        self.feishu_app_id_entry.insert(0, self.app.config.feishu.app_id)
-        # 飞书应用密钥 (新增)
-        ttk.Label(feishu_frame, text="飞书应用密钥:").grid(row=1, column=0, sticky=tk.W, pady=(10, 5))
-        self.feishu_app_secret_entry = ttk.Entry(feishu_frame)
-        self.feishu_app_secret_entry.grid(row=1, column=1, sticky=tk.EW, pady=(10, 5))
-        self.feishu_app_secret_entry.insert(0, self.app.config.feishu.app_secret)
-
-        # 飞书多维表格ID (新增)
-        ttk.Label(feishu_frame, text="飞书多维表格ID:").grid(row=2, column=0, sticky=tk.W, pady=(10, 5))
-        self.feishu_app_token_entry = ttk.Entry(feishu_frame)
-        self.feishu_app_token_entry.grid(row=2, column=1, sticky=tk.EW, pady=(10, 5))
-        self.feishu_app_token_entry.insert(0, self.app.config.feishu.app_token)
-        # 飞书多维表格表格ID (新增)
-        ttk.Label(feishu_frame, text="飞书多维表格表格ID:").grid(row=3, column=0, sticky=tk.W, pady=(10, 5))
-        self.feishu_table_id_entry = ttk.Entry(feishu_frame)
-        self.feishu_table_id_entry.grid(row=3, column=1, sticky=tk.EW, pady=(10, 5))
-        self.feishu_table_id_entry.insert(0, self.app.config.feishu.table_id)
-        # 飞书最后一次发送的消息ID (新增)
-        ttk.Label(feishu_frame, text="飞书最后一次发送的消息ID:").grid(row=4, column=0, sticky=tk.W, pady=(10, 5))
-        self.feishu_last_post_id_entry = ttk.Entry(feishu_frame)
-        self.feishu_last_post_id_entry.grid(row=4, column=1, sticky=tk.EW, pady=(10, 5))
-        self.feishu_last_post_id_entry.insert(0, str(self.app.config.feishu.last_post_id))
-
         # 按钮区域
         button_frame = ttk.Frame(self.window)
         button_frame.pack(fill="x", pady=10)
@@ -267,7 +226,8 @@ class SettingsWindow:
         save_button = ttk.Button(button_frame, text="保存设置", command=self.save_settings)
         save_button.pack(side="right", padx=5)
 
-    def browse_path(self, entry_widget, is_file=False):
+    @staticmethod
+    def browse_path(entry_widget, is_file=False):
         """浏览文件或文件夹路径 (新增)"""
         current_path = entry_widget.get()
         if is_file:
@@ -301,7 +261,7 @@ class SettingsWindow:
         """添加新API (新增)"""
         self.show_api_dialog()
 
-    def edit_api(self, event):
+    def edit_api(self, _event):
         """编辑选中的API (新增)"""
         selected_item = self.api_tree.selection()
         if not selected_item:
@@ -420,28 +380,6 @@ class SettingsWindow:
         self.app.config.data_dir = new_data_dir
         self.app.config.translation_history_path = new_history_path
         self.app.config.log_path = new_log_path
-
-        if self.feishu_frame and self.feishu_frame.winfo_viewable():
-            # 获取飞书设置 (新增)
-            feishu_app_id = self.feishu_app_id_entry.get().strip()
-            feishu_app_secret = self.feishu_app_secret_entry.get().strip()
-            feishu_app_token = self.feishu_app_token_entry.get().strip()
-            feishu_table_id = self.feishu_table_id_entry.get().strip()
-            feishu_last_post_id = self.feishu_last_post_id_entry.get().strip()
-            # 验证飞书设置 (新增)
-            if not feishu_app_id or not feishu_app_secret or not feishu_app_token or not feishu_table_id:
-                messagebox.showerror("错误", "请填写完整的飞书设置")
-                return
-            try:
-                feishu_last_post_id = int(feishu_last_post_id)
-            except ValueError:
-                messagebox.showerror("错误", "飞书最后一次发送的消息ID必须是整数")
-                return
-            self.app.config.feishu.last_post_id = feishu_last_post_id
-            self.app.config.feishu.app_id = feishu_app_id
-            self.app.config.feishu.app_secret = feishu_app_secret
-            self.app.config.feishu.app_token = feishu_app_token
-            self.app.config.feishu.table_id = feishu_table_id
 
         if self.teams_frame and self.teams_frame.winfo_viewable():
             # 获取Teams设置 (新增)
@@ -577,7 +515,7 @@ class ScreenSelector:
         )
         # self.position = f"{self.start_x}x{self.start_y}+{width}+{height}"
 
-    def on_release(self, event):
+    def on_release(self, _event):
         # 确认选择
         if not self.rect_id:
             return
@@ -592,12 +530,12 @@ class ScreenSelector:
         self.callback(f"{int(x)}x{int(y)}+{int(width)}+{int(height)}")
         self.close()
 
-    def key_press(self, event):
+    def key_press(self, _event):
         """处理键盘事件"""
-        if event.keysym.lower() == 'escape':
-            self.cancel_selection(event)
+        if _event.keysym.lower() == 'escape':
+            self.cancel_selection(_event)
 
-    def cancel_selection(self, event):
+    def cancel_selection(self, _event):
         """取消选择操作"""
         self.close()
 

@@ -6,13 +6,10 @@
 @Date-Time  : 2025/9/19 22:18
 """
 import csv
-import platform
-import time
 from pathlib import Path
 from datetime import datetime
 from logging import getLogger
 
-import requests
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.exc import SQLAlchemyError
@@ -193,64 +190,6 @@ class HistoryManager:
             logger.error(f"Error exporting to CSV: {e}")
             return False
 
-    def export_feishu(self) -> str:
-        """"""
-        if not (self.config.feishu.app_id and self.config.feishu.app_secret):
-            logger.error("飞书配置未完成, 请在设置中配置app_id和app_secret")
-            return "飞书配置未完成"
-
-        feishu_meta = self.config.feishu
-        _r_id, records = 0, []
-        for record in self.query_by_id(feishu_meta.last_post_id):
-            en, cn = (record.src, record.dst) if record.src_lang == "en" else (record.dst, record.src)
-            records.append({"fields": {
-                "Time":     int(time.mktime(record.time.timetuple()) * 1000),
-                "Hostname": platform.node(),
-                "Host-ID":  record.id,
-                "EN":       en,
-                "CN":       cn
-            }})
-            # noinspection PyTypeChecker
-            _r_id = max(record.id, _r_id)
-
-        if not records:
-            logger.info(f"No records found for {feishu_meta.last_post_id}")
-            return "没有新的记录"
-
-        logger.info(f"将向飞书推送{len(records)}条记录。")
-
-        resp = requests.post(
-            url="https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
-            json={"app_id": feishu_meta.app_id, "app_secret": feishu_meta.app_secret, }
-        )
-        if resp.status_code != 200 or resp.json()["code"] != 0:
-            emsg = f"获取Access Token Error. [H{resp.status_code}]{resp.text}]"
-            logger.error(emsg)
-            raise PermissionError(emsg)
-        access_token = resp.json()["tenant_access_token"]
-        logger.info(f"GET Feishu Access Token: {access_token}")
-
-        url = (f"https://open.feishu.cn/open-apis/bitable/v1"
-               f"/apps/{feishu_meta.app_token}"
-               f"/tables/{feishu_meta.table_id}/records/batch_create")
-
-        resp = requests.post(
-            url,
-            headers={"Authorization": f"Bearer {access_token}"},
-            json={"records": records})
-        if resp.status_code != 200 or resp.json()["code"] != 0:
-            emsg = f"上传飞书表格失败：[H {resp.status_code}]{resp.text}]"
-            logger.error(emsg)
-            import json
-            print(json.dumps({"records": records}, indent=2, ensure_ascii=False))
-            raise ValueError(emsg)
-        logger.info(f"upload record {len(records)} records.")
-
-        feishu_meta.last_post_id = _r_id
-        self.config.save()
-        logger.info(f"config.feishu.last_post_id: {feishu_meta.last_post_id} 已记录")
-        return f"upload record {len(records)} records."
-
 
 if __name__ == '__main__':
     import logging
@@ -259,4 +198,3 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
     history_manager = HistoryManager(_c)
-    history_manager.export_feishu()

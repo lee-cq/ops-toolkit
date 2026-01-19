@@ -63,7 +63,6 @@ class TranslationApp:
         self.hotkey_listener = HotkeyListener(self)
         self.system_tray = SystemTray(self)
         self.notification_monitor_window = TeamsNotificationsListenerWindow(self)
-        self.export_to_feishu_every_hour()
         logger.info(f"{self.config.app_name} started successfully")
         notify(f"{self.config.app_name} @ {VERSION} started successfully")
 
@@ -130,21 +129,6 @@ class TranslationApp:
     # def show_word_analysis_window(self):
     #     """显示词汇分析窗口"""
     #     self.word_analysis_window.show()
-
-    # noinspection PyTypeChecker
-    def export_to_feishu_every_hour(self):
-        """导出历史记录到飞书"""
-        try:
-            msg = self.history_manager.export_feishu()
-            if msg != "没有新的记录":
-                messagebox.showinfo("导出到飞书成功", msg)
-        except Exception as _e:
-            logger.error(f"Error during export: {_e}", exc_info=_e)
-            msg = f"Error during export: {_e}"
-            messagebox.showerror("导出到飞书失败", msg)
-
-        finally:
-            self.root.after(60 * 60 * 1000, self.export_to_feishu_every_hour)
 
     def run(self):
         """运行应用程序"""

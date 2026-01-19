@@ -135,9 +135,6 @@ class ClipboardWindow:
         export_button = ttk.Button(button_frame, text="导出为CSV", command=self.export_to_file)
         export_button.pack(side="left", padx=5)
 
-        export_button = ttk.Button(button_frame, text="导出到飞书", command=self.export_to_feishu)
-        export_button.pack(side="left", padx=5)
-
         clear_button = ttk.Button(button_frame, text="清空历史", command=self.clear_history)
         clear_button.pack(side="right", padx=5)
 
@@ -242,9 +239,6 @@ class ClipboardWindow:
     def export_to_file(self):
         pass
 
-    def export_to_feishu(self):
-        pass
-
     def clear_history(self):
         if messagebox.askyesno("确认", "确定要清空所有历史记录吗？"):
             return self.app.monitor_clipboard.clear_history()
@@ -258,6 +252,6 @@ if __name__ == "__main__":
     from translate.config import config
 
     root = tk.Tk()
-    app = ClipboardWindow(root)
-    app.config = config
+    _app = ClipboardWindow(root)
+    _app.config = config
     root.mainloop()
