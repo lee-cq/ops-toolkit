@@ -99,6 +99,9 @@ class Keepalive:
         self._running = False
 
     def start(self):
+        if self._running:
+            logger.warning("Keepalive is running, not start again.")
+            return
         threading.Thread(target=self.main, daemon=True, name="keepalive").start()
 
     def is_running(self):

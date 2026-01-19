@@ -16,6 +16,7 @@ from tkinter import ttk
 
 from PIL import ImageTk
 
+from translate import DEBUGGER
 from translate.other_tools.monitor_teams_notification import NotificationMonitor, Screenshot
 
 help_message = """
@@ -82,6 +83,17 @@ Teams通知监控器 v1.0
 logger = logging.getLogger("translate.ui.teams_notifications_listener_window")
 
 
+class GUIHandler(logging.Handler):
+    def __init__(self, queue_: queue.Queue):
+        super().__init__()
+        self.queue_ = queue_
+
+    def emit(self, record: logging.LogRecord):
+        if self.queue_.full():
+            self.queue_.get()
+        self.queue_.put(self.format(record))
+
+
 class TeamsNotificationsListenerWindow:
 
     def __init__(self, app):
@@ -92,48 +104,76 @@ class TeamsNotificationsListenerWindow:
         self.logs_label = None
         self.logs_text = None
         self.screenshot_frames = []  # 存储截图展示的框架
+
+        self.queue_logs = queue.Queue(maxsize=10)
+        self.update_gui_logs_thread = threading.Thread(target=self.update_gui_logs, daemon=True)
+        self.update_gui_logs_thread.start()
+        self.gui_handler = GUIHandler(self.queue_logs)
+        self.gui_handler.setLevel(logging.DEBUG if DEBUGGER else logging.INFO)
+        self.gui_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+        self.gui_logger = {
+            "translate.ui.teams_notifications_listener_window",
+            "translate.monitor_teams_notification",
+            "translate.keepalive"
+        }
+        for _ln in self.gui_logger:
+            logging.getLogger(_ln).addHandler(self.gui_handler)
+
         self.monitor: NotificationMonitor | None = None
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        logger.info("exit TeamsNotificationsListenerWindow")
+        self.stop()
+        self.queue_logs = None
+        for _ln in self.gui_logger:
+            logger.debug(f"remove handler {self.gui_handler} from logger {_ln}")
+            logging.getLogger(_ln).removeHandler(self.gui_handler)
+
+    def update_gui_logs(self):
+        """从队列中获取日志并更新到GUI"""
+        while True:
+            if self.queue_logs is None:
+                break
+            log_text = self.queue_logs.get()
+            self.add_log(log_text)
 
     def add_log(self, log_text):
         """添加运行日志"""
-        self.logs_text.insert(tk.END, log_text + "\n")
-        # 自动滚动到最新日志
-        self.logs_text.see(tk.END)
+        if not self.logs_text:
+            return
+        try:
+            self.logs_text.insert(tk.END, log_text + "\n")
+            # 自动滚动到最新日志
+            self.logs_text.see(tk.END)
+        except tk.TclError:
+            pass
 
     def start(self):
         """开始监控"""
-        logger.info("start monitor")
+        logger.info("初始化监控线程 ...")
         if self.monitor:
             self.monitor.stop()
         self.monitor = NotificationMonitor(self.app)
         logger.debug(f"monitor status: {self.monitor.status_notify}")
 
+        self.app.keepalive.start()  # 确保系统保持运行
+        self.window.attributes("-topmost", False)
+        messagebox.showinfo("提示", "1.确保音量已经调整到合适的大小\n2.确保Teams应用窗口始终可见")
+        self.window.attributes("-topmost", True)
         self.monitor.start()
-        # 更新状态标签：绿底白字，居中显示
-        self.status_label.config(
-            text="监控中",
-            bg="#28a745",  # 绿色背景
-            fg="white"  # 白色文字
-        )
-        # 模拟添加日志
-        self.add_log(f"监控已启动")
-        # 模拟更新截图（实际使用时替换为真实截图）
-        self.update_screenshots()
+
+        self.status_label.config(text="监控中", bg="#28a745", fg="white")  # 更新状态标签：绿底白字，居中显示
+        self.update_screenshots()  # 更新截图线程
+        logger.info(f"监控已启动")
 
     def stop(self):
         """关闭监控"""
-        logger.info("stop monitor")
+        logger.info("正在停止监控 ...")
         if self.monitor:
             self.monitor.stop()
             self.monitor = None
-        # 更新状态标签：深灰色底白字，居中显示
-        self.status_label.config(
-            text="已停止",
-            bg="#7D7D7E",  # 深灰色
-            fg="white"  # 白色文字
-        )
-        # 模拟添加日志
-        self.add_log(f"监控已停止")
+
+        self.status_label.config(text="已停止", bg="#7D7D7E", fg="white")  # 更新状态标签：深灰色底白字，居中显示
         self.window.attributes("-topmost", False)
         messagebox.showinfo("提示", "监控已停止，窗口即将关闭")
         self.window.destroy()
@@ -143,16 +183,22 @@ class TeamsNotificationsListenerWindow:
 
     def show_settings(self):
         """显示设置窗口"""
-        self.window.attributes("-topmost", False)  # 窗口置顶
-        # self.app.settings_window.window.protocol("WM_DELETE_WINDOW", lambda: self.window.attributes("-topmost", True))
-        return self.app.root.after(100, self.app.settings_window.show)
+
+        def callback():
+            if self.window:
+                logger.info("窗口重新置顶")
+                self.window.attributes("-topmost", True)  # 窗口置顶
+
+        self.window.attributes("-topmost", False)  # 窗口取消置顶
+        return self.app.root.after(100, self.app.settings_window.show, callback)
 
     def update_screenshots(self):
         """更新截图展示区（模拟）"""
 
+        # noinspection PyTypeChecker
         def _update(screenshots: list[Screenshot]):
             # 清空原有截图
-            logger.info(f"update screenshots, {len(screenshots)} screenshots")
+            logger.debug(f"update screenshots, {len(screenshots)} screenshots")
             for frame in self.screenshot_frames:
                 for widget in frame.winfo_children():
                     widget.destroy()
@@ -160,6 +206,7 @@ class TeamsNotificationsListenerWindow:
             # 添加新截图
             for i, scr in enumerate(screenshots):
                 # 截图时间标签
+                logger.debug(f"add screenshot {i}, {scr.datetime}, {scr.name}")
                 time_label = tk.Label(self.screenshot_frames[i], text=scr.datetime, font=("Arial", 8))
                 time_label.pack(pady=2)
                 name_label = tk.Label(self.screenshot_frames[i], text=scr.name, font=("Arial", 8))
@@ -186,7 +233,6 @@ class TeamsNotificationsListenerWindow:
                         self.status_label.config(text="监控中", bg="#28a745", fg="white")
             logger.info("截图更新线程screenshots已结束 ...")
 
-        logger.info("start update screenshots thread")
         threading.Thread(target=_update_screenshots, daemon=True).start()
 
     def show(self):
@@ -260,27 +306,15 @@ class TeamsNotificationsListenerWindow:
         link_frame.pack(fill="x", anchor="center")
 
         # 帮助链接
-        help_link = ttk.Label(
-            link_frame,
-            text="帮助",
-            foreground="#007bff",
-            cursor="hand2"
-        )
+        help_link = ttk.Label(link_frame, text="帮助", foreground="#007bff", cursor="hand2")
         help_link.pack(side="left", padx=20)
         help_link.bind("<Button-1>", lambda e: self.open_help())
-
         # 分隔符
-        ttk.Label(link_frame, text="|").pack(side="left")
-
-        # 关于链接
-        about_link = ttk.Label(
-            link_frame,
-            text="关于",
-            foreground="#007bff",
-            cursor="hand2"
-        )
-        about_link.pack(side="left", padx=20)
-        about_link.bind("<Button-1>", lambda e: self.open_about())
+        # ttk.Label(link_frame, text="|").pack(side="left")
+        # # 关于链接
+        # about_link = ttk.Label(link_frame, text="关于", foreground="#007bff", cursor="hand2")
+        # about_link.pack(side="left", padx=20)
+        # about_link.bind("<Button-1>", lambda e: self.open_about())
 
     def open_help(self):
         self.window.attributes("-topmost", False)  # 窗口置顶

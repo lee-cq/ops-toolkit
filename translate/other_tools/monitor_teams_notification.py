@@ -47,13 +47,14 @@ class NotificationMonitor:
             'tray':     self.icon_size_parse(self.app.config.teams.tray)  # 托盘图标
         }
 
-    def icon_size_parse(self, icon_size: str) -> dict:
+    @staticmethod
+    def icon_size_parse(icon_size: str) -> dict:
         """解析图标尺寸字符串"""
         match = re.compile(r"^(\d+)x(\d+)\+(\d+)\+(\d+)$").match(icon_size)
         if not match:
             logger.error(f"错误：图标尺寸格式错误 {icon_size}")
             return {}
-        _s =  {
+        _s = {
             'x':      int(match.group(1)),
             'y':      int(match.group(2)),
             'width':  int(match.group(3)),
@@ -61,7 +62,6 @@ class NotificationMonitor:
         }
         logger.debug(f"parse rest = {_s}")
         return _s
-
 
     @staticmethod
     def is_teams_running():
@@ -79,8 +79,8 @@ class NotificationMonitor:
         cords = self.teams_icons[icon_name]
 
         # 获取屏幕尺寸
-        screen_width = self.app.root.winfo_screenwidth()
-        screen_height = self.app.root.winfo_screenheight()
+        # screen_width = self.app.root.winfo_screenwidth()
+        # screen_height = self.app.root.winfo_screenheight()
 
         # 确保坐标在屏幕范围内
         # x = max(0, min(cords['x'], screen_width))
@@ -88,14 +88,13 @@ class NotificationMonitor:
         # width = min(cords['width'] + x , screen_width )
         # height = min(cords['height'] + y, screen_height)
         # logger.debug(f"优化后的坐标: {x}x{y}+{width}+{height}")
-        
 
         # 确保区域不为空
         # if width <= 0 or height <= 0:
         #     logger.warning(f"错误：图标 {icon_name} 的坐标或尺寸无效: x={x}, y={y}, width={width}, height={height}")
         #     return True
-        
-        bbox = (cords['x'], cords['y'], cords['width'] + cords['x'], cords['height'] +cords['y'])
+
+        bbox = (cords['x'], cords['y'], cords['width'] + cords['x'], cords['height'] + cords['y'])
         # bbox = (x, y, width, height)
         screenshot = ImageGrab.grab(bbox=bbox)
 
@@ -151,7 +150,7 @@ class NotificationMonitor:
             )
             if isinstance(_ts, dict) or "USER_CANCELED" in str(_ts):
                 self.status_notify = False
-                logger.info("用户取消了通知")
+                logger.info("用户消除了通知")
                 break
 
     def check(self):

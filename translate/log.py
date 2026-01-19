@@ -1,6 +1,7 @@
 import logging
 import logging.config
 
+from translate import DEBUGGER
 from translate.config import config
 
 
@@ -80,7 +81,7 @@ def init_logger():
                 'translate':                 {  # 指定translate日志器
                     'handlers':  ['console_handler', 'file_handler', "file_debug_handler"],
                     'level':     'DEBUG',
-                    'propagate': False  # 不向上传播日志
+                    'propagate': True  # 不向上传播日志
                 },
                 'translate.row_request':     {
                     'handlers':  ['row_request_handler', 'console_handler'],
@@ -88,14 +89,14 @@ def init_logger():
                     'propagate': False
                 },
                 'translate.keepalive':       {
-                    'handlers':  ['console_handler', 'keepalive_handler'],
+                    'handlers':  ['keepalive_handler'],
                     'level':     'DEBUG',
-                    'propagate': False,
+                    'propagate': True,
                 },
                 'translate.hourly_reminder': {
-                    'handlers':  ['console_handler', 'hourly_reminder_handler'],
+                    'handlers':  ['hourly_reminder_handler'],
                     'level':     'DEBUG',
-                    'propagate': False,
+                    'propagate': True,
                 }
             }
         }

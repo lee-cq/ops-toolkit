@@ -17,6 +17,7 @@
 2. 变更CHANGELOG位置到README.md
 3. 更新依赖
 4. trams监控添加了配置项
+5. trams监控添加了GUI日志
 
 ### 1.4
 1. 新增aliyun_sls_split.py，用于切割阿里云日志下载文件

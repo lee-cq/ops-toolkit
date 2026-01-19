@@ -7,9 +7,16 @@
 """
 from pathlib import Path
 
+DEBUGGER = Path(__file__).parent.parent.joinpath("README.md").exists()
+
 
 def get_version():
-    _main_split = UPDATE_LOG.strip().split('\n\n')[0].split('\n')
+    if DEBUGGER:
+        readme = Path(__file__).parent.parent.joinpath("README.md")
+        other_line = readme.read_text(encoding="utf-8").split("## CHANGELOG")[0]
+        readme.write_text(other_line + UPDATE_LOG.strip(), encoding="utf-8")
+
+    _main_split = UPDATE_LOG.strip().split("## CHANGELOG")[1].strip().split('\n\n')[0].split('\n')
     _m, _fix_log = _main_split[0], _main_split[-1]
     return f"{_m.strip()}.{_fix_log.split('.')[0]}".replace('###', '').strip()
 
@@ -22,6 +29,7 @@ UPDATE_LOG = """
 2. 变更CHANGELOG位置到README.md
 3. 更新依赖
 4. trams监控添加了配置项
+5. trams监控添加了GUI日志
 
 ### 1.4
 1. 新增aliyun_sls_split.py，用于切割阿里云日志下载文件
@@ -57,9 +65,14 @@ UPDATE_LOG = """
 6. 因开发者不再维护zhconv，将zhconv内联到项目中，自维护，基于1.4.4版本
 
 ### 1.0.0
-""".split("## CHANGELOG")[1].strip()
+"""
 
 VERSION = get_version()
+# if DEBUGGER:
+#     readme = Path(__file__).parent.parent.joinpath("README.md")
+#     other_line = readme.read_text().split("## CHANGELOG")[0] + "\n\n"
+#     readme.write_text(other_line + UPDATE_LOG)
 
 if __name__ == '__main__':
-    print(get_version())
+    print(f"Version: {get_version()}")
+    print(f"DEBUGGER: {DEBUGGER}")

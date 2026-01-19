@@ -49,8 +49,16 @@ class SettingsWindow:
         self.feishu_table_id_entry = None
         self.feishu_last_post_id_entry = None
 
-    def show(self):
+    def show(self, callback_close=None):
         """显示设置窗口"""
+
+        def on_close():
+            """退出应用"""
+            if callback_close and callable(callback_close):
+                callback_close()
+            if self.window:
+                self.window.destroy()
+
         # 如果窗口已存在，先销毁
         if self.window:
             self.window.destroy()
@@ -60,6 +68,8 @@ class SettingsWindow:
         self.window.title("应用设置")
         self.window.geometry("650x500")
         self.window.resizable(True, True)
+        # 绑定关闭事件
+        self.window.protocol("WM_DELETE_WINDOW", on_close)
 
         # 创建标签页控件 (新增)
         self.notebook = ttk.Notebook(self.window)
@@ -519,7 +529,7 @@ class ScreenSelector:
         self.coords_label = self.canvas.create_text(
             100, 30,
             text="",
-            fill="yellow",
+            fill="red",
             font=("Arial", 14, "bold"),
             anchor="nw"
         )
@@ -561,8 +571,10 @@ class ScreenSelector:
         height = abs(cur_y - self.start_y)
 
         # 更新实时坐标显示
-        self.canvas.itemconfig(self.coords_label,
-                               text=f"当前选择: (x,y:{self.start_x},{self.start_y}) - (w,h:{width},{height})")
+        self.canvas.itemconfig(
+            self.coords_label,
+            text=f"当前选择: (x,y:{self.start_x},{self.start_y}) - (w,h:{width},{height})"
+        )
         # self.position = f"{self.start_x}x{self.start_y}+{width}+{height}"
 
     def on_release(self, event):
