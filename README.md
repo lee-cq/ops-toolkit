@@ -3,7 +3,7 @@
 ## 安装
 
 1. 从Git源码安装(最新版本)：`pip install git+https://cnb.cool/leecq/translate.git`
-2. 从PyPI安装(稳定版本)：`pip install translate-toolkit`
+2. 从PyPI安装(稳定版本)：`pip install ops-toolkit --index-url https://pypi.cnb.cool/leecq/pytools/-/packages/simple`
 
 ## 主要功能：
 
@@ -22,8 +22,7 @@
 3. 翻译结果对照到浮动窗口：将翻译API返回的结果放入浮动窗口中，焦点置于浮动窗口，允许按下esc关闭，双击窗口将翻译结果复制到剪切板。
 4. 翻译结果记录：将每次翻译的结果都收集到文件中，格式待定
 5. 翻译日志记录：配置logging记录全部日志
-6. 翻译结果分析：读取翻译结果文件，分析高频词汇并创建单词表
-7. 记录、和分析结果导出：允许将翻译结果导出为csv(time, src, dst)和分析的单词表(txt, 一行一个单词)
+6. 记录、和分析结果导出：允许将翻译结果导出为csv(time, src, dst)
 
 ## 3. Keep Live 保持电脑活跃
 
@@ -40,7 +39,7 @@
 1. 截图监听Teams的托盘区域，消息区域，活动区域和团队区域，如果有红色，则判断为收到信息，触发通知
 2. 如果触发通知：调用系统通知接口，持续通知用户，直到用户点击通知关闭
 3. 需要手动确认图标区域；
-4. 开启监听时，系统会自动开启keeplive功能，保持电脑活跃
+4. 开启监听时，系统会自动开启keepalive功能，保持电脑活跃
 5. 开启监听时，系统会提示用户跳大系统音量，防止错过通知
 
 

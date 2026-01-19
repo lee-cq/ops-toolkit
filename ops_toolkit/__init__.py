@@ -27,6 +27,7 @@ UPDATE_LOG = """
 ### 1.6
 1. 移除飞书相关代码
 2. 重构项目文件结构
+3. 添加cnb CI配置
 
 ### 1.5
 1. 新增teams通知监控
@@ -72,10 +73,6 @@ UPDATE_LOG = """
 """
 
 VERSION = get_version()
-# if DEBUGGER:
-#     readme = Path(__file__).parent.parent.joinpath("README.md")
-#     other_line = readme.read_text().split("## CHANGELOG")[0] + "\n\n"
-#     readme.write_text(other_line + UPDATE_LOG)
 
 if __name__ == '__main__':
     print(f"Version: {get_version()}")

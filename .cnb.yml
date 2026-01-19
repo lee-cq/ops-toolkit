@@ -2,10 +2,11 @@
 main:
   push:
     - docker:
-        image: docker.cnb.cool/examples/language/python-3:latest
+        image: python:3.13
       stages:
         - name: Build & Push
           script:
+            - pip install build twine
             - export TWINE_USERNAME="cnb"
             - export TWINE_PASSWORD=$CNB_TOKEN
             - export TWINE_REPOSITORY_URL="https://pypi.cnb.cool/leecq/pytools/-/packages/simple"

@@ -275,6 +275,52 @@ wheels = [
 ]
 
 [[package]]
+name = "ops-toolkit"
+source = { editable = "." }
+dependencies = [
+    { name = "numpy" },
+    { name = "opencv-python" },
+    { name = "pillow" },
+    { name = "psutil" },
+    { name = "pydantic" },
+    { name = "pynput" },
+    { name = "pyperclip" },
+    { name = "pystray" },
+    { name = "requests" },
+    { name = "sqlalchemy" },
+    { name = "toml" },
+    { name = "win11toast" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "ipython" },
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "numpy", specifier = ">=2.4.1" },
+    { name = "opencv-python", specifier = ">=4.13.0.90" },
+    { name = "pillow", specifier = ">=11.3.0" },
+    { name = "psutil", specifier = ">=7.2.1" },
+    { name = "pydantic", specifier = ">=2.11.9" },
+    { name = "pynput", specifier = ">=1.8.1" },
+    { name = "pyperclip", specifier = ">=1.10.0" },
+    { name = "pystray", specifier = ">=0.19.5" },
+    { name = "requests", specifier = ">=2.32.5" },
+    { name = "sqlalchemy", specifier = ">=2.0.43" },
+    { name = "toml", specifier = ">=0.10.2" },
+    { name = "win11toast", specifier = ">=0.36.3" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "ipython", specifier = ">=9.5.0" },
+    { name = "pytest", specifier = ">=8.4.2" },
+]
+
+[[package]]
 name = "packaging"
 version = "25.0"
 source = { registry = "https://mirrors.huaweicloud.com/repository/pypi/simple" }
@@ -722,52 +768,6 @@ source = { registry = "https://mirrors.huaweicloud.com/repository/pypi/simple" }
 sdist = { url = "https://mirrors.huaweicloud.com/repository/pypi/packages/eb/79/72064e6a701c2183016abbbfedaba506d81e30e232a68c9f0d6f6fcd1574/traitlets-5.14.3.tar.gz", hash = "sha256:9ed0579d3502c94b4b3732ac120375cda96f923114522847de4b3bb98b96b6b7" }
 wheels = [
     { url = "https://mirrors.huaweicloud.com/repository/pypi/packages/00/c0/8f5d070730d7836adc9c9b6408dec68c6ced86b304a9b26a14df072a6e8c/traitlets-5.14.3-py3-none-any.whl", hash = "sha256:b74e89e397b1ed28cc831db7aea759ba6640cb3de13090ca145426688ff1ac4f" },
-]
-
-[[package]]
-name = "translate"
-source = { editable = "." }
-dependencies = [
-    { name = "numpy" },
-    { name = "opencv-python" },
-    { name = "pillow" },
-    { name = "psutil" },
-    { name = "pydantic" },
-    { name = "pynput" },
-    { name = "pyperclip" },
-    { name = "pystray" },
-    { name = "requests" },
-    { name = "sqlalchemy" },
-    { name = "toml" },
-    { name = "win11toast" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "ipython" },
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "numpy", specifier = ">=2.4.1" },
-    { name = "opencv-python", specifier = ">=4.13.0.90" },
-    { name = "pillow", specifier = ">=11.3.0" },
-    { name = "psutil", specifier = ">=7.2.1" },
-    { name = "pydantic", specifier = ">=2.11.9" },
-    { name = "pynput", specifier = ">=1.8.1" },
-    { name = "pyperclip", specifier = ">=1.10.0" },
-    { name = "pystray", specifier = ">=0.19.5" },
-    { name = "requests", specifier = ">=2.32.5" },
-    { name = "sqlalchemy", specifier = ">=2.0.43" },
-    { name = "toml", specifier = ">=0.10.2" },
-    { name = "win11toast", specifier = ">=0.36.3" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "ipython", specifier = ">=9.5.0" },
-    { name = "pytest", specifier = ">=8.4.2" },
 ]
 
 [[package]]

@@ -24,7 +24,10 @@ dependencies = [
 dynamic = ["version"]
 
 [tool.setuptools.dynamic]
-version = { attr = "translate.VERSION" }
+version = { attr = "ops_toolkit.VERSION" }
+
+[tool.setuptools.packages.find]
+include = ["ops_toolkit*"]
 
 [[tool.uv.index]]
 name = "huawei"
@@ -38,20 +41,20 @@ dev = [
 ]
 
 [tool.setuptools.package-data]
-"translate.zhconv" = ["zhcdict.json"]
-"translate" = [
+"ops_toolkit.zhconv" = ["zhcdict.json"]
+"ops_toolkit" = [
     "resources/LXGWWenKaiMono-Medium.ttf.lzma",
     "resources/app-icon.png"
 ]
 
 
 [project.gui-scripts]
-translate = "translate.__main__:main"
+ops_toolkit = "ops_toolkit.__main__:main"
 
 [project.scripts]
-translate-cli = "translate.__main__:main"
+ops-toolkit-cli = "ops-toolkit.__main__:main"
 
 [tool.uv.build-backend]
 source-include = [
-    "translate/resources/*"
+    "ops_toolkit/resources/*"
 ]
