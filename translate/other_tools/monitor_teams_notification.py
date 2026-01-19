@@ -53,12 +53,15 @@ class NotificationMonitor:
         if not match:
             logger.error(f"错误：图标尺寸格式错误 {icon_size}")
             return {}
-        return {
+        _s =  {
             'x':      int(match.group(1)),
             'y':      int(match.group(2)),
             'width':  int(match.group(3)),
             'height': int(match.group(4)),
         }
+        logger.debug(f"parse rest = {_s}")
+        return _s
+
 
     @staticmethod
     def is_teams_running():
@@ -80,16 +83,20 @@ class NotificationMonitor:
         screen_height = self.app.root.winfo_screenheight()
 
         # 确保坐标在屏幕范围内
-        x = max(0, min(cords['x'], screen_width))
-        y = max(0, min(cords['y'], screen_height))
-        width = min(cords['width'], screen_width - x)
-        height = min(cords['height'], screen_height - y)
+        # x = max(0, min(cords['x'], screen_width))
+        # y = max(0, min(cords['y'], screen_height))
+        # width = min(cords['width'] + x , screen_width )
+        # height = min(cords['height'] + y, screen_height)
+        # logger.debug(f"优化后的坐标: {x}x{y}+{width}+{height}")
+        
 
         # 确保区域不为空
-        if width <= 0 or height <= 0:
-            logger.warning(f"错误：图标 {icon_name} 的坐标或尺寸无效: x={x}, y={y}, width={width}, height={height}")
-            return True
-        bbox = (x, y, x + width, y + height)
+        # if width <= 0 or height <= 0:
+        #     logger.warning(f"错误：图标 {icon_name} 的坐标或尺寸无效: x={x}, y={y}, width={width}, height={height}")
+        #     return True
+        
+        bbox = (cords['x'], cords['y'], cords['width'] + cords['x'], cords['height'] +cords['y'])
+        # bbox = (x, y, width, height)
         screenshot = ImageGrab.grab(bbox=bbox)
 
         # 检查截图是否成功

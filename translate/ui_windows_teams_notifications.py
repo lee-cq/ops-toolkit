@@ -143,6 +143,8 @@ class TeamsNotificationsListenerWindow:
 
     def show_settings(self):
         """显示设置窗口"""
+        self.window.attributes("-topmost", False)  # 窗口置顶
+        # self.app.settings_window.window.protocol("WM_DELETE_WINDOW", lambda: self.window.attributes("-topmost", True))
         return self.app.root.after(100, self.app.settings_window.show)
 
     def update_screenshots(self):
