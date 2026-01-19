@@ -5,7 +5,7 @@
 @Author     : LeeCQ
 @Date-Time  : 2025/9/19 22:05
 """
-
+import re
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from pathlib import Path
@@ -33,6 +33,14 @@ class SettingsWindow:
         self.api_tree = None
         self.api_types = ["baidu", "aliyun", "tencent"]
 
+        # 团队设置控件
+        self.teams_frame = None
+        self.teams_activity_entry = None
+        self.teams_chat_entry = None
+        self.teams_tray_entry = None
+        self.teams_team_entry = None
+        self.teams_interval_entry = None
+
         # 飞书设置控件
         self.feishu_frame = None
         self.feishu_app_id_entry = None
@@ -55,7 +63,7 @@ class SettingsWindow:
 
         # 创建标签页控件 (新增)
         self.notebook = ttk.Notebook(self.window)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self.notebook.pack(fill="both", expand=True, padx=10, pady=10)
 
         # ==================== 基本设置标签页 (新增) ====================
         basic_frame = ttk.Frame(self.notebook, padding=10)
@@ -99,18 +107,20 @@ class SettingsWindow:
         self.data_dir_entry = ttk.Entry(path_frame)
         self.data_dir_entry.grid(row=1, column=1, sticky=tk.EW, pady=(10, 5))
         self.data_dir_entry.insert(0, str(self.app.config.data_dir))
-        ttk.Button(path_frame, text="浏览...", command=lambda: self.browse_path(self.data_dir_entry)).grid(row=1,
-                                                                                                           column=2,
-                                                                                                           padx=5)
+        ttk.Button(path_frame,
+                   text="浏览...",
+                   command=lambda: self.browse_path(self.data_dir_entry)
+                   ).grid(row=1, column=2, padx=5)
 
         # 翻译历史路径 (新增)
         ttk.Label(path_frame, text="翻译历史路径:").grid(row=2, column=0, sticky=tk.W, pady=(10, 5))
         self.history_path_entry = ttk.Entry(path_frame)
         self.history_path_entry.grid(row=2, column=1, sticky=tk.EW, pady=(10, 5))
         self.history_path_entry.insert(0, str(self.app.config.translation_history_path))
-        ttk.Button(path_frame, text="浏览...",
-                   command=lambda: self.browse_path(self.history_path_entry, is_file=True)).grid(row=2, column=2,
-                                                                                                 padx=5)
+        ttk.Button(path_frame,
+                   text="浏览...",
+                   command=lambda: self.browse_path(self.history_path_entry, is_file=True)
+                   ).grid(row=2, column=2, padx=5)
 
         # 日志文件路径 (新增)
         ttk.Label(path_frame, text="日志文件路径:").grid(row=3, column=0, sticky=tk.W, pady=(10, 5))
@@ -126,7 +136,7 @@ class SettingsWindow:
 
         # 添加API按钮 (新增)
         add_button = ttk.Button(api_frame, text="添加API", command=self.add_api)
-        add_button.pack(side=tk.TOP, anchor=tk.NW, pady=(0, 10))
+        add_button.pack(side="top", anchor="nw", pady=(0, 10))
 
         # API列表 (新增)
         columns = ("type", "user", "passkey", "text", "image")
@@ -144,18 +154,68 @@ class SettingsWindow:
         self.api_tree.column("image", width=80)
 
         # 添加滚动条 (新增)
-        api_scrollbar = ttk.Scrollbar(api_frame, orient=tk.VERTICAL, command=self.api_tree.yview)
+        api_scrollbar = ttk.Scrollbar(api_frame, orient="vertical", command=self.api_tree.yview)
         self.api_tree.configure(yscrollcommand=api_scrollbar.set)
 
         # 放置树状图和滚动条 (新增)
-        self.api_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        api_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.api_tree.pack(side="left", fill="both", expand=True)
+        api_scrollbar.pack(side="right", fill="y")
 
         # 绑定双击事件 (新增)
         self.api_tree.bind("<Double-1>", self.edit_api)
 
         # 加载API数据 (新增)
         self.load_api_data()
+
+        # ==================== Teams 监控标签页 (新增) ====================
+        self.teams_frame = ttk.Frame(self.notebook, padding=10)
+        self.notebook.add(self.teams_frame, text="Teams监控")
+        self.teams_frame.columnconfigure(1, weight=1, minsize=300)
+
+        ttk.Label(self.teams_frame, text="活动图标位置").grid(row=0, column=0, sticky=tk.W, pady=(10, 5))
+        self.teams_activity_entry = ttk.Entry(self.teams_frame)
+        self.teams_activity_entry.grid(row=0, column=1, sticky=tk.EW, pady=(10, 5))
+        self.teams_activity_entry.insert(0, self.app.config.teams.activity)
+        tk.Button(self.teams_frame, text="选择活动图标区域",
+                  command=lambda: self.open_screen_selector('teams_activity_entry'),
+                  bg="#9E9E9E", fg="white", font=("Arial", 10)).grid(row=0, column=2, padx=5)
+
+        ttk.Label(self.teams_frame, text="消息图标位置").grid(row=1, column=0, sticky=tk.W, pady=(10, 5))
+        self.teams_chat_entry = ttk.Entry(self.teams_frame)
+        self.teams_chat_entry.grid(row=1, column=1, sticky=tk.EW, pady=(10, 5))
+        self.teams_chat_entry.insert(0, self.app.config.teams.chat)
+        tk.Button(self.teams_frame, text="选择消息图标区域",
+                  command=lambda: self.open_screen_selector('teams_chat_entry'),
+                  bg="#9E9E9E", fg="white", font=("Arial", 10)).grid(row=1, column=2, padx=5)
+
+        ttk.Label(self.teams_frame, text="团队图标位置").grid(row=2, column=0, sticky=tk.W, pady=(10, 5))
+        self.teams_team_entry = ttk.Entry(self.teams_frame)
+        self.teams_team_entry.grid(row=2, column=1, sticky=tk.EW, pady=(10, 5))
+        self.teams_team_entry.insert(0, self.app.config.teams.team)
+        tk.Button(self.teams_frame, text="选择团队图标区域",
+                  command=lambda: self.open_screen_selector('teams_team_entry'),
+                  bg="#9E9E9E", fg="white", font=("Arial", 10)).grid(row=2, column=2, padx=5)
+
+        ttk.Label(self.teams_frame, text="托盘图标位置").grid(row=3, column=0, sticky=tk.W, pady=(10, 5))
+        self.teams_tray_entry = ttk.Entry(self.teams_frame)
+        self.teams_tray_entry.grid(row=3, column=1, sticky=tk.EW, pady=(10, 5))
+        self.teams_tray_entry.insert(0, self.app.config.teams.tray)
+        tk.Button(self.teams_frame, text="选择托盘图标区域",
+                  command=lambda: self.open_screen_selector('teams_tray_entry'),
+                  bg="#9E9E9E", fg="white", font=("Arial", 10)).grid(row=3, column=2, padx=5)
+
+        ttk.Label(self.teams_frame, text="检查间隔（秒）").grid(row=4, column=0, sticky=tk.W, pady=(10, 5))
+        self.teams_interval_entry = ttk.Entry(self.teams_frame)
+        self.teams_interval_entry.grid(row=4, column=1, sticky=tk.EW, pady=(10, 5))
+        self.teams_interval_entry.insert(0, str(self.app.config.teams.interval))
+
+        # 格式说明：
+        # 格式："x,y+width+height"
+        # 示例："100,200+300+400" 表示从 (100,200) 开始，宽度为 300，高度为 400
+        ttk.Label(self.teams_frame,
+                  text="格式：XxY+width+height\n示例：\"100x200+300+400\" 表示从 (100,200) 开始，宽度为 300，高度为 400",
+                  ).grid(
+            row=5, column=0, columnspan=self.teams_frame.grid_size()[0], sticky='ew')
 
         # ==================== 飞书设置标签页 (新增) ====================
         feishu_frame = ttk.Frame(self.notebook, padding=10)
@@ -192,10 +252,10 @@ class SettingsWindow:
 
         # 按钮区域
         button_frame = ttk.Frame(self.window)
-        button_frame.pack(fill=tk.X, pady=10)
+        button_frame.pack(fill="x", pady=10)
 
         save_button = ttk.Button(button_frame, text="保存设置", command=self.save_settings)
-        save_button.pack(side=tk.RIGHT, padx=5)
+        save_button.pack(side="right", padx=5)
 
     def browse_path(self, entry_widget, is_file=False):
         """浏览文件或文件夹路径 (新增)"""
@@ -312,10 +372,10 @@ class SettingsWindow:
             dialog.destroy()
 
         save_btn = ttk.Button(button_frame, text="保存", command=save_api)
-        save_btn.pack(side=tk.RIGHT, padx=5)
+        save_btn.pack(side="right", padx=5)
 
         cancel_btn = ttk.Button(button_frame, text="取消", command=dialog.destroy)
-        cancel_btn.pack(side=tk.RIGHT, padx=5)
+        cancel_btn.pack(side="right", padx=5)
 
         dialog.columnconfigure(1, weight=1)
         dialog.wait_window()
@@ -373,9 +433,164 @@ class SettingsWindow:
             self.app.config.feishu.app_token = feishu_app_token
             self.app.config.feishu.table_id = feishu_table_id
 
+        if self.teams_frame and self.teams_frame.winfo_viewable():
+            # 获取Teams设置 (新增)
+            teams_interval = self.teams_interval_entry.get().strip()
+
+            teams_tray = self.teams_tray_entry.get().strip()
+            teams_activity = self.teams_activity_entry.get().strip()
+            teams_team = self.teams_team_entry.get().strip()
+            teams_message = self.teams_chat_entry.get().strip()
+
+            _re = re.compile(r"^\d+x\d+\+\d+\+\d+$")
+            for ck in [teams_activity, teams_team, teams_message, teams_tray]:
+                if not _re.match(ck):
+                    messagebox.showerror("错误", f"请填写正确的设置：{ck}")
+                    return
+            try:
+                teams_interval = int(teams_interval)
+            except ValueError:
+                messagebox.showerror("错误", "Teams监控间隔必须是整数")
+                return
+            self.app.config.teams.activity = teams_activity
+            self.app.config.teams.team = teams_team
+            self.app.config.teams.chat = teams_message
+            self.app.config.teams.tray = teams_tray
+            self.app.config.teams.interval = teams_interval
+
         # 保存配置并更新快捷键
         self.app.config.save()
         self.app.hotkey_listener.update_hotkey(new_hotkey)
 
-        messagebox.showinfo("成功", "设置已保存到")
+        messagebox.showinfo("成功", "设置已保存到" + str(self.app.config.config_path))
         self.window.destroy()
+
+    def open_screen_selector(self, event_type):
+        """打开屏幕选择器"""
+
+        def callback(position):
+            self.__getattribute__(event_type).insert(0, position)
+
+        ScreenSelector(callback=callback)
+
+
+class ScreenSelector:
+    def __init__(self, callback):
+        self.callback = callback
+
+        # 获取屏幕尺寸
+        self.screen_width, self.screen_height = self.get_screen_size()
+
+        self.start_x = None
+        self.start_y = None
+        self.rect_id = None
+        self.coords_label = None
+        self.position = ""
+
+        # 创建全屏透明窗口
+        self.root = tk.Toplevel()
+        self.root.attributes('-fullscreen', True)
+        self.root.attributes('-topmost', True)
+        self.root.attributes('-alpha', 0.3)
+        self.root.configure(bg='gray')
+
+        # 创建画布
+        self.canvas = tk.Canvas(self.root, highlightthickness=0, cursor="cross")
+        self.canvas.pack(fill="both", expand=True)
+        # 绑定事件
+        self.canvas.bind("<ButtonPress-1>", self.on_start)
+        self.canvas.bind("<B1-Motion>", self.on_drag)
+        self.canvas.bind("<ButtonRelease-1>", self.on_release)
+        self.canvas.bind("<Button-3>", self.cancel_selection)  # 添加右键点击事件
+        self.root.bind("<Key>", self.key_press)  # 添加键盘事件处理
+        self.root.bind("<Escape>", lambda e: self.close())  # ESC键取消
+        self.root.focus_set()  # 确保窗口能接收键盘事件
+
+        # 添加提示文本
+        self.canvas.create_text(
+            self.screen_width // 2,
+            50,
+            text="拖动鼠标选择监控区域",
+            fill="white",
+            font=("Arial", 20, "bold"),
+            tags="instruction"
+        )
+        # 添加实时坐标显示
+        self.coords_label = self.canvas.create_text(
+            100, 30,
+            text="",
+            fill="yellow",
+            font=("Arial", 14, "bold"),
+            anchor="nw"
+        )
+        # 禁用窗口管理器的关闭按钮
+        self.root.protocol("WM_DELETE_WINDOW", lambda: None)
+
+    @staticmethod
+    def get_screen_size():
+        """获取屏幕尺寸"""
+        root = tk.Tk()
+        root.withdraw()
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+        root.destroy()
+        return screen_width, screen_height
+
+    def on_start(self, event):
+        # 记录起始点
+        self.start_x = self.canvas.canvasx(event.x)
+        self.start_y = self.canvas.canvasy(event.y)
+
+        # 清除之前的矩形
+        if self.rect_id:
+            self.canvas.delete(self.rect_id)
+
+        # 创建新矩形 - 使用更明显的颜色和样式
+        self.rect_id = self.canvas.create_rectangle(
+            self.start_x, self.start_y, self.start_x, self.start_y,
+            outline='red', width=3, dash=(10, 5), fill='', stipple='gray50'
+        )
+
+    def on_drag(self, event):
+        # 更新矩形位置
+        cur_x = self.canvas.canvasx(event.x)
+        cur_y = self.canvas.canvasy(event.y)
+        self.canvas.coords(self.rect_id, self.start_x, self.start_y, cur_x, cur_y)
+
+        width = abs(cur_x - self.start_x)
+        height = abs(cur_y - self.start_y)
+
+        # 更新实时坐标显示
+        self.canvas.itemconfig(self.coords_label,
+                               text=f"当前选择: (x,y:{self.start_x},{self.start_y}) - (w,h:{width},{height})")
+        # self.position = f"{self.start_x}x{self.start_y}+{width}+{height}"
+
+    def on_release(self, event):
+        # 确认选择
+        if not self.rect_id:
+            return
+
+        x1, y1, x2, y2 = self.canvas.coords(self.rect_id)
+        # 确保坐标顺序正确
+        x = min(x1, x2)
+        y = min(y1, y2)
+        width = max(abs(x2 - x1), 10)
+        height = max(abs(y2 - y1), 10)
+
+        self.callback(f"{int(x)}x{int(y)}+{int(width)}+{int(height)}")
+        self.close()
+
+    def key_press(self, event):
+        """处理键盘事件"""
+        if event.keysym.lower() == 'escape':
+            self.cancel_selection(event)
+
+    def cancel_selection(self, event):
+        """取消选择操作"""
+        self.close()
+
+    def get_position(self):
+        return self.position
+
+    def close(self):
+        self.root.destroy()

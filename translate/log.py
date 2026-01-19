@@ -26,7 +26,7 @@ def init_logger():
             # 'disable_existing_loggers': False,
             'formatters': {
                 'translate_formatter': {
-                    'format':  '%(asctime)s - %(filename)s - [%(levelname)s] - %(message)s',  # 包含时间、logname、等级、msg
+                    'format':  '%(asctime)s - [%(process)d: %(thread)d] %(filename)s - [%(levelname)s] - %(message)s',  # 包含时间、logname、等级、msg
                     'datefmt': '%Y-%m-%d %H:%M:%S'  # 时间格式
                 },
                 'row_request':         {

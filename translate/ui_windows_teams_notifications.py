@@ -6,6 +6,7 @@
 @Date-Time  : 2026/1/19 02:07
 """
 import logging
+import queue
 import threading
 from datetime import datetime
 from tkinter import messagebox
@@ -78,6 +79,8 @@ Teams通知监控器 v1.0
 作者：Johncao@gtjas.com.hk
 """
 
+logger = logging.getLogger("translate.ui.teams_notifications_listener_window")
+
 
 class TeamsNotificationsListenerWindow:
 
@@ -99,7 +102,12 @@ class TeamsNotificationsListenerWindow:
 
     def start(self):
         """开始监控"""
+        logger.info("start monitor")
+        if self.monitor:
+            self.monitor.stop()
         self.monitor = NotificationMonitor(self.app)
+        logger.debug(f"monitor status: {self.monitor.status_notify}")
+
         self.monitor.start()
         # 更新状态标签：绿底白字，居中显示
         self.status_label.config(
@@ -114,13 +122,14 @@ class TeamsNotificationsListenerWindow:
 
     def stop(self):
         """关闭监控"""
+        logger.info("stop monitor")
         if self.monitor:
             self.monitor.stop()
             self.monitor = None
-        # 更新状态标签：红底白字，居中显示
+        # 更新状态标签：深灰色底白字，居中显示
         self.status_label.config(
             text="已停止",
-            bg="#dc3545",  # 红色背景
+            bg="#7D7D7E",  # 深灰色
             fg="white"  # 白色文字
         )
         # 模拟添加日志
@@ -141,6 +150,7 @@ class TeamsNotificationsListenerWindow:
 
         def _update(screenshots: list[Screenshot]):
             # 清空原有截图
+            logger.info(f"update screenshots, {len(screenshots)} screenshots")
             for frame in self.screenshot_frames:
                 for widget in frame.winfo_children():
                     widget.destroy()
@@ -150,6 +160,8 @@ class TeamsNotificationsListenerWindow:
                 # 截图时间标签
                 time_label = tk.Label(self.screenshot_frames[i], text=scr.datetime, font=("Arial", 8))
                 time_label.pack(pady=2)
+                name_label = tk.Label(self.screenshot_frames[i], text=scr.name, font=("Arial", 8))
+                name_label.pack(pady=2)
 
                 # 模拟截图（20x20的彩色方块，实际使用时替换为PhotoImage）
                 # 创建一个随机颜色的画布模拟截图
@@ -159,10 +171,20 @@ class TeamsNotificationsListenerWindow:
                 self.screenshot_frames[i].image = tk_image
 
         def _update_screenshots():
+            logger.info("截图更新线程screenshots在线程中开始 ...")
             while self.monitor:
-                _update(self.monitor.queue_screenshots.get())
-            # self.window.after(1000, _update_screenshots)
+                try:
+                    _update(self.monitor.queue_screenshots.get(timeout=2))
+                except (tk.TclError, queue.Empty):
+                    pass
+                if self.monitor:
+                    if self.monitor.status_notify:
+                        self.status_label.config(text="告警中", bg="#FF4500", fg="white")
+                    else:
+                        self.status_label.config(text="监控中", bg="#28a745", fg="white")
+            logger.info("截图更新线程screenshots已结束 ...")
 
+        logger.info("start update screenshots thread")
         threading.Thread(target=_update_screenshots, daemon=True).start()
 
     def show(self):
@@ -200,7 +222,7 @@ class TeamsNotificationsListenerWindow:
         self.status_label = tk.Label(
             main_container,
             text="已停止",
-            bg="#dc3545",  # 默认红色背景（未监控）
+            bg="#7D7D7E",  # 默认红色背景（未监控）
             fg="white",
             font=("Arial", 12, "bold"),
             height=2  # 增加高度，做成横幅效果

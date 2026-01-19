@@ -13,6 +13,7 @@ import threading
 import time
 import psutil
 import logging
+import re
 
 import cv2
 import numpy as np
@@ -33,16 +34,30 @@ class NotificationMonitor:
     def __init__(self, app):
         self.app = app
         self.status_running = False
+        self.status_notify = False
         self.counter_error = 0
         self.temp_screenshot = []
-        self.queue_screenshots = queue.Queue(maxsize=5)
+        self.queue_screenshots = queue.Queue(maxsize=2)
 
         # 默认的Teams图标坐标（需要根据实际情况校准）
         self.teams_icons = {
-            'activity': {'x': 100, 'y': 50, 'width': 30, 'height': 30},  # 活动图标
-            'teams':    {'x': 150, 'y': 50, 'width': 30, 'height': 30},  # 团队图标
-            'chat':     {'x': 200, 'y': 50, 'width': 30, 'height': 30},  # 聊天图标
-            'tray':     {'x': 1422, 'y': 1039, 'width': 30, 'height': 30}  # 托盘图标
+            'activity': self.icon_size_parse(self.app.config.teams.activity),  # 活动图标
+            'teams':    self.icon_size_parse(self.app.config.teams.team),  # 团队图标
+            'chat':     self.icon_size_parse(self.app.config.teams.chat),  # 聊天图标
+            'tray':     self.icon_size_parse(self.app.config.teams.tray)  # 托盘图标
+        }
+
+    def icon_size_parse(self, icon_size: str) -> dict:
+        """解析图标尺寸字符串"""
+        match = re.compile(r"^(\d+)x(\d+)\+(\d+)\+(\d+)$").match(icon_size)
+        if not match:
+            logger.error(f"错误：图标尺寸格式错误 {icon_size}")
+            return {}
+        return {
+            'x':      int(match.group(1)),
+            'y':      int(match.group(2)),
+            'width':  int(match.group(3)),
+            'height': int(match.group(4)),
         }
 
     @staticmethod
@@ -104,7 +119,7 @@ class NotificationMonitor:
             return True
 
         # 创建红色掩码（红色在HSV中有两个范围）
-        mask1 = cv2.inRange(hsv, np.array([0, 100, 100]), np.array([10, 255, 255]))
+        mask1 = cv2.inRange(hsv, np.array([0, 128, 100]), np.array([10, 255, 255]))
         mask2 = cv2.inRange(hsv, np.array([170, 100, 100]), np.array([180, 255, 255]))
         mask = cv2.bitwise_or(mask1, mask2)
 
@@ -115,9 +130,10 @@ class NotificationMonitor:
         return red_pixels > 10
 
     def notify(self, message: str):
+        self.status_notify = True
         last_notify_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        logger.info(f"notify: {message}")
         while self.status_running:
-
             _ts = toast(
                 title=f"Teams 告警",
                 body=f"{last_notify_time}: {message}",
@@ -127,28 +143,33 @@ class NotificationMonitor:
                 tag="HourlyReminder"
             )
             if isinstance(_ts, dict) or "USER_CANCELED" in str(_ts):
+                self.status_notify = False
+                logger.info("用户取消了通知")
                 break
 
     def check(self):
         if not self.is_teams_running():
             self.notify("Teams 未运行")
 
-        if any(self.check_teams_icon_have_red(ic) for ic in self.teams_icons):
-            self.notify("Teams 图标有红色")
+        _st = [self.check_teams_icon_have_red(ic) for ic in self.teams_icons]
         if self.queue_screenshots.full():
             self.queue_screenshots.get()
         self.queue_screenshots.put(self.temp_screenshot)
+        logger.debug("向队列中添加了截图")
         self.temp_screenshot = []
+        if any(_st):
+            self.notify("Teams 图标有红色")
 
     def start(self):
         def run():
+            logger.info("监控已经在线程中启动")
             while True:
                 if not self.status_running:
                     logger.info("监控已经停止")
                     self.stop()
                     break
                 self.check()
-                time.sleep(5)
+                time.sleep(self.app.config.teams.interval)
 
         self.status_running = True
         threading.Thread(target=run, daemon=True).start()
