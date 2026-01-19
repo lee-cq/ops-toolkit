@@ -9,7 +9,7 @@ import logging
 import json
 from datetime import datetime
 
-from translate.app_history import HistoryManager
+from ops_toolkit.translate.history import HistoryManager
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +29,9 @@ def import_history_from_json(json_file_path: str, history_manager: HistoryManage
 
 if __name__ == '__main__':
     import logging
-    from translate.config import config as _c
+    from ops_toolkit.config import config as _c
 
     logging.basicConfig(level=logging.DEBUG)
 
     history_manager = HistoryManager(_c)
-    import_history_from_json('.translate/translation_history.json', history_manager)
+    import_history_from_json('.ops_toolkit/translation_history.json', history_manager)

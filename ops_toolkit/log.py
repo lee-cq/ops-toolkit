@@ -1,8 +1,8 @@
 import logging
 import logging.config
 
-from translate import DEBUGGER
-from translate.config import config
+from ops_toolkit import DEBUGGER
+from ops_toolkit.config import config
 
 
 class DebugInfoFilter(logging.Filter):
@@ -78,22 +78,22 @@ def init_logger():
             },
             "filters":    {},
             'loggers':    {
-                'translate':                 {  # 指定translate日志器
+                'ops_toolkit':                 {  # 指定translate日志器
                     'handlers':  ['console_handler', 'file_handler', "file_debug_handler"],
                     'level':     'DEBUG',
                     'propagate': True  # 不向上传播日志
                 },
-                'translate.row_request':     {
+                'ops_toolkit.row_request':     {
                     'handlers':  ['row_request_handler', 'console_handler'],
                     'level':     'DEBUG',
                     'propagate': False
                 },
-                'translate.keepalive':       {
+                'ops_toolkit.keepalive':       {
                     'handlers':  ['keepalive_handler'],
                     'level':     'DEBUG',
                     'propagate': True,
                 },
-                'translate.hourly_reminder': {
+                'ops_toolkit.hourly_reminder': {
                     'handlers':  ['hourly_reminder_handler'],
                     'level':     'DEBUG',
                     'propagate': True,

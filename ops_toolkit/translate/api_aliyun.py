@@ -1,4 +1,4 @@
-from translate.api_abs import TranslateApiAbs
+from ops_toolkit.translate.api_abs import TranslateApiAbs
 
 
 class TranslateApiAliyun(TranslateApiAbs):
@@ -10,8 +10,12 @@ class TranslateApiAliyun(TranslateApiAbs):
     def translate_image(self, image: bytes, target_lang: str, from_lang: str) -> str:
         pass
 
-    def translate_document(self, document: bytes, target_lang: str,
-                           from_lang: str) -> str:
+    def translate_document(
+            self,
+            document: bytes,
+            target_lang: str,
+            from_lang: str
+    ) -> str:
         pass
 
     def usage(self) -> str:

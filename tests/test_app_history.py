@@ -10,15 +10,12 @@ from pathlib import Path
 import pytest
 import os
 import tempfile
-from datetime import datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from sqlalchemy.exc import SQLAlchemyError
 
 # Import the module to test
-from translate.app_history import (
+from ops_toolkit.translate.history import (
     HistoryManager,
-    TranslationRecord,
-    Base,
     logger
 )
 

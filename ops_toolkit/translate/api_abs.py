@@ -5,10 +5,10 @@ import typing
 from pydantic import BaseModel
 
 if typing.TYPE_CHECKING:
-    from translate.config import TranslateApiModel
+    from ops_toolkit.config import TranslateApiModel
     from requests import Response
 
-row_request_logger = logging.getLogger("translate.row_request")
+row_request_logger = logging.getLogger("ops_toolkit.row_request")
 
 
 class TextResp(BaseModel):
@@ -69,11 +69,12 @@ class TranslateApiAbs(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def translate_document(self,
-                           document: bytes,
-                           target_lang: str,
-                           from_lang: str
-                           ) -> DocumentResp:
+    def translate_document(
+            self,
+            document: bytes,
+            target_lang: str,
+            from_lang: str
+    ) -> DocumentResp:
         raise NotImplementedError
 
     @abc.abstractmethod

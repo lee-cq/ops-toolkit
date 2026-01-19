@@ -13,7 +13,7 @@ from threading import Timer
 
 from win11toast import notify
 
-logger = logging.getLogger("translate.hourly_reminder")
+logger = logging.getLogger("ops_toolkit.hourly_reminder")
 
 
 class HourlyReminder(object):

@@ -11,7 +11,7 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 import logging
 
-logger = logging.getLogger("translate.ui.window_log")
+logger = logging.getLogger("ops_toolkit.ui.window_log")
 
 
 class LogWindow:

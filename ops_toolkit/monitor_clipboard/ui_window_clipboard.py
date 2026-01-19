@@ -20,7 +20,7 @@ from tkinter import ttk
 import pyperclip
 from PIL import Image
 
-logger = logging.getLogger("translate.ui_window_clipboard")
+logger = logging.getLogger("ops_toolkit.ui_window_clipboard")
 
 
 class ClipboardWindow:
@@ -249,7 +249,7 @@ class ClipboardWindow:
 
 
 if __name__ == "__main__":
-    from translate.config import config
+    from ops_toolkit.config import config
 
     root = tk.Tk()
     _app = ClipboardWindow(root)

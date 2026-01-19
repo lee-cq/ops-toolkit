@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@File Name  : app_analyzer.py
+@File Name  : analyzer.py
 @Author     : LeeCQ
 @Date-Time  : 2025/9/19 22:21
 """
@@ -12,7 +12,7 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
-logger = getLogger("translate.app.analyzer")
+logger = getLogger("ops_toolkit.app.analyzer")
 
 # 确保nltk资源可用
 try:

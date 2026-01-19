@@ -5,7 +5,7 @@
 @Author     : LeeCQ
 @Date-Time  : 2025/9/19 21:37
 """
-from translate.tools import auto_lang
+from ops_toolkit.tools import auto_lang
 
 
 def test_auto_lang():

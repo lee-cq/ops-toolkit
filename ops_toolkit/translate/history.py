@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@File Name  : app_history.py
+@File Name  : history.py
 @Author     : LeeCQ
 @Date-Time  : 2025/9/19 22:18
 """
@@ -14,7 +14,7 @@ from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.exc import SQLAlchemyError
 
-logger = getLogger("translate.app.history")
+logger = getLogger("ops_toolkit.app.history")
 
 Base = declarative_base()
 
@@ -193,7 +193,7 @@ class HistoryManager:
 
 if __name__ == '__main__':
     import logging
-    from translate.config import config as _c
+    from ops_toolkit.config import config as _c
 
     logging.basicConfig(level=logging.DEBUG)
 

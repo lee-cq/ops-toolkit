@@ -3,8 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "translate"
-#version = {attr = "translate.VERSION"}
+name = "ops-toolkit"
 description = "翻译工具包"
 readme = "README.md"
 requires-python = ">=3.13"

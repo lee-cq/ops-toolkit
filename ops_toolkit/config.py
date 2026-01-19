@@ -14,9 +14,9 @@ from typing import Any
 from pydantic import BaseModel
 from pydantic import field_serializer
 
-from translate.api_abs import TranslateApiAbs
+from ops_toolkit.translate.api_abs import TranslateApiAbs
 
-logger = getLogger("translate.config")
+logger = getLogger("ops_toolkit.config")
 
 
 class TranslateApiModel(BaseModel):
@@ -35,13 +35,13 @@ class TranslateApiModel(BaseModel):
 
     def api_factory(self) -> TranslateApiAbs:
         if self.api_type == "baidu":
-            from translate.api_baidu import TranslateApiBaidu
+            from ops_toolkit.translate.api_baidu import TranslateApiBaidu
             return TranslateApiBaidu(self.auth, self)
         elif self.api_type == "aliyun":
-            from translate.api_aliyun import TranslateApiAliyun
+            from ops_toolkit.translate.api_aliyun import TranslateApiAliyun
             return TranslateApiAliyun(self.auth, self)
         elif self.api_type == "tencent":
-            from translate.api_tencent import TranslateApiTencent
+            from ops_toolkit.translate.api_tencent import TranslateApiTencent
             return TranslateApiTencent(self.auth, self)
         raise NotImplementedError
 
@@ -57,7 +57,7 @@ class TeamsModel(BaseModel):
 class Config(BaseModel):
     apis: list[TranslateApiModel] = []
     teams: TeamsModel | None = TeamsModel()
-    app_name: str = "translate"
+    app_name: str = "ops_toolkit"
     startup: bool = False
     hotkey: str = '<ctrl>+<alt>+d'
 
@@ -149,20 +149,20 @@ def find_config_path() -> Path:
 
     # 2. 检查用户主目录
     home_dir = Path.home()
-    for filename in [".config/translate/config.toml", ".config/translate/config.json"]:
+    for filename in [".config/ops_toolkit/config.toml", ".config/ops_toolkit/config.json"]:
         config_path = home_dir / filename
         if config_path.exists():
             return config_path
 
     # 3. 检查当前目录下的 translate_config 文件
     current_dir = Path.cwd()
-    for filename in ["translate/config.toml", "translate/config.json", "_lo_config.toml", "_lo_config.json"]:
+    for filename in ["ops_toolkit/config.toml", "ops_toolkit/config.json", "_lo_config.toml", "_lo_config.json"]:
         config_path = current_dir / filename
         if config_path.exists():
             return config_path
 
     # 5. 在当前目录下创建默认配置文件 (使用toml格式)
-    default_config = home_dir / ".config/translate/config.toml"
+    default_config = home_dir / ".config/ops_toolkit/config.toml"
     default_config.parent.mkdir(parents=True, exist_ok=True)
     default_config.touch()
     return default_config.absolute()

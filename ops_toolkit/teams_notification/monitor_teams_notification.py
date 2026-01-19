@@ -20,7 +20,7 @@ import numpy as np
 from PIL import ImageGrab, Image
 from win11toast import toast
 
-logger = logging.getLogger("translate.monitor_teams_notification")
+logger = logging.getLogger("ops_toolkit.monitor_teams_notification")
 
 
 class Screenshot:

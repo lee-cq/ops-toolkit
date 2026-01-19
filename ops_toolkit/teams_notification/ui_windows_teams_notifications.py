@@ -16,8 +16,8 @@ from tkinter import ttk
 
 from PIL import ImageTk
 
-from translate import DEBUGGER
-from translate.other_tools.monitor_teams_notification import NotificationMonitor, Screenshot
+from ops_toolkit import DEBUGGER
+from ops_toolkit.teams_notification.monitor_teams_notification import NotificationMonitor, Screenshot
 
 help_message = """
 1. 配置坐标
@@ -80,7 +80,7 @@ Teams通知监控器 v1.0
 作者：Johncao@gtjas.com.hk
 """
 
-logger = logging.getLogger("translate.ui.teams_notifications_listener_window")
+logger = logging.getLogger("ops_toolkit.ui.teams_notifications_listener_window")
 
 
 class GUIHandler(logging.Handler):
@@ -112,9 +112,9 @@ class TeamsNotificationsListenerWindow:
         self.gui_handler.setLevel(logging.DEBUG if DEBUGGER else logging.INFO)
         self.gui_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
         self.gui_logger = {
-            "translate.ui.teams_notifications_listener_window",
-            "translate.monitor_teams_notification",
-            "translate.keepalive"
+            "ops_toolkit.ui.teams_notifications_listener_window",
+            "ops_toolkit.monitor_teams_notification",
+            "ops_toolkit.keepalive"
         }
         for _ln in self.gui_logger:
             logging.getLogger(_ln).addHandler(self.gui_handler)

@@ -28,13 +28,13 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 from PIL import BmpImagePlugin
 
-from translate.tools import get_clipboard_content
-from translate.ui_window_sls_split import SlsSplitWindow
+from ops_toolkit.tools import get_clipboard_content
+from ops_toolkit.aliyun_sls.ui_window_sls_split import SlsSplitWindow
 
 if typing.TYPE_CHECKING:
-    from translate.app import TranslationApp
+    from ops_toolkit.app import TranslationApp
 
-logger = logging.getLogger("translate.other_tools.monitor_clipboard")
+logger = logging.getLogger("ops_toolkit.hourly_reminder.monitor_clipboard")
 
 Base = declarative_base()
 

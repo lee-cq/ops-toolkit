@@ -2,7 +2,7 @@ import os
 
 os.environ["TRANSLATE_CONFIG_PATH"] = "_lo_config.toml"
 
-from translate.config import config
+from ops_toolkit.config import config
 
 def test_api():
     for api in config.apis:

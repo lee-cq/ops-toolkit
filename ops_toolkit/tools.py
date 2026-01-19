@@ -5,7 +5,7 @@ import re
 import tempfile
 from pathlib import Path
 
-from translate.zhconv import convert
+from ops_toolkit.zhconv import convert
 from typing import Union
 
 import PIL.BmpImagePlugin
@@ -108,7 +108,7 @@ class StartLock:
         import atexit
         import logging
 
-        self.logger = logging.getLogger("translate.lock")
+        self.logger = logging.getLogger("ops_toolkit.lock")
         try:
             self.fd = self.lock_file.open('w')
             msvcrt.locking(self.fd.fileno(), msvcrt.LK_NBLCK, 1)

@@ -5,12 +5,10 @@
 @Author     : LeeCQ
 @Date-Time  : 2025/9/20 13:26
 """
-import threading
-import time
 import tkinter
 import unittest
 
-from translate.ui_window_translate import TranslationWindow
+from ops_toolkit.translate.ui_window_translate import TranslationWindow
 
 
 class TestApp:

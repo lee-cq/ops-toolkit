@@ -17,9 +17,9 @@ from pathlib import Path
 from tkinter import ttk
 from tkinter import messagebox
 
-from translate.other_tools.aliyun_sls_split import LogSplit
+from ops_toolkit.aliyun_sls.aliyun_sls_split import LogSplit
 
-logger = logging.getLogger("translate.ui.window_sls_split")
+logger = logging.getLogger("ops_toolkit.ui.window_sls_split")
 default_workdir = Path(os.environ.get("USERPROFILE")).joinpath("Downloads", "aliyun_sls_download")
 
 

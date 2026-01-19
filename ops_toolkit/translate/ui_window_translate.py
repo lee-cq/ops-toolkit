@@ -16,7 +16,7 @@ from tkinter import messagebox
 import pyperclip
 from win11toast import notify
 
-logger = logging.getLogger("translate.ui.overlay")
+logger = logging.getLogger("ops_toolkit.ui.overlay")
 
 font_dir = Path(__file__).parent.joinpath("resources")
 

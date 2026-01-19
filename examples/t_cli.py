@@ -10,7 +10,7 @@ import os
 os.environ["TRANSLATE_CONFIG_PATH"] = "_lo_config.toml"
 
 
-from translate.app import TranslationApp
+from ops_toolkit.app import TranslationApp
 
 app = TranslationApp()
 app.run()

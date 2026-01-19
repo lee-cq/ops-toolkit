@@ -14,7 +14,7 @@ import time
 from pynput import keyboard, mouse
 from pynput.keyboard import Controller
 
-logger = logging.getLogger("translate.keepalive")
+logger = logging.getLogger("ops_toolkit.keepalive")
 
 
 def beautiful_second(second) -> str:

@@ -5,9 +5,9 @@ from urllib.parse import urlencode
 from logging import getLogger
 import requests
 
-from translate.api_abs import TranslateApiAbs, TextResp
+from ops_toolkit.translate.api_abs import TranslateApiAbs, TextResp
 
-logger = getLogger("translate.api.baidu")
+logger = getLogger("ops_toolkit.api.baidu")
 
 
 class TranslateApiBaidu(TranslateApiAbs):
@@ -20,8 +20,12 @@ class TranslateApiBaidu(TranslateApiAbs):
     def translate_image(self, image: bytes, target_lang: str, from_lang: str) -> str:
         pass
 
-    def translate_document(self, document: bytes, target_lang: str,
-                           from_lang: str) -> str:
+    def translate_document(
+            self,
+            document: bytes,
+            target_lang: str,
+            from_lang: str
+    ) -> str:
         pass
 
     def usage(self) -> str:

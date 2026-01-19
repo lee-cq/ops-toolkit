@@ -8,9 +8,11 @@ from logging import getLogger
 
 import requests
 
-from translate.api_abs import TranslateApiAbs, TextResp
+from ops_toolkit.translate.api_abs import DocumentResp
+from ops_toolkit.translate.api_abs import ImgResp
+from ops_toolkit.translate.api_abs import TranslateApiAbs, TextResp
 
-logger = getLogger("translate.api.tencent")
+logger = getLogger("ops_toolkit.api.tencent")
 
 
 def tencent_request(
@@ -80,7 +82,7 @@ def tencent_request(
     signature = hmac.new(
         secret_signing, string_to_sign.encode("utf-8"), hashlib.sha256
     ).hexdigest()
-    logger.debug(f">>> signature: \n{signature}\n" )
+    logger.debug(f">>> signature: \n{signature}\n")
     headers["Authorization"] = (
         f"{algorithm} "
         f"Credential={secret_id}/{credential_scope}, "
@@ -122,9 +124,9 @@ class TranslateApiTencent(TranslateApiAbs):
             region="ap-guangzhou",
             body={
                 "SourceText": text,
-                "Source": from_lang or "auto",
-                "Target": to_lang,
-                "ProjectId": 0,
+                "Source":     from_lang or "auto",
+                "Target":     to_lang,
+                "ProjectId":  0,
                 # "UntranslatedText": "",
                 # "TermRepoIDList": [
                 #     None
@@ -151,11 +153,15 @@ class TranslateApiTencent(TranslateApiAbs):
             dst=resp.get("Response").get("TargetText"),
         )
 
-    def translate_image(self, image: bytes, target_lang: str, from_lang: str) -> str:
+    def translate_image(self, image: bytes, target_lang: str, from_lang: str) -> ImgResp:
         pass
 
-    def translate_document(self, document: bytes, target_lang: str,
-                           from_lang: str) -> str:
+    def translate_document(
+            self,
+            document: bytes,
+            target_lang: str,
+            from_lang: str
+    ) -> DocumentResp:
         pass
 
     def usage(self) -> str:

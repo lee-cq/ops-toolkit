@@ -13,9 +13,9 @@ from pathlib import Path
 import pystray
 from PIL import Image
 
-from translate.ui_window_sls_split import SlsSplitWindow
+from ops_toolkit.aliyun_sls.ui_window_sls_split import SlsSplitWindow
 
-logger = logging.getLogger("translate.app_tray")
+logger = logging.getLogger("ops_toolkit.app_tray")
 
 
 class SystemTray:

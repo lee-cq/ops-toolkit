@@ -8,7 +8,7 @@
 from pynput import keyboard
 from logging import getLogger
 
-logger = getLogger("translate.app.hotkey")
+logger = getLogger("ops_toolkit.app.hotkey")
 
 
 class HotkeyListener:

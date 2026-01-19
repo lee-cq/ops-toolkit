@@ -11,26 +11,26 @@ from PIL import Image
 from PIL import ImageTk
 from win11toast import notify
 
-from translate import VERSION
-from translate.app_history import HistoryManager
-from translate.app_hotkey import HotkeyListener
-from translate.app_tray import SystemTray
-from translate.config import config
-from translate.other_tools.hourly_reminder import HourlyReminder
-from translate.other_tools.monitor_clipboard import MonitorClipboard
-from translate.tools import trans_lang
-from translate.ui_window_history import HistoryWindow
-from translate.ui_window_log import LogWindow
-from translate.ui_window_settings import SettingsWindow
-from translate.ui_window_translate import TranslationWindow
-from translate.ui_window_clipboard import ClipboardWindow
-from translate.ui_windows_teams_notifications import TeamsNotificationsListenerWindow
-from translate.other_tools.keepalive import Keepalive
+from ops_toolkit import VERSION
+from ops_toolkit.translate.history import HistoryManager
+from ops_toolkit.app_hotkey import HotkeyListener
+from ops_toolkit.app_tray import SystemTray
+from ops_toolkit.config import config
+from ops_toolkit.hourly_reminder.hourly_reminder import HourlyReminder
+from ops_toolkit.monitor_clipboard.monitor_clipboard import MonitorClipboard
+from ops_toolkit.tools import trans_lang
+from ops_toolkit.translate.ui_window_history import HistoryWindow
+from ops_toolkit.ui_window_log import LogWindow
+from ops_toolkit.ui_window_settings import SettingsWindow
+from ops_toolkit.translate.ui_window_translate import TranslationWindow
+from ops_toolkit.monitor_clipboard.ui_window_clipboard import ClipboardWindow
+from ops_toolkit.teams_notification.ui_windows_teams_notifications import TeamsNotificationsListenerWindow
+from ops_toolkit.keepalive import Keepalive
 
 if TYPE_CHECKING:
-    from translate.config import Config
+    from ops_toolkit.config import Config
 
-logger = getLogger("translate.app.main")
+logger = getLogger("ops_toolkit.app.main")
 
 
 class TranslationApp:

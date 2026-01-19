@@ -12,10 +12,10 @@ import argparse
 import logging
 import os
 
-from translate.log import init_logger
-from translate.tools import StartLock
+from ops_toolkit.log import init_logger
+from ops_toolkit.tools import StartLock
 
-logger = logging.getLogger("translate.app.main")
+logger = logging.getLogger("ops_toolkit.app.main")
 
 
 def _main():
@@ -25,7 +25,7 @@ def _main():
     parser.add_argument(
         '--config',
         default='',
-        help='指定配置文件路径，默认为 ~/.config/translate/config.toml'
+        help='指定配置文件路径，默认为 ~/.config/ops_toolkit/config.toml'
     )
 
     # 解析命令行参数
@@ -36,7 +36,7 @@ def _main():
         os.environ["TRANSLATE_CONFIG_PATH"] = args.config
 
     # 导入应用类
-    from translate.app import TranslationApp
+    from ops_toolkit.app import TranslationApp
 
     # 创建并运行应用
     app = TranslationApp()
