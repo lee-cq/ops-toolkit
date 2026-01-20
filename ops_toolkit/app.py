@@ -64,7 +64,10 @@ class TranslationApp:
         self.system_tray = SystemTray(self)
         self.notification_monitor_window = TeamsNotificationsListenerWindow(self)
         logger.info(f"{self.config.app_name} started successfully")
-        notify(f"{self.config.app_name} @ {VERSION} started successfully")
+        notify(
+            app_id=self.config.app_name,
+            title=f"{self.config.app_name} @ {VERSION} started successfully"
+        )
 
     def perform_translation(self):
         """执行翻译操作"""
@@ -105,6 +108,10 @@ class TranslationApp:
                 src_lang,
                 dst_lang
             )
+        except IndexError:
+            logger.info("IndexError: 请先在设置中添加API密钥", exc_info=True)
+            messagebox.showinfo("提示", "请先在设置中添加API密钥")
+            return
 
         except Exception as _e:
             logger.error(f"Error during translation: {_e}", exc_info=_e)

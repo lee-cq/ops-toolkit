@@ -50,7 +50,10 @@ def main():
             _main()
     except KeyboardInterrupt:
         from win11toast import notify
-        notify("Translate APP Exited.")
+        notify(
+            app_id="TranslateAPP",
+            title="Translate APP Exited."
+        )
     except Exception as e:
         from tkinter import messagebox
         logger.error(f"Translator Start Error: {e}", exc_info=True)

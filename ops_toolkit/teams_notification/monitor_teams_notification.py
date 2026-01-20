@@ -141,6 +141,7 @@ class NotificationMonitor:
         logger.info(f"notify: {message}")
         while self.status_running:
             _ts = toast(
+                app_id=self.app.config.teams.app_id,
                 title=f"Teams 告警",
                 body=f"{last_notify_time}: {message}",
                 duration="long",

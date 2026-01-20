@@ -31,7 +31,7 @@ class SettingsWindow:
 
         # API设置控件
         self.api_tree = None
-        self.api_types = ["baidu", "aliyun", "tencent"]
+        self.api_types = ["baidu", "aliyun(未实现)", "tencent"]
 
         # 团队设置控件
         self.teams_frame = None

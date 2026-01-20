@@ -2,8 +2,8 @@
 
 ## 安装
 
-1. 从Git源码安装(最新版本)：`pip install git+https://cnb.cool/leecq/translate.git`
-2. 从PyPI安装(稳定版本)：`pip install ops-toolkit --index-url https://pypi.cnb.cool/leecq/pytools/-/packages/simple`
+1. 从Git源码安装(最新版本)：`pip install git+https://cnb.cool/leecq/ops-toolkit.git`
+2. 从制品库安装(稳定版本)：`pip install ops-toolkit --index-url https://pypi.cnb.cool/leecq/pytools/-/packages/simple`
 
 ## 主要功能：
 
@@ -17,14 +17,14 @@
 
 ## 2. 翻译模块
 
-1. 基础翻译API
-2. 全局快捷键绑定：按下快捷键读取剪切板内容，并调用翻译API
-3. 翻译结果对照到浮动窗口：将翻译API返回的结果放入浮动窗口中，焦点置于浮动窗口，允许按下esc关闭，双击窗口将翻译结果复制到剪切板。
-4. 翻译结果记录：将每次翻译的结果都收集到文件中，格式待定
-5. 翻译日志记录：配置logging记录全部日志
-6. 记录、和分析结果导出：允许将翻译结果导出为csv(time, src, dst)
+1. 通过监听快捷键，快速将剪切板的内容通过百度或腾讯的翻译API获取翻译内容；
+2. 翻译结果的中英文对照结果在当前鼠标位置创建浮动窗口并显示翻译结果；
+3. 焦点置于浮动窗口，允许按下esc关闭，双击窗口将翻译结果复制到剪切板；
+4. 翻译结果记录：将每次翻译的结果都收集到文件中作为缓存；
+5. 每次翻译时会检查缓存中是否有该内容的翻译结果，如果有则直接显示，否则调用翻译API获取翻译结果并显示；
+6. 记录、和分析结果导出：允许将翻译结果导出为csv(time, src, dst)。
 
-## 3. Keep Live 保持电脑活跃
+## 3. Keepalive 保持电脑活跃
 
 监听检查周期内是否有键盘或鼠标活动，如果没有将向操作系统发送Ctrl键；
 
@@ -49,6 +49,7 @@
 1. 移除飞书相关代码
 2. 重构项目文件结构
 3. 添加cnb CI配置
+4. 优化通知提示，添加app_id
 
 ### 1.5
 1. 新增teams通知监控

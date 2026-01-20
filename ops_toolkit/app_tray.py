@@ -35,7 +35,6 @@ class SystemTray:
         self.icon = pystray.Icon(
             self.app.config.app_name, image, self.app.config.app_name, pystray.Menu(
                 pystray.MenuItem("翻译记录", self.show_history),
-                pystray.MenuItem("运行日志", self.show_logs),
                 pystray.MenuItem("剪切板记录", self.show_clipboard_history),
                 pystray.MenuItem("Aliyun SLS 日志切割", self.show_log_split),
                 pystray.MenuItem("Teams 通知监控", self.show_notification_monitor),
@@ -66,6 +65,7 @@ class SystemTray:
                                  checked=lambda ic: self.app.monitor_clipboard.auto_sls_split,
                                  ),
                 pystray.Menu.SEPARATOR,  # 分隔线
+                pystray.MenuItem("运行日志", self.show_logs),
                 pystray.MenuItem("设置", self.show_settings),
                 pystray.MenuItem("退出", self.exit_app)
             )
