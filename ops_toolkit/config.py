@@ -107,23 +107,30 @@ class Config(BaseModel):
 
     def set_startup(self):
         """设置开机自启"""
-
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Run",
+            0,
+            winreg.KEY_ALL_ACCESS
+        )
+        start_str = f'"{sys.executable}" -m "{Path(__file__).parent.name}"'
         try:
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0,
-                                 winreg.KEY_SET_VALUE)
+
             if self.startup:
-                if sys.argv[0].endswith(".exe"):
-                    winreg.SetValueEx(key, self.app_name, 0, winreg.REG_SZ, f"{sys.argv[0]}")
-                    logger.info(f"设置开机自启成功[exe]: {self.app_name}: {sys.argv[0]}")
+                if winreg.QueryValueEx(key, self.app_name)[0] != start_str:
+                    winreg.SetValueEx(key, self.app_name, 0, winreg.REG_SZ, start_str)
+                    logger.info(f"设置开机自启成功: {self.app_name} - {start_str}")
                 else:
-                    winreg.SetValueEx(key, self.app_name, 0, winreg.REG_SZ, f"{sys.executable} {sys.argv[0]}")
-                    logger.info(f"设置开机自启成功[py]: {self.app_name}: {sys.executable} {sys.argv[0]}")
+                    logger.debug(f"开机自启已设置: {self.app_name} - {winreg.QueryValueEx(key, self.app_name)[0]}")
             else:
                 winreg.DeleteValue(key, self.app_name)
                 logger.info(f"删除开机自启成功: {self.app_name}")
             winreg.CloseKey(key)
+        except FileNotFoundError:
+            winreg.SetValueEx(key, self.app_name, 0, winreg.REG_SZ, start_str)
+            logger.info(f"设置开机自启成功: {self.app_name} - {start_str}")
         except Exception as e:
-            logger.error(f"设置开机自启失败: {e}")
+            logger.error(f"设置开机自启失败: {e}", exc_info=True)
 
     @property
     def api(self):
