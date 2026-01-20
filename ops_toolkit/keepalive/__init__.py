@@ -8,6 +8,7 @@
 保持电脑处于活跃状态
 监听键盘和鼠标的活跃情况，如果30s无操作，按下Ctrl键
 """
+from ctypes import windll
 import logging
 import threading
 import time
@@ -15,6 +16,10 @@ from pynput import keyboard, mouse
 from pynput.keyboard import Controller
 
 logger = logging.getLogger("ops_toolkit.keepalive")
+
+ES_CONTINUOUS = 0x80000000
+ES_SYSTEM_REQUIRED = 0x00000001
+ES_DISPLAY_REQUIRED = 0x00000002
 
 
 def beautiful_second(second) -> str:
@@ -24,9 +29,21 @@ def beautiful_second(second) -> str:
     return f"{int(h):02d}:{int(m):02d}:{int(s):02d}"
 
 
+def system_keepalive():
+    """保持系统活跃"""
+    # noinspection PyUnresolvedReferences
+    windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED)
+
+
+def system_keepalive_stop():
+    """停止保持系统活跃"""
+    # noinspection PyUnresolvedReferences
+    windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS)
+
+
 class Keepalive:
 
-    def __init__(self, timeout=120, period=30):
+    def __init__(self, timeout=60, period=30):
         self.last_activity_time = time.time()
         self.timeout = timeout
         self.period = period
@@ -39,6 +56,9 @@ class Keepalive:
         # 初始化键盘控制器，用于模拟按键
         self.keyboard_controller = Controller()
 
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
+
     def on_activity(self, *args):
         """更新最后一次活动时间"""
         self.last_activity_time = time.time()
@@ -48,7 +68,7 @@ class Keepalive:
         if time.time() - self.last_activity_time > self.timeout:
             self.keepalive_time += self.timeout
             self.ctrl_press_count += 1
-            logger.info(f"按下 {self.ctrl_press_count} 次Ctrl键，已保持活跃 {beautiful_second(self.keepalive_time)}")
+            logger.debug(f"按下 {self.ctrl_press_count} 次Ctrl键，已保持活跃 {beautiful_second(self.keepalive_time)}")
             # 按下并释放Ctrl键
             with self.keyboard_controller.pressed(keyboard.Key.ctrl):
                 pass
@@ -80,6 +100,7 @@ class Keepalive:
         keyboard_listener.start()
 
         try:
+            system_keepalive()
             # 主循环，定期检查是否超时
             while True:
                 if self.check_exit():
@@ -93,10 +114,12 @@ class Keepalive:
             # 停止监听器
             mouse_listener.stop()
             keyboard_listener.stop()
+            system_keepalive_stop()
 
     def stop(self):
         logger.info("Keepalive will be stopped at next period.")
         self._running = False
+        system_keepalive_stop()
 
     def start(self):
         if self._running:
@@ -120,4 +143,8 @@ def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
     Keepalive().main()
