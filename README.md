@@ -2,8 +2,22 @@
 
 ## 安装
 
+### 1. 环境要求:
+
+`Python 3.13+`
+
+### 2. 安装:
+
 1. 从Git源码安装(最新版本)：`pip install git+https://cnb.cool/leecq/ops-toolkit.git`
 2. 从制品库安装(稳定版本)：`pip install ops-toolkit -i https://pypi.cnb.cool/leecq/pytools/-/packages/simple`
+
+### 3. 使用说明:
+
+1. 安装程序将会创建2个exe，位于Python安装目录的Scripts文件夹下：
+   - `ops-toolkit.exe`：GUI主程序，将会在单独的进程中启动
+   - `ops-toolkit-cli.exe`：带调试日志的GUI程序，会在控制台输出调试日志
+2. 翻译功能需要添加百度翻译API密钥，并开通“大模型文本翻译API” [官网](https://fanyi-api.baidu.com/)
+
 
 ## 主要功能：
 
@@ -51,6 +65,7 @@
 3. 添加cnb CI配置
 4. 优化通知提示，添加app_id
 5. 优化坐标选择器，先截图在创建窗口，避免在创建窗口后内容变更，保证获得的坐标准确
+6. 优化坐标选择器，选择完成后先清空原来的内容
 
 ### 1.5
 1. 新增teams通知监控

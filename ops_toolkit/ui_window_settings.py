@@ -12,7 +12,6 @@ from tkinter import ttk, messagebox, filedialog
 from pathlib import Path
 
 from PIL import ImageGrab, ImageTk
-from sqlalchemy.dialects.mssql import IMAGE
 
 from ops_toolkit.config import TranslateApiModel
 
@@ -422,6 +421,7 @@ class SettingsWindow:
         """打开屏幕选择器"""
 
         def callback(position):
+            self.__getattribute__(event_type).delete(0, tk.END)
             self.__getattribute__(event_type).insert(0, position)
 
         ScreenSelector(callback=callback)
@@ -447,9 +447,6 @@ class ScreenSelector:
         self.root.attributes('-topmost', True)
         self.root.attributes('-alpha', 1)
         self.root.configure(bg='gray')
-        # background_label = tk.Label(self.root, image=img)
-        # background_label.place(relwidth=1, relheight=1)
-        # background_label.image = img
 
         # 创建画布
         self.canvas = tk.Canvas(self.root, highlightthickness=3, cursor="cross")
@@ -560,10 +557,10 @@ class ScreenSelector:
 if __name__ == '__main__':
     def _callback(x):
         print(x)
-        app.destroy()
+        _app.destroy()
 
 
-    app = tk.Tk()
-    app.withdraw()
+    _app = tk.Tk()
+    _app.withdraw()
     ScreenSelector(_callback)
-    app.mainloop()
+    _app.mainloop()
