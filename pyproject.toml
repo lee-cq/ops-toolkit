@@ -49,10 +49,10 @@ dev = [
 
 
 [project.gui-scripts]
-ops_toolkit = "ops_toolkit.__main__:main"
+ops-toolkit = "ops_toolkit.__main__:main"
 
 [project.scripts]
-ops-toolkit-cli = "ops-toolkit.__main__:main"
+ops-toolkit-cli = "ops_toolkit.__main__:main"
 
 [tool.uv.build-backend]
 source-include = [
