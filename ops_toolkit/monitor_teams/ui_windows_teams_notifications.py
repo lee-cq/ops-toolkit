@@ -17,7 +17,7 @@ from tkinter import ttk
 from PIL import ImageTk
 
 from ops_toolkit import DEBUGGER
-from ops_toolkit.teams_notification.monitor_teams_notification import NotificationMonitor, Screenshot
+from ops_toolkit.monitor_teams.monitor_teams_notification import NotificationMonitor, Screenshot
 
 help_message = """
 1. 配置坐标

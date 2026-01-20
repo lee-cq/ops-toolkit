@@ -3,7 +3,7 @@
 ## 安装
 
 1. 从Git源码安装(最新版本)：`pip install git+https://cnb.cool/leecq/ops-toolkit.git`
-2. 从制品库安装(稳定版本)：`pip install ops-toolkit --index-url https://pypi.cnb.cool/leecq/pytools/-/packages/simple`
+2. 从制品库安装(稳定版本)：`pip install ops-toolkit -i https://pypi.cnb.cool/leecq/pytools/-/packages/simple`
 
 ## 主要功能：
 
@@ -50,6 +50,7 @@
 2. 重构项目文件结构
 3. 添加cnb CI配置
 4. 优化通知提示，添加app_id
+5. 优化坐标选择器，先截图在创建窗口，避免在创建窗口后内容变更，保证获得的坐标准确
 
 ### 1.5
 1. 新增teams通知监控

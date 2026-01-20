@@ -6,9 +6,14 @@
 @Date-Time  : 2025/9/19 22:05
 """
 import re
+import time
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from pathlib import Path
+
+from PIL import ImageGrab, ImageTk
+from sqlalchemy.dialects.mssql import IMAGE
+
 from ops_toolkit.config import TranslateApiModel
 
 
@@ -425,7 +430,8 @@ class SettingsWindow:
 class ScreenSelector:
     def __init__(self, callback):
         self.callback = callback
-
+        self.img = ImageTk.PhotoImage(ImageGrab.grab())
+        time.sleep(0.5)
         # 获取屏幕尺寸
         self.screen_width, self.screen_height = self.get_screen_size()
 
@@ -439,11 +445,15 @@ class ScreenSelector:
         self.root = tk.Toplevel()
         self.root.attributes('-fullscreen', True)
         self.root.attributes('-topmost', True)
-        self.root.attributes('-alpha', 0.3)
+        self.root.attributes('-alpha', 1)
         self.root.configure(bg='gray')
+        # background_label = tk.Label(self.root, image=img)
+        # background_label.place(relwidth=1, relheight=1)
+        # background_label.image = img
 
         # 创建画布
-        self.canvas = tk.Canvas(self.root, highlightthickness=0, cursor="cross")
+        self.canvas = tk.Canvas(self.root, highlightthickness=3, cursor="cross")
+        self.canvas.create_image(self.screen_width // 2, self.screen_height // 2, image=self.img)
         self.canvas.pack(fill="both", expand=True)
         # 绑定事件
         self.canvas.bind("<ButtonPress-1>", self.on_start)
@@ -453,6 +463,7 @@ class ScreenSelector:
         self.root.bind("<Key>", self.key_press)  # 添加键盘事件处理
         self.root.bind("<Escape>", lambda e: self.close())  # ESC键取消
         self.root.focus_set()  # 确保窗口能接收键盘事件
+        print("创建画布")
 
         # 添加提示文本
         self.canvas.create_text(
@@ -544,3 +555,15 @@ class ScreenSelector:
 
     def close(self):
         self.root.destroy()
+
+
+if __name__ == '__main__':
+    def _callback(x):
+        print(x)
+        app.destroy()
+
+
+    app = tk.Tk()
+    app.withdraw()
+    ScreenSelector(_callback)
+    app.mainloop()

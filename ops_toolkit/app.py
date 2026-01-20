@@ -24,7 +24,7 @@ from ops_toolkit.ui_window_log import LogWindow
 from ops_toolkit.ui_window_settings import SettingsWindow
 from ops_toolkit.translate.ui_window_translate import TranslationWindow
 from ops_toolkit.monitor_clipboard.ui_window_clipboard import ClipboardWindow
-from ops_toolkit.teams_notification.ui_windows_teams_notifications import TeamsNotificationsListenerWindow
+from ops_toolkit.monitor_teams.ui_windows_teams_notifications import TeamsNotificationsListenerWindow
 from ops_toolkit.keepalive import Keepalive
 
 if TYPE_CHECKING:
