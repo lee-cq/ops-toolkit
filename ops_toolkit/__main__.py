@@ -14,6 +14,7 @@ import os
 
 from ops_toolkit.log import init_logger
 from ops_toolkit.tools import StartLock
+from ops_toolkit.config import config
 
 logger = logging.getLogger("ops_toolkit.app.main")
 
@@ -33,13 +34,13 @@ def _main():
 
     # 设置环境变量
     if args.config:
-        os.environ["TRANSLATE_CONFIG_PATH"] = args.config
+        os.environ["OPS_TOOLKIT_CONFIG_PATH"] = args.config
 
     # 导入应用类
-    from ops_toolkit.app import TranslationApp
+    from ops_toolkit.app import App
 
     # 创建并运行应用
-    app = TranslationApp()
+    app = App()
     app.run()
 
 
@@ -51,13 +52,13 @@ def main():
     except KeyboardInterrupt:
         from win11toast import notify
         notify(
-            app_id="TranslateAPP",
-            title="Translate APP Exited."
+            app_id=config.app_name,
+            title=f"{config.app_name} APP Exited."
         )
     except Exception as e:
         from tkinter import messagebox
-        logger.error(f"Translator Start Error: {e}", exc_info=True)
-        messagebox.showerror("Translator Start Error", f"{e}")
+        logger.error(f"{config.app_name} Start Error: {e}", exc_info=True)
+        messagebox.showerror(f"{config.app_name} Start Error", f"{e}")
 
 
 if __name__ == '__main__':

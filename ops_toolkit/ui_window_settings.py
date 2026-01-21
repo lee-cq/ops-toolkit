@@ -14,6 +14,7 @@ from pathlib import Path
 from PIL import ImageGrab, ImageTk
 
 from ops_toolkit.config import TranslateApiModel
+from ops_toolkit.update_version import check_update
 
 
 class SettingsWindow:
@@ -26,6 +27,7 @@ class SettingsWindow:
         self.app_name_entry = None
         self.hotkey_entry = None
         self.startup_var = None
+        self.registry_entry = None
 
         # 路径设置控件
         self.config_path_entry = None
@@ -67,15 +69,15 @@ class SettingsWindow:
         # 绑定关闭事件
         self.window.protocol("WM_DELETE_WINDOW", on_close)
 
-        # 创建标签页控件 (新增)
+        # 创建标签页控件 
         self.notebook = ttk.Notebook(self.window)
         self.notebook.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # ==================== 基本设置标签页 (新增) ====================
+        # ==================== 基本设置标签页  ====================
         basic_frame = ttk.Frame(self.notebook, padding=10)
         self.notebook.add(basic_frame, text="基本设置")
 
-        # 应用名称设置 (新增)
+        # 应用名称设置 
         ttk.Label(basic_frame, text="应用名称:").grid(row=0, column=0, sticky=tk.W, pady=(10, 5))
         self.app_name_entry = ttk.Entry(basic_frame)
         self.app_name_entry.grid(row=0, column=1, sticky=tk.EW, pady=(10, 5))
@@ -90,17 +92,34 @@ class SettingsWindow:
         ttk.Label(basic_frame, text="提示: 格式如 '<ctrl>+<alt>+t'", foreground="gray"). \
             grid(row=2, column=1, sticky=tk.W)
 
-        # 开机自启 (新增)
+        # 开机自启 
         ttk.Label(basic_frame, text="开机自启:").grid(row=3, column=0, sticky=tk.W, pady=(10, 5))
         self.startup_var = tk.BooleanVar(value=self.app.config.startup)
         ttk.Checkbutton(basic_frame, variable=self.startup_var).grid(row=3, column=1, sticky=tk.W, pady=(10, 5))
 
-        # ==================== 路径设置标签页 (新增) ====================
+        # 注册表路径 
+        ttk.Label(basic_frame, text="注册表路径:").grid(row=4, column=0, sticky=tk.W, pady=(10, 5))
+        self.registry_entry = ttk.Entry(basic_frame)
+        self.registry_entry.grid(row=4, column=1, sticky=tk.EW, pady=(10, 5))
+        self.registry_entry.insert(0, self.app.config.registry)
+        ttk.Label(basic_frame,
+                  text=f"提示: 格式如 {self.app.config.registry}",
+                  foreground="gray") \
+            .grid(row=5, column=1, sticky=tk.W)
+
+        # TODO 按钮，创建桌面快捷方式
+        # ttk.Button(basic_frame, text="创建桌面快捷方式", command=self.create_shortcut) \
+        #     .grid(row=6, column=1, sticky=tk.EW, pady=(10, 5))
+        # 按钮，检查更新 
+        ttk.Button(basic_frame, text="检查更新", command=check_update) \
+            .grid(row=7, column=1, sticky=tk.EW, pady=(10, 5))
+
+        # ==================== 路径设置标签页  ====================
         path_frame = ttk.Frame(self.notebook, padding=10)
         self.notebook.add(path_frame, text="路径设置")
         path_frame.columnconfigure(1, weight=1)
 
-        # 配置文件路径 (新增)
+        # 配置文件路径 
         ttk.Label(path_frame, text="配置文件路径:").grid(row=0, column=0, sticky=tk.W, pady=(10, 5))
         self.config_path_entry = ttk.Entry(path_frame)
         self.config_path_entry.grid(row=0, column=1, sticky=tk.EW, pady=(10, 5))
@@ -108,7 +127,7 @@ class SettingsWindow:
         ttk.Button(path_frame, text="浏览...",
                    command=lambda: self.browse_path(self.config_path_entry, is_file=True)).grid(row=0, column=2, padx=5)
 
-        # 数据目录 (新增)
+        # 数据目录 
         ttk.Label(path_frame, text="数据目录:").grid(row=1, column=0, sticky=tk.W, pady=(10, 5))
         self.data_dir_entry = ttk.Entry(path_frame)
         self.data_dir_entry.grid(row=1, column=1, sticky=tk.EW, pady=(10, 5))
@@ -118,7 +137,7 @@ class SettingsWindow:
                    command=lambda: self.browse_path(self.data_dir_entry)
                    ).grid(row=1, column=2, padx=5)
 
-        # 翻译历史路径 (新增)
+        # 翻译历史路径 
         ttk.Label(path_frame, text="翻译历史路径:").grid(row=2, column=0, sticky=tk.W, pady=(10, 5))
         self.history_path_entry = ttk.Entry(path_frame)
         self.history_path_entry.grid(row=2, column=1, sticky=tk.EW, pady=(10, 5))
@@ -128,7 +147,7 @@ class SettingsWindow:
                    command=lambda: self.browse_path(self.history_path_entry, is_file=True)
                    ).grid(row=2, column=2, padx=5)
 
-        # 日志文件路径 (新增)
+        # 日志文件路径 
         ttk.Label(path_frame, text="日志文件路径:").grid(row=3, column=0, sticky=tk.W, pady=(10, 5))
         self.log_path_entry = ttk.Entry(path_frame)
         self.log_path_entry.grid(row=3, column=1, sticky=tk.EW, pady=(10, 5))
@@ -136,15 +155,15 @@ class SettingsWindow:
         ttk.Button(path_frame, text="浏览...",
                    command=lambda: self.browse_path(self.log_path_entry, is_file=True)).grid(row=3, column=2, padx=5)
 
-        # ==================== API设置标签页 (新增) ====================
+        # ==================== API设置标签页  ====================
         api_frame = ttk.Frame(self.notebook, padding=10)
         self.notebook.add(api_frame, text="API设置")
 
-        # 添加API按钮 (新增)
+        # 添加API按钮 
         add_button = ttk.Button(api_frame, text="添加API", command=self.add_api)
         add_button.pack(side="top", anchor="nw", pady=(0, 10))
 
-        # API列表 (新增)
+        # API列表 
         columns = ("type", "user", "passkey", "text", "image")
         self.api_tree = ttk.Treeview(api_frame, columns=columns, show="headings", height=8)
         self.api_tree.heading("type", text="类型")
@@ -159,21 +178,21 @@ class SettingsWindow:
         self.api_tree.column("text", width=80)
         self.api_tree.column("image", width=80)
 
-        # 添加滚动条 (新增)
+        # 添加滚动条 
         api_scrollbar = ttk.Scrollbar(api_frame, orient="vertical", command=self.api_tree.yview)
         self.api_tree.configure(yscrollcommand=api_scrollbar.set)
 
-        # 放置树状图和滚动条 (新增)
+        # 放置树状图和滚动条 
         self.api_tree.pack(side="left", fill="both", expand=True)
         api_scrollbar.pack(side="right", fill="y")
 
-        # 绑定双击事件 (新增)
+        # 绑定双击事件 
         self.api_tree.bind("<Double-1>", self.edit_api)
 
-        # 加载API数据 (新增)
+        # 加载API数据 
         self.load_api_data()
 
-        # ==================== Teams 监控标签页 (新增) ====================
+        # ==================== Teams 监控标签页  ====================
         self.teams_frame = ttk.Frame(self.notebook, padding=10)
         self.notebook.add(self.teams_frame, text="Teams监控")
         self.teams_frame.columnconfigure(1, weight=1, minsize=300)
@@ -232,7 +251,7 @@ class SettingsWindow:
 
     @staticmethod
     def browse_path(entry_widget, is_file=False):
-        """浏览文件或文件夹路径 (新增)"""
+        """浏览文件或文件夹路径 """
         current_path = entry_widget.get()
         if is_file:
             # 浏览文件
@@ -246,7 +265,7 @@ class SettingsWindow:
             entry_widget.insert(0, path)
 
     def load_api_data(self):
-        """加载API数据到列表 (新增)"""
+        """加载API数据到列表 """
         # 清空现有数据
         for item in self.api_tree.get_children():
             self.api_tree.delete(item)
@@ -262,11 +281,11 @@ class SettingsWindow:
             ))
 
     def add_api(self):
-        """添加新API (新增)"""
+        """添加新API """
         self.show_api_dialog()
 
     def edit_api(self, _event):
-        """编辑选中的API (新增)"""
+        """编辑选中的API """
         selected_item = self.api_tree.selection()
         if not selected_item:
             return
@@ -276,7 +295,7 @@ class SettingsWindow:
         self.show_api_dialog(api_index)
 
     def show_api_dialog(self, api_index=None):
-        """显示API编辑对话框 (新增)"""
+        """显示API编辑对话框 """
         dialog = tk.Toplevel(self.window)
         dialog.title("编辑API" if api_index is not None else "添加API")
         dialog.geometry("300x250")
@@ -289,7 +308,7 @@ class SettingsWindow:
         y = self.window.winfo_y() + (self.window.winfo_height() - dialog.winfo_height()) // 2
         dialog.geometry(f"+{x}+{y}")
 
-        # API类型 (新增)
+        # API类型 
         ttk.Label(dialog, text="API类型:").grid(row=0, column=0, sticky=tk.W, pady=(10, 5), padx=10)
         api_type_var = tk.StringVar()
         api_type_combobox = ttk.Combobox(dialog, textvariable=api_type_var, values=self.api_types, state="readonly")
@@ -297,26 +316,26 @@ class SettingsWindow:
         if self.api_types:
             api_type_combobox.current(0)
 
-        # API用户 (新增)
+        # API用户 
         ttk.Label(dialog, text="API Key:").grid(row=1, column=0, sticky=tk.W, pady=(10, 5), padx=10)
         api_user_var = tk.StringVar()
         api_user_entry = ttk.Entry(dialog, textvariable=api_user_var)
         api_user_entry.grid(row=1, column=1, sticky=tk.EW, pady=(10, 5), padx=10)
 
-        # API密钥 (新增)
+        # API密钥 
         ttk.Label(dialog, text="Secret Key:").grid(row=2, column=0, sticky=tk.W, pady=(10, 5), padx=10)
         api_passkey_var = tk.StringVar()
         api_passkey_entry = ttk.Entry(dialog, textvariable=api_passkey_var, show="*")
         api_passkey_entry.grid(row=2, column=1, sticky=tk.EW, pady=(10, 5), padx=10)
 
-        # 如果是编辑模式，加载现有数据 (新增)
+        # 如果是编辑模式，加载现有数据 
         if api_index is not None:
             api = self.app.config.apis[api_index]
             api_type_var.set(api.api_type)
             api_user_var.set(api.auth[0])
             api_passkey_var.set(api.auth[1])
 
-        # 按钮区域 (新增)
+        # 按钮区域 
         button_frame = ttk.Frame(dialog)
         button_frame.grid(row=3, column=0, columnspan=2, pady=10)
 
@@ -361,7 +380,7 @@ class SettingsWindow:
         new_hotkey = self.hotkey_entry.get().strip()
         new_startup = self.startup_var.get()
 
-        # 获取路径设置 (新增)
+        # 获取路径设置 
         new_config_path = Path(self.config_path_entry.get().strip())
         new_data_dir = Path(self.data_dir_entry.get().strip())
         new_history_path = Path(self.history_path_entry.get().strip())
@@ -386,7 +405,7 @@ class SettingsWindow:
         self.app.config.log_path = new_log_path
 
         if self.teams_frame and self.teams_frame.winfo_viewable():
-            # 获取Teams设置 (新增)
+            # 获取Teams设置 
             teams_interval = self.teams_interval_entry.get().strip()
 
             teams_tray = self.teams_tray_entry.get().strip()

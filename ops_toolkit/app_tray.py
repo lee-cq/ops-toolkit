@@ -67,7 +67,7 @@ class SystemTray:
                 pystray.Menu.SEPARATOR,  # 分隔线
                 pystray.MenuItem("运行日志", self.show_logs),
                 pystray.MenuItem("设置", self.show_settings),
-                pystray.MenuItem("退出", self.exit_app)
+                pystray.MenuItem(f"退出 @ {self.app.version}", self.exit_app)
             )
         )
         self.update_thread = threading.Thread(target=self.update_menu, daemon=True)

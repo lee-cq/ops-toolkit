@@ -102,7 +102,7 @@ def trans_lang(text: str) -> tuple[str, str]:
 
 class StartLock:
     def __init__(self, ):
-        self.lock_file = Path(tempfile.gettempdir()).joinpath("py_translate_app.lock")
+        self.lock_file = Path(tempfile.gettempdir()).joinpath("py_ops_toolkit_app.lock")
         import msvcrt
         import sys
         import atexit
@@ -115,9 +115,13 @@ class StartLock:
             self.logger.info(f"Get lock file. fileno: {self.fd.fileno()}")
             atexit.register(self.release)
         except (BlockingIOError, PermissionError):
-            self.logger.error("Another instance of the Translator is already running.")
+            self.logger.error("Another instance of the ops-toolkit is already running.")
             from tkinter import messagebox
-            messagebox.showerror("Translator Start Error", "另一个进程已在运行中。")
+            messagebox.showerror(
+                "ops-toolkit Start Error",
+                "另一个进程已在运行中 ...\n"
+                "1. 检查托盘图标是否被隐藏\n"
+                "2. 通过任务管理器结束该进程")
             sys.exit(1)
 
     def release(self):

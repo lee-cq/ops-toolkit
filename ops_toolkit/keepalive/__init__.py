@@ -78,7 +78,7 @@ class Keepalive:
             self.living_time += self.period
 
     def main(self):
-        logger.info("Keepalive @ LeeCQ, Version 2.2")
+        logger.info("Keepalive @ LeeCQ, Version 3.0")
         logger.info(f"开始监控键盘鼠标活动，{self.timeout}秒无操作将自动按下Ctrl键...")
         self._running = True
 

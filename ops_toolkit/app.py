@@ -1,3 +1,4 @@
+import atexit
 import sys
 import threading
 import tkinter as tk
@@ -26,6 +27,7 @@ from ops_toolkit.translate.ui_window_translate import TranslationWindow
 from ops_toolkit.monitor_clipboard.ui_window_clipboard import ClipboardWindow
 from ops_toolkit.monitor_teams.ui_windows_teams_notifications import TeamsNotificationsListenerWindow
 from ops_toolkit.keepalive import Keepalive
+from ops_toolkit.update_version import check_update
 
 if TYPE_CHECKING:
     from ops_toolkit.config import Config
@@ -33,9 +35,12 @@ if TYPE_CHECKING:
 logger = getLogger("ops_toolkit.app.main")
 
 
-class TranslationApp:
+class App:
     def __init__(self):
 
+        self.version = VERSION
+        self.app_name = config.app_name
+        self.title = f"{config.app_name} @ {VERSION}"
         # 初始化配置
         logger.info(f"APP Start @ {VERSION} ...")
         self.config: "Config" = config
@@ -68,6 +73,10 @@ class TranslationApp:
             app_id=self.config.app_name,
             title=f"{self.config.app_name} @ {VERSION} started successfully"
         )
+        globals()["ops_toolkit_app"] = self
+        # self.check_new_version()
+        check_update(self)
+        atexit.register(check_update, self)
 
     def perform_translation(self):
         """执行翻译操作"""
@@ -117,6 +126,14 @@ class TranslationApp:
             logger.error(f"Error during translation: {_e}", exc_info=_e)
             messagebox.showerror("错误", f"翻译过程中发生错误:\n{str(_e)}")
 
+    # def check_new_version(self):
+    #     """检查是否有新版本"""
+    #     try:
+    #         from ops_toolkit.update_version import check_update
+    #         threading.Thread(target=check_update, args=(self,)).start()
+    #     finally:
+    #         self.root.after(60 * 60 * 1000, self.check_new_version, )
+
     def show_history_window(self):
         """显示历史记录窗口"""
         self.history_window.show()
@@ -155,11 +172,23 @@ class TranslationApp:
         sys.exit(0)
 
 
-# 主程序入口
-if __name__ == "__main__":
-    try:
-        app = TranslationApp()
-        app.run()
-    except Exception as e:
-        logger.critical(f"Application crashed: {e}", exc_info=True)
-        sys.exit(1)
+def quit_app():
+    """退出应用程序"""
+    if globals().get("ops_toolkit_app", None) is not None:
+        globals().get("ops_toolkit_app").quit()
+
+
+def get_app() -> App:
+    """获取应用程序实例"""
+    if globals().get("ops_toolkit_app", None) is None:
+        raise ValueError("App instance not found. Please run the app first.")
+    return globals().get("ops_toolkit_app")
+
+# # 主程序入口
+# if __name__ == "__main__":
+#     try:
+#         app = App()
+#         app.run()
+#     except Exception as e:
+#         logger.critical(f"Application crashed: {e}", exc_info=True)
+#         sys.exit(1)

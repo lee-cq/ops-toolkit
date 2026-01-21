@@ -57,7 +57,7 @@ class TranslateApiAbs(abc.ABC):
             f"-------------- Response ---------------\n"
             f"HTTP/{response.raw.version / 10.0} {response.status_code} {response.reason}\n"
             f"{'\n'.join(f'{k}: {v}' for k, v in response.headers.items())}\n\n"
-            f"{response.json()}"
+            f"{response.json()}\n"
             f"============ Row Request End =============="
         )
 

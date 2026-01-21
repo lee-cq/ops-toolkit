@@ -35,7 +35,7 @@ class HourlyReminder(object):
             return
         try:
             notify(
-                app_id=self.app.config.hourly_reminder.app_id,
+                app_id=self.app.config.app_name,
                 title=f"现在是{datetime.now().hour}点整",
                 body="记得要巡检啊",
                 duration="long",

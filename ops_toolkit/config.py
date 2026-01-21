@@ -60,6 +60,7 @@ class Config(BaseModel):
     app_name: str = "ops_toolkit"
     startup: bool = False
     hotkey: str = '<ctrl>+<alt>+d'
+    registry: str = "https://pypi.cnb.cool/leecq/pytools/-/packages/simple"
 
     config_path: Path
     data_dir: Path = None
