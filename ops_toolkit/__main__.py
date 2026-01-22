@@ -35,7 +35,9 @@ def _main():
     # 设置环境变量
     if args.config:
         os.environ["OPS_TOOLKIT_CONFIG_PATH"] = args.config
+        # BUG 设置环境变量是不生效，因为config在该关键变量被指定前就完成了导入
 
+    logger.info("starting ...")
     # 导入应用类
     from ops_toolkit.app import App
 

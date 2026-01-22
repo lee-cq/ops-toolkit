@@ -114,7 +114,8 @@ class Config(BaseModel):
             0,
             winreg.KEY_ALL_ACCESS
         )
-        start_str = f'"{sys.executable}" -m "{Path(__file__).parent.name}"'
+        pyw = Path(sys.executable).with_name("pythonw.exe")
+        start_str = f'"{pyw}" -m "{Path(__file__).parent.name}"'
         try:
 
             if self.startup:

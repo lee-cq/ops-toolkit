@@ -24,10 +24,11 @@ logger = logging.getLogger("ops_toolkit.monitor_teams_notification")
 
 
 class Screenshot:
-    def __init__(self, datetime: str, name: str, image: Image.Image):
+    def __init__(self, datetime: str, name: str, image: Image.Image, status: bool = False):
         self.datetime = datetime
         self.name = name
         self.image = image
+        self.status = status
 
 
 class NotificationMonitor:
@@ -36,6 +37,7 @@ class NotificationMonitor:
         self.status_running = False
         self.status_notify = False
         self.counter_error = 0
+        self.counter_checker = 0
         self.temp_screenshot = []
         self.queue_screenshots = queue.Queue(maxsize=2)
 
@@ -74,6 +76,33 @@ class NotificationMonitor:
                 pass
         return False
 
+    @staticmethod
+    def is_screen_active() -> bool:
+        """检查屏幕是否被锁定"""
+        try:
+            import ctypes.wintypes
+
+            w_id = getattr(ctypes.windll.user32, "GetForegroundWindow")()
+            if w_id == 0:
+                return True
+
+            w_length = getattr(ctypes.windll.user32, "GetWindowTextLengthW")(w_id) + 1
+            w_title = ctypes.create_unicode_buffer(w_length)
+            getattr(ctypes.windll.user32, "GetWindowTextW")(w_id, w_title, w_length)
+
+            class_name = ctypes.create_unicode_buffer(256)
+            getattr(ctypes.windll.user32, "GetClassNameW")(w_id, class_name, 256)
+
+            logger.debug(f"前置窗口 class_name = {class_name.value}, w_title = {w_title.value}")
+            if w_title.value == "Windows 默认锁屏界面" or class_name.value == "Windows.UI.Core.CoreWindow":
+                return True
+
+            return False
+
+        except Exception as _e:
+            print(f"检查屏幕是否被锁定时出错: {_e}")
+            return False
+
     def check_teams_icon_have_red(self, icon_name) -> bool:
         """检查Teams图标是否有红色，默认认为有红色"""
         cords = self.teams_icons[icon_name]
@@ -103,16 +132,19 @@ class NotificationMonitor:
             logger.warning(f"警告：截取图标 {icon_name} 区域失败，图像为None")
             return True
 
-        self.temp_screenshot.append(Screenshot(
+        _ss = Screenshot(
             datetime=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
             name=icon_name,
             image=screenshot
-        ))
+        )
+
+        self.temp_screenshot.append(_ss)
 
         image = np.array(screenshot)
         # 检查图像是否为空
         if image.size == 0:
             logger.warning(f"警告：截取图标 {icon_name} 区域失败，图像为空（可能屏幕被锁定或黑屏）")
+            _ss.status = True
             return True
 
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -122,6 +154,7 @@ class NotificationMonitor:
             hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         except cv2.error as e:
             logger.warning(f"转换图像色彩空间时出错: {e}")
+            _ss.status = True
             return True
 
         # 创建红色掩码（红色在HSV中有两个范围）
@@ -131,8 +164,7 @@ class NotificationMonitor:
 
         # 计算红色像素数量
         red_pixels = cv2.countNonZero(mask)
-
-        # 如果红色像素超过阈值，则认为检测到通知
+        _ss.status = red_pixels > 10
         return red_pixels > 10
 
     def notify(self, message: str):
@@ -155,14 +187,20 @@ class NotificationMonitor:
                 break
 
     def check(self):
+        self.counter_checker += 1
+        logger.debug(f"check {self.counter_checker=}")
         if not self.is_teams_running():
             self.notify("Teams 未运行")
+            return
+        if self.is_screen_active():
+            self.notify("屏幕已锁定")
+            return
 
         _st = [self.check_teams_icon_have_red(ic) for ic in self.teams_icons]
         if self.queue_screenshots.full():
             self.queue_screenshots.get()
         self.queue_screenshots.put(self.temp_screenshot)
-        logger.debug("向队列中添加了截图")
+        logger.debug(f"向队列中添加了截图, {_st=}")
         self.temp_screenshot = []
         if any(_st):
             self.notify("Teams 图标有红色")
@@ -172,16 +210,27 @@ class NotificationMonitor:
             logger.info("监控已经在线程中启动")
             while True:
                 if not self.status_running:
-                    logger.info("监控已经停止")
                     self.stop()
+                    logger.info(f"监控线程已经停止并退出, {self.status_running=}")
                     break
-                self.check()
+                try:
+                    self.check()
+                    self.counter_error = 0
+                except Exception as _e:
+                    logger.error(f"周期「{self.counter_checker}」检查状态时遇到问题: {_e}")
+                    self.counter_error += 1
+                    self.status_running = True
+                    if self.counter_error >= 5:
+                        self.notify("Teams 监控连续5次遇到问题")
+                        self.stop()
+
                 time.sleep(self.app.config.teams.interval)
 
         self.status_running = True
         threading.Thread(target=run, daemon=True).start()
 
     def stop(self):
+        logger.info("监控线程正在停止")
         self.status_running = False
 
 

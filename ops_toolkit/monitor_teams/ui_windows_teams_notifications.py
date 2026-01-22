@@ -206,10 +206,10 @@ class TeamsNotificationsListenerWindow:
             # 添加新截图
             for i, scr in enumerate(screenshots):
                 # 截图时间标签
-                logger.debug(f"add screenshot {i}, {scr.datetime}, {scr.name}")
+                logger.debug(f"add screenshot {i}, {scr.datetime}, {scr.name}, {scr.status}")
                 time_label = tk.Label(self.screenshot_frames[i], text=scr.datetime, font=("Arial", 8))
                 time_label.pack(pady=2)
-                name_label = tk.Label(self.screenshot_frames[i], text=scr.name, font=("Arial", 8))
+                name_label = tk.Label(self.screenshot_frames[i], text=f"{scr.name}-{scr.status}", font=("Arial", 8))
                 name_label.pack(pady=2)
 
                 # 模拟截图（20x20的彩色方块，实际使用时替换为PhotoImage）
@@ -223,7 +223,7 @@ class TeamsNotificationsListenerWindow:
             logger.info("截图更新线程screenshots在线程中开始 ...")
             while self.monitor:
                 try:
-                    _update(self.monitor.queue_screenshots.get(timeout=2))
+                    _update(self.monitor.queue_screenshots.get(self.app.config.teams.interval+1))
                 except (tk.TclError, queue.Empty):
                     pass
                 if self.monitor:
@@ -231,6 +231,7 @@ class TeamsNotificationsListenerWindow:
                         self.status_label.config(text="告警中", bg="#FF4500", fg="white")
                     else:
                         self.status_label.config(text="监控中", bg="#28a745", fg="white")
+            self.status_label.config(text="已停止", bg="#7D7D7E", fg="white")  # 更新状态标签：深灰色底白字，居中显示
             logger.info("截图更新线程screenshots已结束 ...")
 
         threading.Thread(target=_update_screenshots, daemon=True).start()
@@ -334,5 +335,6 @@ if __name__ == '__main__':
     logging.debug("程序启动")
 
     _app = _APP()
-    _app.root.after(0, TeamsNotificationsListenerWindow(_app).show)
+    # noinspection PyTypeChecker
+    _app.root.after(0, TeamsNotificationsListenerWindow(_app).show, )
     _app.root.mainloop()

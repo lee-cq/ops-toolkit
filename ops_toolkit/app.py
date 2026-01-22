@@ -74,8 +74,7 @@ class App:
             title=f"{self.config.app_name} @ {VERSION} started successfully"
         )
         globals()["ops_toolkit_app"] = self
-        # self.check_new_version()
-        check_update(self)
+        threading.Thread(target=check_update, args=(self,)).start()
         atexit.register(check_update, self)
 
     def perform_translation(self):
@@ -125,14 +124,6 @@ class App:
         except Exception as _e:
             logger.error(f"Error during translation: {_e}", exc_info=_e)
             messagebox.showerror("错误", f"翻译过程中发生错误:\n{str(_e)}")
-
-    # def check_new_version(self):
-    #     """检查是否有新版本"""
-    #     try:
-    #         from ops_toolkit.update_version import check_update
-    #         threading.Thread(target=check_update, args=(self,)).start()
-    #     finally:
-    #         self.root.after(60 * 60 * 1000, self.check_new_version, )
 
     def show_history_window(self):
         """显示历史记录窗口"""

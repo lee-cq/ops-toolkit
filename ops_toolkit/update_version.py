@@ -52,7 +52,7 @@ class UpdateVersion:
 
     def __init__(self, app: "App" = None):
         self.app = app
-
+        logger.info("checking new version ...")
         self.update_script = Path(config.data_dir).joinpath("update_version.bat")
         self.skip_version_file = config.data_dir.joinpath("SKIP_VERSION")
 
@@ -138,6 +138,8 @@ class UpdateVersion:
             self.write_update_script()
             logger.info(f"已生成更新脚本: {self.update_script}")
             subprocess.run(["cmd", "/c", "start", "", str(self.update_script)], check=True)
+            if self.app is not None:
+                self.app.quit()
             sys.exit(0)
         elif ret is False:
             logger.info(f"用户选择跳过升级: {self.new_version_str}")
