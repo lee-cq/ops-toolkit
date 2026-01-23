@@ -5,6 +5,7 @@
 @Author     : LeeCQ
 @Date-Time  : 2025/9/19 22:05
 """
+import logging
 import re
 import time
 import tkinter as tk
@@ -15,6 +16,8 @@ from PIL import ImageGrab, ImageTk
 
 from ops_toolkit.config import TranslateApiModel
 from ops_toolkit.update_version import check_update
+
+logger = logging.getLogger("ops_toolkit.ui_window_settings")
 
 
 class SettingsWindow:
@@ -449,15 +452,14 @@ class SettingsWindow:
 class ScreenSelector:
     def __init__(self, callback):
         self.callback = callback
-        self.img = ImageTk.PhotoImage(ImageGrab.grab())
+        _grab = ImageGrab.grab()
         time.sleep(0.5)
-        # 获取屏幕尺寸
-        self.screen_width, self.screen_height = self.get_screen_size()
 
         self.start_x = None
         self.start_y = None
         self.rect_id = None
         self.coords_label = None
+        self.motion_label = None
         self.position = ""
 
         # 创建全屏透明窗口
@@ -466,6 +468,12 @@ class ScreenSelector:
         self.root.attributes('-topmost', True)
         self.root.attributes('-alpha', 1)
         self.root.configure(bg='gray')
+        self.screen_width = self.root.winfo_screenwidth()
+        self.screen_height = self.root.winfo_screenheight()
+        logger.debug(f"屏幕大小：{self.screen_width}x{self.screen_height}， 截图大小：{_grab.width}x{_grab.height}")
+        _grab = _grab.resize((self.screen_width, self.screen_height))
+        logger.debug(f"缩放后的大小：{_grab.width}x{_grab.height}")
+        self.img = ImageTk.PhotoImage(_grab)
 
         # 创建画布
         self.canvas = tk.Canvas(self.root, highlightthickness=3, cursor="cross")
@@ -473,13 +481,13 @@ class ScreenSelector:
         self.canvas.pack(fill="both", expand=True)
         # 绑定事件
         self.canvas.bind("<ButtonPress-1>", self.on_start)
+        self.canvas.bind('<Motion>', self.on_motion)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
         self.canvas.bind("<Button-3>", self.cancel_selection)  # 添加右键点击事件
         self.root.bind("<Key>", self.key_press)  # 添加键盘事件处理
         self.root.bind("<Escape>", lambda e: self.close())  # ESC键取消
         self.root.focus_set()  # 确保窗口能接收键盘事件
-        print("创建画布")
 
         # 添加提示文本
         self.canvas.create_text(
@@ -490,26 +498,27 @@ class ScreenSelector:
             font=("Arial", 20, "bold"),
             tags="instruction"
         )
+        # 添加实时鼠标位置显示
+        self.motion_label = self.canvas.create_text(
+            100, 30,
+            text="",
+            fill="red",
+            font=("Arial", 12, "bold"),
+            anchor="nw"
+        )
         # 添加实时坐标显示
         self.coords_label = self.canvas.create_text(
-            100, 30,
+            100, 60,
             text="",
             fill="red",
             font=("Arial", 14, "bold"),
             anchor="nw"
         )
+
+
+
         # 禁用窗口管理器的关闭按钮
         self.root.protocol("WM_DELETE_WINDOW", lambda: None)
-
-    @staticmethod
-    def get_screen_size():
-        """获取屏幕尺寸"""
-        root = tk.Tk()
-        root.withdraw()
-        screen_width = root.winfo_screenwidth()
-        screen_height = root.winfo_screenheight()
-        root.destroy()
-        return screen_width, screen_height
 
     def on_start(self, event):
         # 记录起始点
@@ -526,6 +535,15 @@ class ScreenSelector:
             outline='red', width=3, dash=(10, 5), fill='', stipple='gray50'
         )
 
+    def on_motion(self, event):
+        # 更新实时坐标显示
+        cur_x = self.canvas.canvasx(event.x)
+        cur_y = self.canvas.canvasy(event.y)
+        self.canvas.itemconfig(
+            self.motion_label,
+            text=f"当前位置: ({cur_x},{cur_y})"
+        )
+
     def on_drag(self, event):
         # 更新矩形位置
         cur_x = self.canvas.canvasx(event.x)
@@ -540,7 +558,6 @@ class ScreenSelector:
             self.coords_label,
             text=f"当前选择: (x,y:{self.start_x},{self.start_y}) - (w,h:{width},{height})"
         )
-        # self.position = f"{self.start_x}x{self.start_y}+{width}+{height}"
 
     def on_release(self, _event):
         # 确认选择

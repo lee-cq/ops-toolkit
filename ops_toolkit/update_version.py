@@ -133,8 +133,6 @@ class UpdateVersion:
 
         if ret:
             logger.info("用户选择升级")
-            if self.app is not None:
-                self.app.quit()
             self.write_update_script()
             logger.info(f"已生成更新脚本: {self.update_script}")
             subprocess.run(["cmd", "/c", "start", "", str(self.update_script)], check=True)

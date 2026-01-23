@@ -74,6 +74,11 @@ class App:
             title=f"{self.config.app_name} @ {VERSION} started successfully"
         )
         globals()["ops_toolkit_app"] = self
+        if Path(__file__).parent.parent.joinpath("scripts", "gui_auto.py").exists():
+            sys.path.insert(0, str(Path(__file__).parent.parent.joinpath("scripts")))
+            # noinspection PyUnresolvedReferences
+            from gui_auto import gui_auto
+            gui_auto(self)
         threading.Thread(target=check_update, args=(self,)).start()
         atexit.register(check_update, self)
 
