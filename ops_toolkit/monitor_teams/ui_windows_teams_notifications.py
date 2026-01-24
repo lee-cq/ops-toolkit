@@ -8,6 +8,7 @@
 import logging
 import queue
 import threading
+import time
 from datetime import datetime
 from tkinter import messagebox
 import tkinter as tk
@@ -103,6 +104,7 @@ class TeamsNotificationsListenerWindow:
         self.status_label = None
         self.logs_label = None
         self.logs_text = None
+        self.debug_button = None
         self.screenshot_frames = []  # 存储截图展示的框架
 
         self.queue_logs = queue.Queue(maxsize=10)
@@ -153,6 +155,8 @@ class TeamsNotificationsListenerWindow:
         logger.info("初始化监控线程 ...")
         if self.monitor:
             self.monitor.stop()
+            del self.monitor
+
         self.monitor = NotificationMonitor(self.app)
         logger.debug(f"monitor status: {self.monitor.status_notify}")
 
@@ -161,8 +165,17 @@ class TeamsNotificationsListenerWindow:
         messagebox.showinfo("提示", "1.确保音量已经调整到合适的大小\n2.确保Teams应用窗口始终可见")
         self.window.attributes("-topmost", True)
         self.monitor.start()
+        for _ in range(3):
+            if self.monitor.status_running:
+                break
+            time.sleep(1)
+        else:
+            logger.error("监控线程启动失败")
+            self.monitor.stop()
+            del self.monitor
+            return
 
-        self.status_label.config(text="监控中", bg="#28a745", fg="white")  # 更新状态标签：绿底白字，居中显示
+        self.set_status_label("监控中")
         self.update_screenshots()  # 更新截图线程
         logger.info(f"监控已启动")
 
@@ -173,7 +186,7 @@ class TeamsNotificationsListenerWindow:
             self.monitor.stop()
             self.monitor = None
 
-        self.status_label.config(text="已停止", bg="#7D7D7E", fg="white")  # 更新状态标签：深灰色底白字，居中显示
+        self.set_status_label("已停止")
         self.window.attributes("-topmost", False)
         messagebox.showinfo("提示", "监控已停止，窗口即将关闭")
         self.window.destroy()
@@ -192,6 +205,18 @@ class TeamsNotificationsListenerWindow:
         self.window.attributes("-topmost", False)  # 窗口取消置顶
         return self.app.root.after(100, self.app.settings_window.show, callback)
 
+    def set_status_label(self, status: str = ""):
+        """设置状态标签"""
+        try:
+            if status == "监控中":
+                self.status_label.config(text=status, bg="#28a745", fg="white")  # 更新状态标签：绿底白字，居中显示
+            elif status == "告警中":
+                self.status_label.config(text=status, bg="#FF4500", fg="white")  # 更新状态标签：橙底白字，居中显示
+            else:
+                self.status_label.config(text=status, bg="#7D7D7E", fg="white")  # 更新状态标签：深灰色底白字，居中显示
+        except tk.TclError:
+            logger.debug(f"set status label {status} failed")
+
     def update_screenshots(self):
         """更新截图展示区（模拟）"""
 
@@ -205,15 +230,12 @@ class TeamsNotificationsListenerWindow:
 
             # 添加新截图
             for i, scr in enumerate(screenshots):
-                # 截图时间标签
                 logger.debug(f"add screenshot {i}, {scr.datetime}, {scr.name}, {scr.status}")
                 time_label = tk.Label(self.screenshot_frames[i], text=scr.datetime, font=("Arial", 8))
                 time_label.pack(pady=2)
                 name_label = tk.Label(self.screenshot_frames[i], text=f"{scr.name}-{scr.status}", font=("Arial", 8))
                 name_label.pack(pady=2)
 
-                # 模拟截图（20x20的彩色方块，实际使用时替换为PhotoImage）
-                # 创建一个随机颜色的画布模拟截图
                 tk_image = ImageTk.PhotoImage(scr.image)
                 image_label = tk.Label(self.screenshot_frames[i], image=tk_image)
                 image_label.pack()
@@ -223,15 +245,15 @@ class TeamsNotificationsListenerWindow:
             logger.info("截图更新线程screenshots在线程中开始 ...")
             while self.monitor:
                 try:
-                    _update(self.monitor.queue_screenshots.get(self.app.config.teams.interval+1))
+                    _update(self.monitor.queue_screenshots.get(timeout=self.app.config.teams.interval * 2))
                 except (tk.TclError, queue.Empty):
-                    pass
+                    logger.debug("截图更新线程在周期内未获取到截图...")
                 if self.monitor:
                     if self.monitor.status_notify:
-                        self.status_label.config(text="告警中", bg="#FF4500", fg="white")
+                        self.set_status_label("告警中")
                     else:
-                        self.status_label.config(text="监控中", bg="#28a745", fg="white")
-            self.status_label.config(text="已停止", bg="#7D7D7E", fg="white")  # 更新状态标签：深灰色底白字，居中显示
+                        self.set_status_label("监控中")
+            self.set_status_label("已停止")
             logger.info("截图更新线程screenshots已结束 ...")
 
         threading.Thread(target=_update_screenshots, daemon=True).start()
@@ -250,7 +272,7 @@ class TeamsNotificationsListenerWindow:
         # 取消无边框（方便操作，如需保留可取消注释）
         # self.window.overrideredirect(True)
         self.window.attributes("-topmost", True)  # 窗口置顶
-        self.window.geometry(f"700x600+{x}+{y}")
+        self.window.geometry(f"700x700+{x}+{y}")
         self.window.resizable(True, True)
         self.window.protocol("WM_DELETE_WINDOW", self.stop)
 
@@ -316,6 +338,18 @@ class TeamsNotificationsListenerWindow:
         # about_link = ttk.Label(link_frame, text="关于", foreground="#007bff", cursor="hand2")
         # about_link.pack(side="left", padx=20)
         # about_link.bind("<Button-1>", lambda e: self.open_about())
+        ttk.Label(link_frame, text="|").pack(side="left")
+        # 显示debug按钮
+        self.debug_button = ttk.Button(
+            link_frame,
+            text="显示INFO日志" if self.gui_handler.level == logging.DEBUG else "显示DEBUG日志",
+            command=self.set_debug
+        )
+        self.debug_button.pack(side="left")
+
+    def set_debug(self):
+        self.gui_handler.setLevel(logging.INFO if self.gui_handler.level == logging.DEBUG else logging.DEBUG)
+        self.debug_button.config(text="显示INFO日志" if self.gui_handler.level == logging.DEBUG else "显示DEBUG日志")
 
     def open_help(self):
         self.window.attributes("-topmost", False)  # 窗口置顶

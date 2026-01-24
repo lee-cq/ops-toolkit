@@ -49,6 +49,9 @@ class NotificationMonitor:
             'tray':     self.icon_size_parse(self.app.config.teams.tray)  # 托盘图标
         }
 
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
+
     @staticmethod
     def icon_size_parse(icon_size: str) -> dict:
         """解析图标尺寸字符串"""
@@ -205,29 +208,31 @@ class NotificationMonitor:
         if any(_st):
             self.notify("Teams 图标有红色")
 
-    def start(self):
-        def run():
-            logger.info("监控已经在线程中启动")
-            while True:
-                if not self.status_running:
-                    self.stop()
-                    logger.info(f"监控线程已经停止并退出, {self.status_running=}")
-                    break
-                try:
-                    self.check()
-                    self.counter_error = 0
-                except Exception as _e:
-                    logger.error(f"周期「{self.counter_checker}」检查状态时遇到问题: {_e}")
-                    self.counter_error += 1
-                    self.status_running = True
-                    if self.counter_error >= 5:
-                        self.notify("Teams 监控连续5次遇到问题")
-                        self.stop()
-
+    def run(self):
+        logger.info("监控已经在线程中启动")
+        try:
+            while self.status_running:
+                self.check()
+                self.counter_error = 0
                 time.sleep(self.app.config.teams.interval)
+            else:
+                self.stop()
+                logger.info(f"监控线程已经停止并退出, {self.status_running=}")
+        except Exception as _e:
+            logger.error(f"周期「{self.counter_checker}」检查状态时遇到问题: {_e}")
+            self.counter_error += 1
+            self.status_running = True
+            if self.counter_error >= 5:
+                self.notify(f"Teams 监控连续5次遇到问题, 已停止监控")
+                self.stop()
+            else:
+                self.start()
 
+        self.stop()
+
+    def start(self):
         self.status_running = True
-        threading.Thread(target=run, daemon=True).start()
+        threading.Thread(target=self.run, daemon=True).start()
 
     def stop(self):
         logger.info("监控线程正在停止")
