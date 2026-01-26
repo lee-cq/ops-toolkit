@@ -191,7 +191,6 @@ class NotificationMonitor:
 
     def check(self):
         self.counter_checker += 1
-        logger.debug(f"check {self.counter_checker=}")
         if not self.is_teams_running():
             self.notify("Teams 未运行")
             return
@@ -205,6 +204,7 @@ class NotificationMonitor:
         self.queue_screenshots.put(self.temp_screenshot)
         logger.debug(f"向队列中添加了截图, {_st=}")
         self.temp_screenshot = []
+        logger.info(f"check {self.counter_checker=} Status={any(_st)}")
         if any(_st):
             self.notify("Teams 图标有红色")
 

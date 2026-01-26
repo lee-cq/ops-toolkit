@@ -19,6 +19,7 @@ from PIL import ImageTk
 
 from ops_toolkit import DEBUGGER
 from ops_toolkit.monitor_teams.monitor_teams_notification import NotificationMonitor, Screenshot
+from ops_toolkit.tools import GUIHandler
 
 help_message = """
 1. 配置坐标
@@ -84,17 +85,6 @@ Teams通知监控器 v1.0
 logger = logging.getLogger("ops_toolkit.ui.teams_notifications_listener_window")
 
 
-class GUIHandler(logging.Handler):
-    def __init__(self, queue_: queue.Queue):
-        super().__init__()
-        self.queue_ = queue_
-
-    def emit(self, record: logging.LogRecord):
-        if self.queue_.full():
-            self.queue_.get()
-        self.queue_.put(self.format(record))
-
-
 class TeamsNotificationsListenerWindow:
 
     def __init__(self, app):
@@ -105,14 +95,13 @@ class TeamsNotificationsListenerWindow:
         self.logs_label = None
         self.logs_text = None
         self.debug_button = None
-        self.screenshot_frames = []  # 存储截图展示的框架
+        self.screenshot_frame: ttk.LabelFrame | None = None  # 存储截图展示的框架
 
         self.queue_logs = queue.Queue(maxsize=10)
         self.update_gui_logs_thread = threading.Thread(target=self.update_gui_logs, daemon=True)
         self.update_gui_logs_thread.start()
         self.gui_handler = GUIHandler(self.queue_logs)
         self.gui_handler.setLevel(logging.DEBUG if DEBUGGER else logging.INFO)
-        self.gui_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
         self.gui_logger = {
             "ops_toolkit.ui.teams_notifications_listener_window",
             "ops_toolkit.monitor_teams_notification",
@@ -224,30 +213,35 @@ class TeamsNotificationsListenerWindow:
         def _update(screenshots: list[Screenshot]):
             # 清空原有截图
             logger.debug(f"update screenshots, {len(screenshots)} screenshots")
-            for frame in self.screenshot_frames:
-                for widget in frame.winfo_children():
-                    widget.destroy()
+            try:
+                for frame in self.screenshot_frame.winfo_children():
+                    frame.destroy()
+            except tk.TclError:
+                logger.debug(f"destroy widget failed, {self.screenshot_frame=}")
 
             # 添加新截图
             for i, scr in enumerate(screenshots):
+                frame = ttk.Frame(self.screenshot_frame)
+                frame.pack(side="left", padx=10, pady=5, expand=True)
+
                 logger.debug(f"add screenshot {i}, {scr.datetime}, {scr.name}, {scr.status}")
-                time_label = tk.Label(self.screenshot_frames[i], text=scr.datetime, font=("Arial", 8))
+                time_label = tk.Label(frame, text=scr.datetime, font=("Arial", 8))
                 time_label.pack(pady=2)
-                name_label = tk.Label(self.screenshot_frames[i], text=f"{scr.name}-{scr.status}", font=("Arial", 8))
+                name_label = tk.Label(frame, text=f"{scr.name}-{scr.status}", font=("Arial", 8))
                 name_label.pack(pady=2)
 
                 tk_image = ImageTk.PhotoImage(scr.image)
-                image_label = tk.Label(self.screenshot_frames[i], image=tk_image)
+                image_label = tk.Label(frame, image=tk_image)
                 image_label.pack()
-                self.screenshot_frames[i].image = tk_image
+                image_label.image = tk_image
 
         def _update_screenshots():
             logger.info("截图更新线程screenshots在线程中开始 ...")
             while self.monitor:
                 try:
                     _update(self.monitor.queue_screenshots.get(timeout=self.app.config.teams.interval * 2))
-                except (tk.TclError, queue.Empty):
-                    logger.debug("截图更新线程在周期内未获取到截图...")
+                except (tk.TclError, queue.Empty) as e:
+                    logger.debug(f"截图更新线程在周期内未获取到截图... {e}")
                 if self.monitor:
                     if self.monitor.status_notify:
                         self.set_status_label("告警中")
@@ -301,14 +295,8 @@ class TeamsNotificationsListenerWindow:
         self.status_label.pack(fill="x", pady=(0, 10))
 
         # ========== 第三行：截图展示区 ==========
-        screenshot_frame = ttk.LabelFrame(main_container, text="截图内容")
-        screenshot_frame.pack(fill="x", pady=(0, 10))
-
-        # 创建4个截图展示框
-        for i in range(4):
-            frame = ttk.Frame(screenshot_frame)
-            frame.pack(side="left", padx=10, pady=5, expand=True)
-            self.screenshot_frames.append(frame)
+        self.screenshot_frame = ttk.LabelFrame(main_container, text="截图内容")
+        self.screenshot_frame.pack(fill="x", pady=(0, 10))
 
         # ========== 第四行：运行日志区 ==========
         log_frame = ttk.LabelFrame(main_container, text="运行日志")
@@ -348,8 +336,15 @@ class TeamsNotificationsListenerWindow:
         self.debug_button.pack(side="left")
 
     def set_debug(self):
-        self.gui_handler.setLevel(logging.INFO if self.gui_handler.level == logging.DEBUG else logging.DEBUG)
-        self.debug_button.config(text="显示INFO日志" if self.gui_handler.level == logging.DEBUG else "显示DEBUG日志")
+        if self.gui_handler.level == logging.DEBUG:
+            self.gui_handler.setLevel(logging.INFO)
+            _info_logs = self.logs_text.get(1.0, tk.END).splitlines()
+            self.logs_text.delete(1.0, tk.END)
+            [self.add_log(line) for line in _info_logs if " [INFO] " in line]
+
+        else:
+            self.gui_handler.setLevel(logging.DEBUG)
+            self.debug_button.config(text="显示DEBUG日志")
 
     def open_help(self):
         self.window.attributes("-topmost", False)  # 窗口置顶

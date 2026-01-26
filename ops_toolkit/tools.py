@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+import logging
+import queue
 import re
 import tempfile
 from pathlib import Path
@@ -138,3 +139,15 @@ class StartLock:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.release()
+
+
+class GUIHandler(logging.Handler):
+    def __init__(self, queue_: queue.Queue):
+        super().__init__()
+        self.queue_ = queue_
+        self.setFormatter(logging.Formatter("%(asctime)s - [%(levelname)s] - %(message)s"))
+
+    def emit(self, record: logging.LogRecord):
+        if self.queue_.full():
+            self.queue_.get()
+        self.queue_.put(self.format(record))
