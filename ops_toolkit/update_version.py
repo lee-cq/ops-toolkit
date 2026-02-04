@@ -59,7 +59,8 @@ class UpdateVersion:
         self.new_version = self.get_remote_version()
         self.new_version_str = ".".join(map(str, self.new_version))
         self.old_version = self.get_local_version()
-        logger.info(f"当前版本: {self.old_version=} 远程版本: {self.new_version=}")
+        self.old_version_str = ".".join(map(str, self.old_version))
+        logger.info(f"当前版本: {self.old_version_str=} 远程版本: {self.new_version_str=}")
 
     @staticmethod
     def get_remote_version() -> tuple[int, ...]:
@@ -86,7 +87,7 @@ class UpdateVersion:
             _skip_version = tuple(map(int, self.skip_version_file.read_text().strip().split(".")))
             logger.debug(f"跳过版本文件: {self.skip_version_file} {_skip_version}")
         else:
-            _skip_version = (0, 0, 0)
+            _skip_version = ("0", "0", "0")
         return max(tuple(map(int, VERSION.split("."))), _skip_version)
 
     def write_update_script(self):
@@ -96,7 +97,7 @@ class UpdateVersion:
             py_exe=sys.executable,
             pid=os.getpid(),
             new_version=self.new_version_str,
-            old_version=VERSION,
+            old_version=self.old_version_str,
             registry=config.registry,
         )
         logger.info(f"更新脚本: {_sp}\n========================")
@@ -109,10 +110,10 @@ class UpdateVersion:
         :return:
         """
         if self.new_version <= self.old_version:
-            logger.debug(f"当前版本 {VERSION} 大于等于远程版本 {self.new_version_str}, 或已跳过该版本")
+            logger.debug(f"当前版本 {self.old_version_str} 大于等于远程版本 {self.new_version_str}, 或已跳过该版本")
             return
 
-        logger.info(f"发现新版本: {VERSION} -> {self.new_version_str}")
+        logger.info(f"发现新版本: {self.old_version_str} -> {self.new_version_str}")
         self.show()
 
     def show(self):
@@ -125,7 +126,7 @@ class UpdateVersion:
 
         ret = messagebox.askyesnocancel(
             "更新提示",
-            f"发现新版本: {VERSION} -> {'.'.join(map(str, self.new_version))}\n是否升级？\n\n"
+            f"发现新版本: {self.old_version_str} -> {self.new_version_str}\n是否升级？\n\n"
             "是：升级到最新版本\n"
             f"否：跳过该版本: {self.new_version_str}\n"
             "取消：取消本次升级"
