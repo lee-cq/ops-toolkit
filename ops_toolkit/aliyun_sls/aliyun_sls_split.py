@@ -29,12 +29,21 @@ import os
 import queue
 import re
 from pathlib import Path
+from typing import Iterable
 
 import requests
+from aliyun.log import GetLogsResponse
+from aliyun.log import LogException
+from aliyun.log import LogClient
 
-logger = logging.getLogger("")
-
+logger = logging.getLogger("ops_toolkit.sls_split.sp")
 re_all_num = re.compile(r"\d+")
+mapping_access_env = {
+    "cloud_account": "ALIBABA_CLOUD_ACCOUNT",
+    "access_id":     "ALIBABA_CLOUD_ACCESS_KEY_ID",
+    "access_secret": "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
+    "access_token":  "ALIBABA_CLOUD_ACCESS_TOKEN",
+}
 
 
 def strip_path_num(path: str):
@@ -52,31 +61,30 @@ class LogSplit:
 
     def __init__(
             self,
-            uri: str,
-            workdir="",
+            workdir: str | Path = "./logs",
             diff_path=True,
             diff_hostname=False,
             remove_path_num=False,
             single_file=False,
+            single_file_add_prefix=False,
     ):
-        self.uri = uri
-        self.source_name = Path(uri).stem
-        self.js_data = None
+        self.source_name = None
         self.diff_path = diff_path
         self.diff_hostname = diff_hostname
         self.remove_path_num = remove_path_num
         self.single_file = single_file
+        self.single_file_add_prefix = single_file_add_prefix
 
         self.min_time = -1
         self.max_time = -1
         self.total_line = 0
         self.status = None
-        self.gui_logs = queue.Queue()
+        self.gui_logs = queue.Queue(maxsize=5)
         self.workdir = (
             Path(workdir)
             if workdir else
             Path(os.environ.get("USERPROFILE")).joinpath("Downloads", "log_down")
-        ).joinpath(self.source_name.split(".")[0])
+        )
         self.workdir.mkdir(parents=True, exist_ok=True)
         self.log_files = dict()
 
@@ -95,17 +103,34 @@ class LogSplit:
         if _t > self.max_time:
             self.max_time = _t
 
-    def get_data(self, uri: str):
+    def get_data(self, uri: str) -> Iterable[str]:
         self.status = "download"
-        self.gui_logs.put(f"开始下载日志文件: {self.source_name}")
+        logger.info(f"开始下载日志文件: {self.source_name}")
+        _source_file = Path(uri)
 
         if uri.startswith("http"):
             resp = requests.get(uri)
-            self.js_data = gzip.decompress(resp.content)
-            self.workdir.joinpath(self.source_name).write_bytes(self.js_data)
+            _source_file = self.workdir.joinpath(self.source_name)
+            _source_file.write_bytes(gzip.decompress(resp.content))
+
+        if _source_file.open("rb").read(2) == b"\x1f\x8b":
+            logger.info(f"开始处理压缩日志文件: {self.source_name}")
+            with _source_file.open("rb") as f:
+                with gzip.GzipFile(fileobj=f) as gz_f:
+                    while True:
+                        line = gz_f.readline()
+                        if not line:
+                            break
+                        yield line.decode("utf-8").strip()
 
         else:
-            self.js_data = gzip.decompress(open(uri, "rb").read())
+            logger.info(f"开始处理普通日志文件: {self.source_name}")
+            with _source_file.open("r", encoding="utf-8") as ff:
+                while True:
+                    line = ff.readline()
+                    if not line:
+                        break
+                    yield line.strip()
 
     def logs_close(self):
         for f in self.log_files.values():
@@ -134,19 +159,24 @@ class LogSplit:
         self.log_files[filename] = self.workdir.joinpath(filename).open(
             "a+", encoding="utf-8"
         )
-        self.gui_logs.put(f"新的日志文件 {filename} 已打开")
         logger.info(f"新的日志文件 {filename} 已打开")
         return self.log_files[filename]
 
-    def write_to_file(self, line):
+    def write_to_file(self, line: str | dict):
         """将一行日志写入到对应的文件"""
-        js = json.loads(line)
+        js = json.loads(line) if isinstance(line, str) else line
         self.setup_time(date=js["__time__"])
+
+        if js["content"].endswith("\r"):
+            js["content"] = js["content"].strip("\r")
+        if not js["content"].endswith("\n"):
+            js["content"] += "\n"
+
         if self.single_file and "content" in js:
-            self.join_file_name(
-                "single_file", "", ""
-            ).write(
-                "|||".join((js["__source__"], Path(js["__tag__:__path__"]).name, js["content"])) + "\n"
+            self.join_file_name("single_file", "", "").write(
+                f'{js["__source__"]} ||| {Path(js["__tag__:__path__"]).name} ||| {js["content"]}'
+                if self.single_file_add_prefix else
+                js["content"]
             )
 
         if {"__tag__:__path__", "__tag__:__hostname__", "content"}.issubset(js):
@@ -155,15 +185,12 @@ class LogSplit:
                 js["__tag__:__path__"],
                 js["__tag__:__hostname__"],
                 js["__source__"],
-            ).write(js["content"] + "\n")
+            ).write(js["content"])
         else:
-            self.gui_logs.put(f"key not in logs, source: \n {js.keys()}")
             logger.warning(f"key not in logs, source: \n {js.keys()}")
 
     def rename_log_file(self):
         self.status = "rename"
-        self.gui_logs.put(
-            f"开始重命名日志文件: {self.source_name}, min_time: {self.min_time}, max_time: {self.max_time}")
         logger.info(f"重命名日志文件: {self.source_name}, min_time: {self.min_time}, max_time: {self.max_time}")
         self.logs_close()
         t_max = datetime.datetime.fromtimestamp(self.max_time).strftime("%Y%m%d-%H%M%S")
@@ -172,38 +199,67 @@ class LogSplit:
         for name in self.log_files.keys():
             new_name = name + f"{t_min}_{t_max}.log"
             logger.info(f"重命名日志文件: {name} -> {new_name}")
-            self.gui_logs.put(f"重命名日志文件: {name} -> {new_name}")
             p = self.workdir.joinpath(name)
             p.rename(p.with_name(new_name))
 
-    def run(self):
-        self.gui_logs.put(f"开始处理日志文件: {self.source_name}")
-        logger.info(f"开始处理日志文件: {self.source_name}")
-        self.get_data(self.uri)
-
+    def run(self, lines: Iterable[str | dict]):
         self.status = "split"
-        self.gui_logs.put(f"开始分割日志文件: {self.source_name}")
         logger.info(f"开始分割日志文件: {self.source_name}")
-        for line in self.js_data.split(b"\n"):
+        for line in lines:
             if not line:
                 continue
             self.write_to_file(line)
 
         self.rename_log_file()
         self.status = "done"
-        self.gui_logs.put(f"日志文件处理完成: {self.source_name}")
         logger.info(f"日志文件处理完成: {self.source_name}")
 
-    def start(self):
+    def from_uri(self, uri: str):
         try:
             self.status = "start"
-            self.run()
+            self.source_name = Path(uri).stem
+            self.run(self.get_data(uri))
         except Exception as _e:
-            self.gui_logs.put(f"日志文件处理错误: {_e}")
-            logger.error(f"日志文件处理错误: {self.source_name}", exc_info=True)
+            logger.error(f"日志文件处理错误: {self.source_name}: {_e}", exc_info=True)
+            self.status = "error"
+
+    def from_sdk(self,
+                 project,
+                 logstore,
+                 query="*",
+                 from_time="-15min",
+                 to_time="now",
+                 endpoint="cn-hongkong.log.aliyuncs.com"):
+        def get_log_from_response(responses: Iterable[GetLogsResponse]):
+            for resp in responses:
+                for log in resp.body.get("data", []):
+                    yield log
+
+        try:
+            access_info = {v: os.getenv(mapping_access_env[k]) for k, v in {
+                "access_id":     "accessKeyId",
+                "access_secret": "accessKey",
+                "access_token":  "securityToken",
+            }.items()}
+            for k, info in access_info.items():
+                if not info:
+                    raise ValueError(f"Access Info: {k} 不能为空")
+
+            self.source_name = f"{project}_{logstore}_{from_time}_{to_time}"
+            log_client = LogClient(endpoint, **access_info)
+            self.run(
+                get_log_from_response(
+                    log_client.get_log_all_v2(project, logstore, from_time, to_time, query=query)
+                )
+            )
+        except LogException as _e:
+            logger.error(f"日志下载处理错误: {self.source_name}: {_e}")
+            self.status = "error"
+        except Exception as _e:
+            logger.error(f"日志文件处理错误: {self.source_name}: {_e}", exc_info=True)
             self.status = "error"
 
 
 if __name__ == "__main__":
     logging.basicConfig(level="DEBUG")
-
+    split_log_file = LogSplit()

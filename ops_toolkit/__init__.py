@@ -23,6 +23,8 @@ def get_version():
 
 UPDATE_LOG = """
 ## CHANGELOG
+### 1.8
+1. 添加aliyun-sls-sdk下载功能
 
 ### 1.7
 1. 添加自动更新功能

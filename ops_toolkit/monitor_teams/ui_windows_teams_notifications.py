@@ -125,8 +125,11 @@ class TeamsNotificationsListenerWindow:
         while True:
             if self.queue_logs is None:
                 break
-            log_text = self.queue_logs.get()
-            self.add_log(log_text)
+            try:
+                log_text = self.queue_logs.get(timeout=3)
+                self.add_log(log_text)
+            except queue.Empty:
+                time.sleep(0.1)
 
     def add_log(self, log_text):
         """添加运行日志"""

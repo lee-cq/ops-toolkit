@@ -139,7 +139,6 @@ class UpdateVersion:
             subprocess.run(["cmd", "/c", "start", "", str(self.update_script)], check=True)
             if self.app is not None:
                 self.app.quit()
-            sys.exit(0)
         elif ret is False:
             logger.info(f"用户选择跳过升级: {self.new_version_str}")
             self.skip_version_file.write_text(self.new_version_str)
