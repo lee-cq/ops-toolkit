@@ -87,7 +87,7 @@ class UpdateVersion:
             _skip_version = tuple(map(int, self.skip_version_file.read_text().strip().split(".")))
             logger.debug(f"跳过版本文件: {self.skip_version_file} {_skip_version}")
         else:
-            _skip_version = ("0", "0", "0")
+            _skip_version = 0, 0, 0
         return max(tuple(map(int, VERSION.split("."))), _skip_version)
 
     def write_update_script(self):
