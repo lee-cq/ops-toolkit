@@ -55,11 +55,11 @@ class UpdateVersion:
         logger.info("checking new version ...")
         self.update_script = Path(config.data_dir).joinpath("update_version.bat")
         self.skip_version_file = config.data_dir.joinpath("SKIP_VERSION")
-
-        self.new_version = self.get_remote_version()
-        self.new_version_str = ".".join(map(str, self.new_version))
         self.old_version = self.get_local_version()
         self.old_version_str = ".".join(map(str, self.old_version))
+        self.new_version = self.get_remote_version()
+        self.new_version_str = ".".join(map(str, self.new_version))
+
         logger.info(f"当前版本: {self.old_version_str=} 远程版本: {self.new_version_str=}")
 
     @staticmethod
