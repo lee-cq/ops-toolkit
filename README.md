@@ -60,6 +60,7 @@
 ## CHANGELOG
 ### 1.8
 1. 添加aliyun-sls-sdk下载功能
+2. fix:添加aliyun-log-python-sdk依赖
 
 ### 1.7
 1. 添加自动更新功能
