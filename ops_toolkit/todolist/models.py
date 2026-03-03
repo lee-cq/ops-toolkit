@@ -33,6 +33,12 @@ def json_serializer(obj):
     raise TypeError(f"Object of type '{obj.__class__.__name__}' is not JSON serializable")
 
 
+class TaskStatus:
+    UNDO = 0
+    DONE = 1
+    DELETE = 2
+
+
 class TodolistModel(Base):
     __tablename__ = 'todolist'
 

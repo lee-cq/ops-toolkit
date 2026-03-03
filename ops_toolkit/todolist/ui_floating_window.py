@@ -15,6 +15,7 @@ from tkinter import messagebox
 from tkinter import ttk
 from typing import Optional
 
+from ops_toolkit.todolist.models import TaskStatus
 from ops_toolkit.todolist.models import TodolistManager
 from ops_toolkit.todolist.models import TodolistModel
 
@@ -29,6 +30,11 @@ class TaskItem:
 
     def on_link_click(self):
         webbrowser.open(self.record.link)
+
+    def on_delete(self):
+        if messagebox.askyesno("提示", "确定要删除此任务吗？"):
+            self.manager.update_record(self.record, status=TaskStatus.DELETE)
+            self.ui.load_tasks()
 
     def delay_time(self, hours=1, minutes=0, days=0):
         do_time = self.record.do_time if self.record.do_time > datetime.now() else datetime.now()
@@ -62,7 +68,7 @@ class FloatingWindow:
 
     def show(self):
         """创建浮动窗口"""
-        if self.window:
+        if self.window and self.window.winfo_exists():
             self.window.focus_force()
             return
 
@@ -152,6 +158,7 @@ class FloatingWindow:
             background=bg[id_]
         )
         time_label.pack(side="left", padx=5, pady=2)
+        self.show_frame_row_menu(time_label, _op)
 
         # 3. 任务名称标签：同理，背景色匹配行背景
         name_label = ttk.Label(
@@ -210,7 +217,13 @@ class FloatingWindow:
         menu.add_command(label="2 小时", command=lambda: op.delay_time(hours=2))
         menu.add_command(label="1 天", command=lambda: op.delay_time(hours=24))
         menu.add_command(label="自定义", command=lambda: self.customize_input("输入延迟的时间(小时)", op.delay_time))
-        # 2. 绑定鼠标右键事件（<Button-3>是右键，Mac系统是<Button-2>）
+        # 绑定鼠标右键事件（<Button-3>是右键，Mac系统是<Button-2>）
+        frame.bind("<Button-3>", lambda event: menu.post(event.x_root, event.y_root))
+
+    def show_frame_row_menu(self, frame, op: TaskItem):
+        menu = tk.Menu(frame, tearoff=False)
+        menu.add_command(label="删除", command=lambda: op.on_delete())
+        # 绑定鼠标右键事件（<Button-3>是右键，Mac系统是<Button-2>）
         frame.bind("<Button-3>", lambda event: menu.post(event.x_root, event.y_root))
 
     def customize_input(self, msg, callback):
