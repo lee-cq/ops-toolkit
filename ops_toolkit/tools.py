@@ -12,6 +12,7 @@ from typing import Union
 import PIL.BmpImagePlugin
 import PIL.ImageGrab
 import pyperclip
+from win11toast import notify, clear_toast
 
 
 def get_clipboard_content() -> tuple[str, Union[str, list[str], PIL.BmpImagePlugin.BmpImageFile, None]]:
@@ -151,3 +152,12 @@ class GUIHandler(logging.Handler):
         if self.queue_.full():
             self.queue_.get()
         self.queue_.put(self.format(record))
+
+
+def toolkit_notify(title: str, message: str, group: str = None):
+    """
+    使用Windows系统通知进行通知
+    """
+    notify(title, message, app_id="ops-toolkit", group=group)
+    # if group:
+    #     clear_toast(app_id="ops-toolkit", group=group)

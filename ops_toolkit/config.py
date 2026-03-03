@@ -59,7 +59,9 @@ class Config(BaseModel):
     teams: TeamsModel | None = TeamsModel()
     app_name: str = "ops_toolkit"
     startup: bool = False
-    hotkey: str = '<ctrl>+<alt>+d'
+    hotkey_translate: str = '<ctrl>+<alt>+d'
+    hotkey_todo_create: str = '<ctrl>+<alt>+t'
+    hotkey_todo_display: str = '<alt>+t'
     registry: str = "https://pypi.cnb.cool/leecq/pytools/-/packages/simple"
 
     config_path: Path

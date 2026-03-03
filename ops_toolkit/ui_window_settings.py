@@ -91,7 +91,7 @@ class SettingsWindow:
         ttk.Label(basic_frame, text="全局翻译快捷键:").grid(row=1, column=0, sticky=tk.W, pady=(10, 5))
         self.hotkey_entry = ttk.Entry(basic_frame)
         self.hotkey_entry.grid(row=1, column=1, sticky=tk.EW, pady=(10, 5))
-        self.hotkey_entry.insert(0, self.app.config.hotkey)
+        self.hotkey_entry.insert(0, self.app.config.hotkey_translate)
         ttk.Label(basic_frame, text="提示: 格式如 '<ctrl>+<alt>+t'", foreground="gray"). \
             grid(row=2, column=1, sticky=tk.W)
 
@@ -400,7 +400,7 @@ class SettingsWindow:
 
         # 更新配置 (修改)
         self.app.config.app_name = new_app_name
-        self.app.config.hotkey = new_hotkey
+        self.app.config.hotkey_translate = new_hotkey
         self.app.config.startup = new_startup
         self.app.config.config_path = new_config_path
         self.app.config.data_dir = new_data_dir

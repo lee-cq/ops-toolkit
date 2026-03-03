@@ -38,6 +38,7 @@ class SystemTray:
                 pystray.MenuItem("剪切板记录", self.show_clipboard_history),
                 pystray.MenuItem("Aliyun SLS 日志切割", self.show_log_split),
                 pystray.MenuItem("Teams 通知监控", self.show_notification_monitor),
+                pystray.MenuItem("待办事项管理", self.show_todo_manager),
                 pystray.Menu.SEPARATOR,  # 分隔线
 
                 pystray.MenuItem(
@@ -107,6 +108,14 @@ class SystemTray:
     def show_notification_monitor(self):
         """显示Teams通知监控窗口"""
         self.app.root.after(0, self.app.notification_monitor_window.show)
+
+    def show_todo_manager(self, icon=None, item=None):
+        """显示待办事项管理器"""
+        try:
+            # 在主线程中显示创建窗口
+            self.app.root.after(0, self.app.todoer.show_create_window)
+        except Exception as e:
+            logger.error(f"Show todo manager failed: {e}")
 
     def monitor_clipboard(self):
         """开一个子线程监控剪切板"""

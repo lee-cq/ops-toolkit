@@ -32,7 +32,7 @@ from ops_toolkit.tools import get_clipboard_content
 from ops_toolkit.aliyun_sls.ui_window_sls_split import SlsSplitWindow
 
 if typing.TYPE_CHECKING:
-    from ops_toolkit.app import TranslationApp
+    from ops_toolkit.app import App
 
 logger = logging.getLogger("ops_toolkit.hourly_reminder.monitor_clipboard")
 
@@ -52,7 +52,7 @@ class ClipboardRecord(Base):
 
 
 class MonitorClipboard:
-    def __init__(self, app: "TranslationApp"):
+    def __init__(self, app: "App"):
         self.engine = None
         self.app = app
         self.started = False

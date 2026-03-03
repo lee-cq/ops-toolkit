@@ -27,6 +27,7 @@ from ops_toolkit.translate.ui_window_translate import TranslationWindow
 from ops_toolkit.monitor_clipboard.ui_window_clipboard import ClipboardWindow
 from ops_toolkit.monitor_teams.ui_windows_teams_notifications import TeamsNotificationsListenerWindow
 from ops_toolkit.keepalive import Keepalive
+from ops_toolkit.todolist import TodoManager
 from ops_toolkit.update_version import check_update
 
 if TYPE_CHECKING:
@@ -67,6 +68,7 @@ class App:
         self.settings_window = SettingsWindow(self)
         self.hotkey_listener = HotkeyListener(self)
         self.system_tray = SystemTray(self)
+        self.todoer = TodoManager(self)
         self.notification_monitor_window = TeamsNotificationsListenerWindow(self)
         logger.info(f"{self.config.app_name} started successfully")
         notify(
