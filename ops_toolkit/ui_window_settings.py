@@ -28,8 +28,11 @@ class SettingsWindow:
 
         # 基本设置控件
         self.app_name_entry = None
-        self.hotkey_entry = None
+        self.hotkey_translate_entry = None
+        self.hotkey_todo_create_entry = None
+        self.hotkey_todo_display_entry = None
         self.startup_var = None
+        self.startup_beta_var = None
         self.registry_entry = None
 
         # 路径设置控件
@@ -80,42 +83,62 @@ class SettingsWindow:
         basic_frame = ttk.Frame(self.notebook, padding=10)
         self.notebook.add(basic_frame, text="基本设置")
 
-        # 应用名称设置 
+        # 0 应用名称设置 0
         ttk.Label(basic_frame, text="应用名称:").grid(row=0, column=0, sticky=tk.W, pady=(10, 5))
         self.app_name_entry = ttk.Entry(basic_frame)
         self.app_name_entry.grid(row=0, column=1, sticky=tk.EW, pady=(10, 5))
         self.app_name_entry.insert(0, self.app.config.app_name)
         basic_frame.columnconfigure(1, weight=1)
 
-        # 全局快捷键设置
+        # 1 全局翻译快捷键 1
         ttk.Label(basic_frame, text="全局翻译快捷键:").grid(row=1, column=0, sticky=tk.W, pady=(10, 5))
-        self.hotkey_entry = ttk.Entry(basic_frame)
-        self.hotkey_entry.grid(row=1, column=1, sticky=tk.EW, pady=(10, 5))
-        self.hotkey_entry.insert(0, self.app.config.hotkey_translate)
+        self.hotkey_translate_entry = ttk.Entry(basic_frame)
+        self.hotkey_translate_entry.grid(row=1, column=1, sticky=tk.EW, pady=(10, 5))
+        self.hotkey_translate_entry.insert(0, self.app.config.hotkey_translate)
+        # 2
         ttk.Label(basic_frame, text="提示: 格式如 '<ctrl>+<alt>+t'", foreground="gray"). \
             grid(row=2, column=1, sticky=tk.W)
+        # 3 全局创建Todoer快捷键
+        ttk.Label(basic_frame, text="全局创建Todoer快捷键:").grid(row=3, column=0, sticky=tk.W, pady=(10, 5))
+        self.hotkey_todo_create_entry = ttk.Entry(basic_frame)
+        self.hotkey_todo_create_entry.grid(row=3, column=1, sticky=tk.EW, pady=(10, 5))
+        self.hotkey_todo_create_entry.insert(0, self.app.config.hotkey_todo_create)
 
-        # 开机自启 
-        ttk.Label(basic_frame, text="开机自启:").grid(row=3, column=0, sticky=tk.W, pady=(10, 5))
+        # 4 全局Todoer浮窗快捷键
+        ttk.Label(basic_frame, text="全局Todoer浮窗快捷键:").grid(row=4, column=0, sticky=tk.W, pady=(10, 5))
+        self.hotkey_todo_display_entry = ttk.Entry(basic_frame)
+        self.hotkey_todo_display_entry.grid(row=4, column=1, sticky=tk.EW, pady=(10, 5))
+        self.hotkey_todo_display_entry.insert(0, self.app.config.hotkey_todo_display)
+
+        # 5 开机自启
+        ttk.Label(basic_frame, text="开机自启:").grid(row=5, column=0, sticky=tk.W, pady=(10, 5))
         self.startup_var = tk.BooleanVar(value=self.app.config.startup)
-        ttk.Checkbutton(basic_frame, variable=self.startup_var).grid(row=3, column=1, sticky=tk.W, pady=(10, 5))
+        ttk.Checkbutton(basic_frame, variable=self.startup_var).grid(row=5, column=1, sticky=tk.W, pady=(10, 5))
 
-        # 注册表路径 
-        ttk.Label(basic_frame, text="注册表路径:").grid(row=4, column=0, sticky=tk.W, pady=(10, 5))
+        # 6 注册表路径
+        ttk.Label(basic_frame, text="注册表路径:").grid(row=6, column=0, sticky=tk.W, pady=(10, 5))
         self.registry_entry = ttk.Entry(basic_frame)
-        self.registry_entry.grid(row=4, column=1, sticky=tk.EW, pady=(10, 5))
+        self.registry_entry.grid(row=6, column=1, sticky=tk.EW, pady=(10, 5))
         self.registry_entry.insert(0, self.app.config.registry)
-        ttk.Label(basic_frame,
-                  text=f"提示: 格式如 {self.app.config.registry}",
-                  foreground="gray") \
-            .grid(row=5, column=1, sticky=tk.W)
+        # 7
+        ttk.Label(basic_frame, text=f"提示: 格式如 {self.app.config.registry}", foreground="gray") \
+            .grid(row=7, column=1, sticky=tk.W)
+
+        # 9 接受bate版本
+        ttk.Label(basic_frame, text="接受bate版本:").grid(row=8, column=0, sticky=tk.W, pady=(10, 5))
+        self.startup_beta_var = tk.BooleanVar(value=self.app.config.startup_beta)
+        ttk.Checkbutton(basic_frame, variable=self.startup_beta_var).grid(row=8, column=1, sticky=tk.W, pady=(10, 5))
 
         # TODO 按钮，创建桌面快捷方式
         # ttk.Button(basic_frame, text="创建桌面快捷方式", command=self.create_shortcut) \
         #     .grid(row=6, column=1, sticky=tk.EW, pady=(10, 5))
-        # 按钮，检查更新 
-        ttk.Button(basic_frame, text="检查更新", command=check_update) \
-            .grid(row=7, column=1, sticky=tk.EW, pady=(10, 5))
+        # 10 按钮，检查更新
+        _ct = ttk.Button(
+            basic_frame,
+            text="检查更新",
+            command=lambda: messagebox.showinfo("提示", "无新版本") if check_update() else ""
+        )
+        _ct.grid(row=9, column=1, sticky=tk.EW, pady=(10, 5))
 
         # ==================== 路径设置标签页  ====================
         path_frame = ttk.Frame(self.notebook, padding=10)
@@ -380,8 +403,11 @@ class SettingsWindow:
         """保存设置"""
         # 获取基本设置 (修改)
         new_app_name = self.app_name_entry.get().strip()
-        new_hotkey = self.hotkey_entry.get().strip()
+        new_hotkey_translate = self.hotkey_translate_entry.get().strip()
+        new_hotkey_todo_create = self.hotkey_todo_create_entry.get().strip()
+        new_hotkey_todo_display = self.hotkey_todo_display_entry.get().strip()
         new_startup = self.startup_var.get()
+        new_startup_beta = self.startup_beta_var.get()
 
         # 获取路径设置 
         new_config_path = Path(self.config_path_entry.get().strip())
@@ -394,13 +420,16 @@ class SettingsWindow:
             messagebox.showerror("错误", "应用名称不能为空")
             return
 
-        if not new_hotkey:
+        if not new_hotkey_translate or not new_hotkey_todo_create or not new_hotkey_todo_display:
             messagebox.showerror("错误", "请输入快捷键")
             return
 
         # 更新配置 (修改)
         self.app.config.app_name = new_app_name
-        self.app.config.hotkey_translate = new_hotkey
+        self.app.config.hotkey_translate = new_hotkey_translate
+        self.app.config.hotkey_todo_create = new_hotkey_todo_create
+        self.app.config.hotkey_todo_display = new_hotkey_todo_display
+        self.app.config.startup_beta = new_startup_beta
         self.app.config.startup = new_startup
         self.app.config.config_path = new_config_path
         self.app.config.data_dir = new_data_dir
@@ -434,7 +463,7 @@ class SettingsWindow:
 
         # 保存配置并更新快捷键
         self.app.config.save()
-        self.app.hotkey_listener.update_hotkey(new_hotkey)
+        self.app.hotkey_listener.update_hotkey()
 
         messagebox.showinfo("成功", "设置已保存到" + str(self.app.config.config_path))
         self.window.destroy()
@@ -514,8 +543,6 @@ class ScreenSelector:
             font=("Arial", 14, "bold"),
             anchor="nw"
         )
-
-
 
         # 禁用窗口管理器的关闭按钮
         self.root.protocol("WM_DELETE_WINDOW", lambda: None)

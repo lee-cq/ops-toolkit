@@ -46,6 +46,8 @@ start "" "{pyw_exe}" -m ops_toolkit
 exit /b 0
 """
 
+DEFAULT_VERSION = (0, 0, 0, 99)
+
 
 class UpdateVersion:
     """更新版本"""
@@ -56,14 +58,26 @@ class UpdateVersion:
         self.update_script = Path(config.data_dir).joinpath("update_version.bat")
         self.skip_version_file = config.data_dir.joinpath("SKIP_VERSION")
         self.old_version = self.get_local_version()
-        self.old_version_str = ".".join(map(str, self.old_version))
+        self.old_version_str = self.version_to_str(self.old_version)
         self.new_version = self.get_remote_version()
-        self.new_version_str = ".".join(map(str, self.new_version))
+        self.new_version_str = self.version_to_str(self.new_version)
 
         logger.info(f"当前版本: {self.old_version_str=} 远程版本: {self.new_version_str=}")
 
     @staticmethod
-    def get_remote_version() -> tuple[int, ...]:
+    def version_to_tuple(version: str) -> tuple[int, int, int, int]:
+        beta = int(version.split("b")[1]) if 'b' in version else 99
+        _m = list(map(int, version.split("b")[0].split(".")))
+        return _m[0], _m[1], _m[2], beta
+
+    @staticmethod
+    def version_to_str(version: tuple[int, ...]) -> str:
+        if len(version) == 3:
+            return ".".join(map(str, version))
+        else:
+            return ".".join(map(str, version[:3])) + (f"b{version[3]}" if version[3] != 99 else "")
+
+    def get_remote_version(self) -> tuple[int, ...]:
         """获取远程版本号
 
         :return:
@@ -71,12 +85,13 @@ class UpdateVersion:
         try:
             response = requests.get("https://cnb.cool/leecq/pytools/-/registries/ops-toolkit/-/tags")
             response.raise_for_status()
-            versions = re.findall(r"/leecq/pytools/-/registries/ops-toolkit/-/tag/(\d\.\d+\.\d+)", response.text)
+            versions = re.findall(r"/leecq/pytools/-/registries/ops-toolkit/-/tag/(\d\.\d+\.\d+[b\d]*)", response.text)
             logger.info(f"在制品库中找到版本号: {versions}")
-            return max(tuple(map(int, i.split("."))) for i in versions)
+            acc_beta = config.startup_beta
+            return max(self.version_to_tuple(i) for i in versions if ("b" in i and acc_beta) or "b" not in i)
         except requests.RequestException as e:
             logger.error(f"获取远程版本号失败: {e}")
-            return 0, 0, 0
+            return DEFAULT_VERSION
 
     def get_local_version(self) -> tuple[int, ...]:
         """获取本地版本号
@@ -84,11 +99,11 @@ class UpdateVersion:
         :return:
         """
         if self.skip_version_file.exists():
-            _skip_version = tuple(map(int, self.skip_version_file.read_text().strip().split(".")))
+            _skip_version = self.version_to_tuple(self.skip_version_file.read_text().strip())
             logger.debug(f"跳过版本文件: {self.skip_version_file} {_skip_version}")
         else:
-            _skip_version = 0, 0, 0
-        return max(tuple(map(int, VERSION.split("."))), _skip_version)
+            _skip_version = DEFAULT_VERSION
+        return max(self.version_to_tuple(VERSION), _skip_version)
 
     def write_update_script(self):
         """写入更新脚本"""
@@ -104,17 +119,18 @@ class UpdateVersion:
         with open(self.update_script, "w", encoding="utf-8") as f:
             f.write(_sp)
 
-    def check(self):
+    def check(self) -> bool:
         """检查是否有更新
 
         :return:
         """
         if self.new_version <= self.old_version:
             logger.debug(f"当前版本 {self.old_version_str} 大于等于远程版本 {self.new_version_str}, 或已跳过该版本")
-            return
+            return False
 
         logger.info(f"发现新版本: {self.old_version_str} -> {self.new_version_str}")
         self.show()
+        return True
 
     def show(self):
         """弹窗提示用户是否需要升级：
@@ -146,12 +162,12 @@ class UpdateVersion:
             logger.info("用户取消升级")
 
 
-def check_update(app: "App" = None):
+def check_update(app: "App" = None) -> bool:
     """检查更新"""
-    UpdateVersion(app).check()
+    return UpdateVersion(app).check()
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
-    VERSION = "1.0.0"
+    # VERSION = "1.0.0"
     UpdateVersion().check()

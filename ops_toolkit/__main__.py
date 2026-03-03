@@ -11,12 +11,15 @@ app 入口， 接收一个参数 config指定配置文件的位置， 默认为 
 import argparse
 import logging
 import os
+import warnings
 
 from ops_toolkit.log import init_logger
 from ops_toolkit.tools import StartLock
 from ops_toolkit.config import config
 
 logger = logging.getLogger("ops_toolkit.app.main")
+
+warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 
 def _main():
