@@ -87,7 +87,7 @@ class UpdateVersion:
             response.raise_for_status()
             versions = re.findall(r"/leecq/pytools/-/registries/ops-toolkit/-/tag/(\d\.\d+\.\d+[b\d]*)", response.text)
             logger.info(f"在制品库中找到版本号: {versions}")
-            acc_beta = config.startup_beta
+            acc_beta = config.update_beta
             return max(self.version_to_tuple(i) for i in versions if ("b" in i and acc_beta) or "b" not in i)
         except requests.RequestException as e:
             logger.error(f"获取远程版本号失败: {e}")
@@ -125,7 +125,7 @@ class UpdateVersion:
         :return:
         """
         if self.new_version <= self.old_version:
-            logger.debug(f"当前版本 {self.old_version_str} 大于等于远程版本 {self.new_version_str}, 或已跳过该版本")
+            logger.debug(f"当前版本 {self.old_version_str} 大于等于远程版本 {self.new_version_str}, 或已跳过该版本（{config.update_beta=}）")
             return False
 
         logger.info(f"发现新版本: {self.old_version_str} -> {self.new_version_str}")

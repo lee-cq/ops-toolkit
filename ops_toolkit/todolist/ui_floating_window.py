@@ -153,7 +153,7 @@ class FloatingWindow:
             row_frame,
             text=self.show_time(task.do_time),
             style="Task.TLabel",
-            width=7,
+            width=8,
             # 关键：强制标签背景色和父Frame一致（ttk.Label需用configure动态设置）
             background=bg[id_]
         )
@@ -195,7 +195,7 @@ class FloatingWindow:
             return dt.strftime("%H:%M")
         else:
             days_diff = (dt.date() - now.date()).days
-            return f"{dt.strftime('%H:%M')}({days_diff:+}d)"
+            return f"{dt.strftime('%H:%M')}({days_diff:+})"
 
     def show_worktime_menu(self, frame, op: TaskItem):
         menu = tk.Menu(frame, tearoff=False)

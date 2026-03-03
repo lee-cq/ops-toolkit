@@ -59,7 +59,7 @@ class Config(BaseModel):
     teams: TeamsModel | None = TeamsModel()
     app_name: str = "ops_toolkit"
     startup: bool = False
-    startup_beta: bool = False
+    update_beta: bool = False
     hotkey_translate: str = '<ctrl>+<alt>+d'
     hotkey_todo_create: str = '<ctrl>+<alt>+t'
     hotkey_todo_display: str = '<alt>+t'

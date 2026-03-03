@@ -28,7 +28,8 @@ UPDATE_LOG = """
 2. fix:添加aliyun-log-python-sdk依赖
 3. 添加todolist task
 4. update_version 支持选择beta版本
-5b1. [todolist] add "删除任务"
+5. [todolist] add "删除任务" 优化 窗口布局
+6. [update_version] fix 更新提醒和beta提示
 
 ### 1.7
 1. 添加自动更新功能

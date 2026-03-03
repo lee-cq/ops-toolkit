@@ -32,7 +32,7 @@ class SettingsWindow:
         self.hotkey_todo_create_entry = None
         self.hotkey_todo_display_entry = None
         self.startup_var = None
-        self.startup_beta_var = None
+        self.update_beta_var = None
         self.registry_entry = None
 
         # 路径设置控件
@@ -125,18 +125,19 @@ class SettingsWindow:
             .grid(row=7, column=1, sticky=tk.W)
 
         # 9 接受bate版本
-        ttk.Label(basic_frame, text="接受bate版本:").grid(row=8, column=0, sticky=tk.W, pady=(10, 5))
-        self.startup_beta_var = tk.BooleanVar(value=self.app.config.startup_beta)
-        ttk.Checkbutton(basic_frame, variable=self.startup_beta_var).grid(row=8, column=1, sticky=tk.W, pady=(10, 5))
+        ttk.Label(basic_frame, text="接受bate版本(保存后生效):").grid(row=8, column=0, sticky=tk.W, pady=(10, 5))
+        self.update_beta_var = tk.BooleanVar(value=self.app.config.update_beta)
+        ttk.Checkbutton(basic_frame, variable=self.update_beta_var).grid(row=8, column=1, sticky=tk.W, pady=(10, 5))
 
         # TODO 按钮，创建桌面快捷方式
         # ttk.Button(basic_frame, text="创建桌面快捷方式", command=self.create_shortcut) \
         #     .grid(row=6, column=1, sticky=tk.EW, pady=(10, 5))
         # 10 按钮，检查更新
+        _vs = "忽略beta版本" if not self.app.config.update_beta else "接受beta版本"
         _ct = ttk.Button(
             basic_frame,
             text="检查更新",
-            command=lambda: messagebox.showinfo("提示", "无新版本") if check_update() else ""
+            command=lambda: "" if check_update() else messagebox.showinfo("提示", f"无新版本({_vs})")
         )
         _ct.grid(row=9, column=1, sticky=tk.EW, pady=(10, 5))
 
@@ -407,7 +408,7 @@ class SettingsWindow:
         new_hotkey_todo_create = self.hotkey_todo_create_entry.get().strip()
         new_hotkey_todo_display = self.hotkey_todo_display_entry.get().strip()
         new_startup = self.startup_var.get()
-        new_startup_beta = self.startup_beta_var.get()
+        new_update_beta = self.update_beta_var.get()
 
         # 获取路径设置 
         new_config_path = Path(self.config_path_entry.get().strip())
@@ -429,7 +430,7 @@ class SettingsWindow:
         self.app.config.hotkey_translate = new_hotkey_translate
         self.app.config.hotkey_todo_create = new_hotkey_todo_create
         self.app.config.hotkey_todo_display = new_hotkey_todo_display
-        self.app.config.startup_beta = new_startup_beta
+        self.app.config.update_beta = new_update_beta
         self.app.config.startup = new_startup
         self.app.config.config_path = new_config_path
         self.app.config.data_dir = new_data_dir
