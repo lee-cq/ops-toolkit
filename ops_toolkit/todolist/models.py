@@ -18,6 +18,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Text
+from sqlalchemy import text
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -40,7 +41,7 @@ class TaskStatus:
 
 
 class TodolistModel(Base):
-    __tablename__ = 'todolist'
+    __tablename__ = 'todolist_tasks'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(255), nullable=False, comment="标题")
@@ -55,15 +56,26 @@ class TodolistModel(Base):
 class TodolistHistoryModel(Base):
     __tablename__ = 'todolist_history'
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    tid = Column(Integer, ForeignKey('todolist.id'), comment="todolistID")
-    create_time = Column(DateTime, default=datetime, comment="修改时间")
-    change = Column(Text, nullable=False, comment="修改内容")  # JSON format string
+    tid = Column(Integer, ForeignKey('todolist_tasks.id'), comment="task ID")
+    c_time = Column(DateTime, default=datetime.now, comment="修改时间")
+    c_table = Column(String(255), nullable=False, comment="修改表")
+    c_key = Column(String(255), nullable=False, comment="修改字段")
+    c_value = Column(Text, nullable=True, comment="修改值")
+    # change = Column(Text, nullable=False, comment="修改内容")  # JSON format string
     # t_key = Column(String(255), nullable=False, comment="修改字段")
     # old_value = Column(Text, nullable=True, comment="旧值")
     # new_value = Column(Text, nullable=True, comment="新值")
 
 
-class TodolistManager:
+class TodolistConfigModel(Base):
+    __tablename__ = 'todolist_config'
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    key = Column(String(255), nullable=False, index=True, comment="配置项")
+    value = Column(Text, nullable=True, comment="配置值")
+
+
+class DBManager:
 
     def __init__(self, app):
         self.engine = None
@@ -81,12 +93,38 @@ class TodolistManager:
             self.app.config.data_dir.mkdir(parents=True, exist_ok=True)
             db_path = Path(self.app.config.data_dir) / "todolist.db"
             self.engine = create_engine(f'sqlite:///{db_path.as_posix()}')
+            self._update_tables()
             Base.metadata.create_all(self.engine)
             self.Session = sessionmaker(bind=self.engine)
             logger.info("todolist Database initialized successfully")
         except Exception as e:
             logger.error(f"todolist Error initializing database: {e}")
             raise e
+
+    def _update_tables(self):
+        session = sessionmaker(self.engine)()
+        try:
+            if session.execute(text(
+                    """SELECT MAX(CASE WHEN name = 'todolist' THEN 1 ELSE 0 END)       AS todolist_exists,
+                              MAX(CASE WHEN name = 'todolist_tasks' THEN 1 ELSE 0 END) AS tasks_exists
+                       FROM sqlite_master
+                       WHERE type = 'table'
+                         AND name IN ('todolist', 'todolist_tasks');
+                    """
+            )).first() == (1, 0):
+                session.execute(text("ALTER TABLE todolist RENAME TO todolist_tasks;"))
+                session.commit()
+
+            _t_names = [t[1] for t in session.execute(text("PRAGMA table_info(todolist_history)")).all()]
+            if "change" in _t_names and "t_key" not in _t_names and "t_table" not in _t_names:
+                session.execute(text("DROP TABLE todolist_history;"))
+                session.commit()
+
+        except Exception as e:
+            logger.error(f"todolist Error updating tables: {e}")
+            session.rollback()
+        finally:
+            session.close()
 
     def _get_session(self):
         """获取数据库会话"""
@@ -101,7 +139,7 @@ class TodolistManager:
             logger.info("todolist Database connection closed")
 
     # 添加记录
-    def add_record(self, title, desc="", link="", do_time: datetime = None):
+    def add_task(self, title, desc="", link="", do_time: datetime = None):
         """"""
         if do_time is None:
             do_time = datetime.now() + timedelta(hours=1)
@@ -127,7 +165,7 @@ class TodolistManager:
         finally:
             session.close()
 
-    def update_record(self, tid, **kwargs):
+    def update_task(self, tid, **kwargs):
         """title="", desc="", link="", do_time: datetime = None
 
         :param tid:
@@ -141,19 +179,18 @@ class TodolistManager:
                 old = {k: getattr(record, k) for k in kwargs.keys()}
                 [setattr(record, key, value) for key, value in kwargs.items()]
                 logger.debug(f"todolist New Record: {record.__dict__}")
-                change = {
-                    "old": old,
-                    "new": kwargs
-                }
-                session.add(TodolistHistoryModel(
-                    tid=tid,
-                    create_time=datetime.now(),
-                    change=json.dumps(change, ensure_ascii=False, default=json_serializer)
-                ))
+                change = {k: [old[k], v] for k, v in kwargs.items() if old[k] != v}
+                for k, v in change.items():
+                    session.add(TodolistHistoryModel(
+                        tid=tid,
+                        c_table="todolist_tasks",
+                        c_key=k,
+                        c_value=json.dumps(v, ensure_ascii=False, default=json_serializer)
+                    ))
                 session.flush()
                 session.commit()
-
-                toolkit_notify("todolist", f"更新任务成功: {tid=} ")
+                c_s = "\n".join(f"{k}: {v[0]} -> {v[1]}" for k, v in change.items())
+                toolkit_notify("todolist", f"更新任务成功: {tid} : {record.title} \n{c_s}")
                 logger.debug(f"create history: {change}")
                 logger.info(f"todolist Record updated: {tid=}")
                 session.flush()
@@ -170,7 +207,7 @@ class TodolistManager:
         finally:
             session.close()
 
-    def top_10_todo(self) -> list[type[TodolistModel]]:
+    def top_10_task(self) -> list[type[TodolistModel] | TodolistModel]:
         """获取10条未完成的任务"""
         session = self._get_session()
         try:
@@ -182,10 +219,21 @@ class TodolistManager:
         finally:
             session.close()
 
-    def complete_todo(self, tid) -> bool:
+    def get_task(self, tid) -> type[TodolistModel] | TodolistModel | None:
+        """获取一个待办事项"""
+        session = self._get_session()
+        try:
+            return session.query(TodolistModel).filter(TodolistModel.id == tid).first()
+        except Exception as e:
+            logger.error(f"todolist Error getting todo {tid=}: {e}")
+            return None
+        finally:
+            session.close()
+
+    def complete_task(self, tid) -> bool:
         """完成待办事项"""
         try:
-            self.update_record(tid, status=1)
+            self.update_task(tid, status=1)
             logger.info("任务 {tid} 已经完成")
             toolkit_notify("todolist", f"任务 {tid} 已经完成")
             return True
@@ -193,3 +241,54 @@ class TodolistManager:
             logger.error(f"todolist Error completing todo {tid=}: {e}")
             toolkit_notify("todolist", f"任务 {tid} 完成失败\n{e}")
             return False
+
+    def get_setting(self, key, default: str = None) -> str:
+        """从设置表中获取一个值.
+        如果key不存在且default=None, 则KeyError
+        """
+        session = self._get_session()
+        try:
+            req = session.query(TodolistConfigModel).filter(TodolistConfigModel.key == key).first()
+            if req is not None:
+                return str(req.value)
+            if default is not None:
+                logger.warning(f'"{key}" not in table "todolist_config", using default: "{default}"')
+                return default
+            logger.error(f'"{key}" not in table "todolist_config", and default is None')
+            raise KeyError(f'"{key}" not in table "todolist_config", and default is None')
+
+        finally:
+            session.close()
+
+    def set_setting(self, key: str, value: str):
+        """设置一个值"""
+        session = self._get_session()
+        try:
+            req = session.query(TodolistConfigModel).filter(TodolistConfigModel.key == key).first()
+            if req is not None:
+                req.value = value
+            else:
+                req = TodolistConfigModel(key=key, value=value)
+                session.add(req)
+            session.commit()
+            logger.info(f'todolist_config "{key}" updated:  {value}')
+            return True
+        except Exception as e:
+            logger.error(f"Error updating todolist_config {key=}: {e}")
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+
+if __name__ == '__main__':
+    from ops_toolkit.config import config
+
+
+    class _APP:
+        def __init__(self):
+            self.config = config
+
+
+    db = DBManager(_APP())
+    print(db.get_setting("test", "000"))

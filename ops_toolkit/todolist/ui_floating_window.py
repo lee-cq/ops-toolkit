@@ -8,62 +8,77 @@
 
 import logging
 import tkinter as tk
+import typing
 import webbrowser
 from datetime import datetime
 from datetime import timedelta
 from tkinter import messagebox
 from tkinter import ttk
-from typing import Optional
 
 from ops_toolkit.todolist.models import TaskStatus
-from ops_toolkit.todolist.models import TodolistManager
 from ops_toolkit.todolist.models import TodolistModel
+
+if typing.TYPE_CHECKING:
+    from ops_toolkit.todolist.main import TodoManager
 
 logger = logging.getLogger("ops_toolkit.todolist.ui_floating_window")
 
 
 class TaskItem:
-    def __init__(self, record: TodolistModel, manager: TodolistManager, ui: "FloatingWindow"):
-        self.manager: TodolistManager = manager
+    def __init__(self, record: TodolistModel, manager: "TodoManager"):
+        self.todo: "TodoManager" = manager
         self.record: TodolistModel = record
-        self.ui: "FloatingWindow" = ui
 
     def on_link_click(self):
-        webbrowser.open(self.record.link)
+        if self.record.link:
+            webbrowser.open(self.record.link)
 
     def on_delete(self):
-        if messagebox.askyesno("提示", "确定要删除此任务吗？"):
-            self.manager.update_record(self.record, status=TaskStatus.DELETE)
-            self.ui.load_tasks()
+        if messagebox.askyesno(
+                "提示",
+                f"确定要删除任务吗？\n"
+                f"{self.record.id} {self.record.title} (已经花费{self.record.work_time_occupied / 60:.2f}小时)"
+        ):
+            self.todo.db_manager.update_task(self.record, status=TaskStatus.DELETE)
+            self.todo.reminder_manager.cancel(self)
+            self.todo.floating_window.load_tasks()
 
     def delay_time(self, hours=1, minutes=0, days=0):
         do_time = self.record.do_time if self.record.do_time > datetime.now() else datetime.now()
-        self.manager.update_record(
-            self.record.id,
-            do_time=do_time + timedelta(hours=hours, minutes=minutes, days=days)
-        )
-        self.ui.load_tasks()
+        new_time = do_time + timedelta(hours=hours, minutes=minutes, days=days)
+        self.record.do_time = new_time
+        self.todo.db_manager.update_task(self.record.id, do_time=new_time)
+        self.todo.floating_window.load_tasks()
+        self.todo.reminder_manager.change_time(self)
 
     def complete_todo(self):
         """完成待办事项"""
-        if messagebox.askyesno("提示", "确定要完成此任务吗？"):
-            self.manager.complete_todo(self.record.id)
-            self.ui.load_tasks()
+        if messagebox.askyesno(
+                "提示",
+                "确定要完成此任务吗？\n"
+                f"{self.record.id} {self.record.title} (已经花费{self.record.work_time_occupied / 60:.2f}小时)"
+        ):
+            self.todo.db_manager.complete_task(self.record.id)
+            self.todo.reminder_manager.cancel(self)
+            self.todo.floating_window.load_tasks()
 
     def on_add_worktime(self, minutes=1):
         minutes = int(minutes)
-        self.manager.update_record(self.record.id, work_time_occupied=self.record.work_time_occupied + minutes)
-        self.ui.load_tasks()
+        self.todo.db_manager.update_task(self.record.id, work_time_occupied=self.record.work_time_occupied + minutes)
+        self.todo.floating_window.load_tasks()
+
+    def on_add_reminder(self):
+        self.todo.reminder_manager.add(self)
 
 
 class FloatingWindow:
     """浮动任务窗口"""
 
-    def __init__(self, app, manager: TodolistManager):
+    def __init__(self, app, manager: "TodoManager"):
         self.app = app
-        self.manager = manager
-        self.window: Optional[tk.Toplevel] = None
-        self.tasks_frame: Optional[ttk.Frame] = None
+        self.todo = manager
+        self.window: tk.Toplevel | None = None
+        self.tasks_frame: ttk.Frame | None = None
         self.window_size = (405, 230)
 
     def show(self):
@@ -133,7 +148,7 @@ class FloatingWindow:
             item.destroy()
 
         # 获取未完成的任务
-        tasks = self.manager.top_10_todo()
+        tasks = self.todo.db_manager.top_10_task()
 
         # 创建任务项
         for i, task in enumerate(tasks):
@@ -146,7 +161,7 @@ class FloatingWindow:
         bg = ["#FFE6EA", "#FFF4CC"] + ["#FFFFFF"] * 10
         row_frame = tk.Frame(self.tasks_frame, bg=bg[id_], relief="solid", borderwidth=1)
         row_frame.pack(fill="x", pady=1)
-        _op = TaskItem(task, self.manager, self)
+        _op = TaskItem(task, self.todo)
 
         # 2. 时间标签：通过设置label的background为行背景色，实现“透明”
         time_label = ttk.Label(
@@ -199,7 +214,8 @@ class FloatingWindow:
 
     def show_worktime_menu(self, frame, op: TaskItem):
         menu = tk.Menu(frame, tearoff=False)
-        menu.add_command(label="完成", command=lambda: op.complete_todo())
+        _wto_h = op.record.work_time_occupied / 60
+        menu.add_command(label=f"完成 ({_wto_h:.1f})", command=lambda: op.complete_todo())
         menu.add_command(label="5分钟", command=lambda: op.on_add_worktime(5))
         menu.add_command(label="10分钟", command=lambda: op.on_add_worktime(10))
         menu.add_command(label="15分钟", command=lambda: op.on_add_worktime(15))
@@ -223,6 +239,7 @@ class FloatingWindow:
     def show_frame_row_menu(self, frame, op: TaskItem):
         menu = tk.Menu(frame, tearoff=False)
         menu.add_command(label="删除", command=lambda: op.on_delete())
+        menu.add_command(label="添加提醒", command=lambda: op.on_add_reminder())
         # 绑定鼠标右键事件（<Button-3>是右键，Mac系统是<Button-2>）
         frame.bind("<Button-3>", lambda event: menu.post(event.x_root, event.y_root))
 
@@ -242,30 +259,3 @@ class FloatingWindow:
         butten = tk.Button(label_frame, text="确定",
                            command=lambda: (callback(float(entry.get().strip())), window.destroy()))
         butten.pack(side='left', padx=(10, 0))
-
-
-if __name__ == '__main__':
-    from ops_toolkit.config import config
-
-    logging.basicConfig(level=logging.INFO)
-
-
-    class _APP:
-        def __init__(self):
-            self.debug__ = True
-            self.root = tk.Tk()
-            self.root.withdraw()  # 隐藏主窗口
-            self.config = config
-
-
-    _app = _APP()
-    mock_manager = TodolistManager(
-        app=_app
-    )
-
-    # 创建浮动窗口
-    floating_window = FloatingWindow(_app, mock_manager)
-    floating_window.show()
-
-    # 运行主循环
-    _app.root.mainloop()

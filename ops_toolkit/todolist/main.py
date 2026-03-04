@@ -1,15 +1,21 @@
+import json
 import tkinter as tk
 import typing
 import logging
+from datetime import datetime
+from threading import Timer
+from tkinter import messagebox
 
-from ops_toolkit.todolist.models import TodolistManager
+from ops_toolkit.todolist.models import DBManager
 from ops_toolkit.todolist.ui_create_window import TodoCreateWindow
 from ops_toolkit.todolist.ui_floating_window import FloatingWindow
+from ops_toolkit.todolist.ui_floating_window import TaskItem
+from ops_toolkit.tools import toolkit_notify
 
 if typing.TYPE_CHECKING:
     from ops_toolkit.app import App
 
-logger = logging.getLogger("ops-toolkit.todolist.main")
+logger = logging.getLogger("ops_toolkit.todolist.main")
 
 
 class TodoManager:
@@ -17,9 +23,10 @@ class TodoManager:
 
     def __init__(self, app: "App"):
         self.app = app
-        self.db_manager = TodolistManager(self.app)
+        self.db_manager = DBManager(self.app)
 
-        self.floating_window = FloatingWindow(self.app, self.db_manager)
+        self.floating_window: FloatingWindow = FloatingWindow(self.app, self)
+        self.reminder_manager: ReminderManager = ReminderManager(self)
 
     def show_create_window(self):
         """显示创建窗口"""
@@ -34,8 +41,65 @@ class TodoManager:
         self.floating_window.load_tasks()
 
 
+class ReminderManager:
+    def __init__(self, todo_manager: TodoManager):
+        self.todo_manager = todo_manager
+        self.remainder_tid_old = set()
+        self.remainders: dict[int, Timer] = {}
+        self._init()
+
+    def _init(self):
+        for tid in json.loads(self.todo_manager.db_manager.get_setting("remainders", "[]")):
+            record = self.todo_manager.db_manager.get_task(tid)
+            if record:
+                self.remainder_tid_old.add(tid)
+                self.add(TaskItem(record, self.todo_manager))
+        self._save()
+
+    def _save(self):
+        if self.remainder_tid_old != self.remainders.keys():
+            self.todo_manager.db_manager.set_setting("remainders", json.dumps(list(self.remainders.keys())))
+            self.remainder_tid_old = self.remainders.keys()
+            logger.info("Reminder list 已经更新...")
+
+    def add(self, op: TaskItem):
+        if op.record.do_time <= datetime.now():
+            messagebox.showinfo("提示", f"任务{op.record.title}已过期")
+            return
+
+        if op.record.id in self.remainders and self.remainders[op.record.id].is_alive():
+            self.remainders[op.record.id].cancel()
+
+        self.remainders[op.record.id] = Timer(
+            (op.record.do_time - datetime.now()).total_seconds(),
+            toolkit_notify,
+            (op.record.title, op.record.desc),
+            # {"launch": True}
+        )
+        self.remainders[op.record.id].start()
+        self._save()
+
+    def cancel(self, op: TaskItem | int):
+        _id = op.record.id if isinstance(op, TaskItem) else op
+        if _id in self.remainders:
+            if self.remainders[_id].is_alive():
+                self.remainders[_id].cancel()
+            del self.remainders[_id]
+            self._save()
+            logger.info(f"已经取消/完成任务 {_id}: {op.record.title} 的定时器")
+        else:
+            logger.debug(f"未找到任务 {_id}: {op.record.title} 的定时器")
+
+    def change_time(self, op: TaskItem):
+        if op.record.id not in self.remainders:
+            return
+        self.add(op)
+
+
 if __name__ == '__main__':
     from ops_toolkit.config import config
+
+    logging.basicConfig(level=logging.INFO)
 
 
     class App:

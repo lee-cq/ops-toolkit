@@ -65,6 +65,7 @@
 4. update_version 支持选择beta版本
 5. [todolist] add "删除任务" 优化 窗口布局
 6. [update_version] fix 更新提醒和beta提示
+7. [todolist] add "到期提醒功能" update "history 表结构"
 
 ### 1.7
 1. 添加自动更新功能

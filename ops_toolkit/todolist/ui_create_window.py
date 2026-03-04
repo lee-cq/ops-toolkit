@@ -93,5 +93,5 @@ class TodoCreateWindow:
         except ValueError:
             messagebox.showwarning("提示", "请输入正确的时间格式")
             return
-        self.manager.db_manager.add_record(**kwargs)
+        self.manager.db_manager.add_task(**kwargs)
         self.manager.update_window()
