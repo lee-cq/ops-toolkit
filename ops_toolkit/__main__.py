@@ -16,6 +16,7 @@ import warnings
 from ops_toolkit.log import init_logger
 from ops_toolkit.tools import StartLock
 from ops_toolkit.config import config
+from ops_toolkit.tools import toolkit_notify
 
 logger = logging.getLogger("ops_toolkit.app.main")
 
@@ -55,10 +56,11 @@ def main():
         with StartLock():
             _main()
     except KeyboardInterrupt:
-        from win11toast import notify
-        notify(
-            app_id=config.app_name,
-            title=f"{config.app_name} APP Exited."
+        logger.info("Exited by user.")
+        toolkit_notify(
+            title=f"{config.app_name} APP Exited.",
+            tag="app",
+            clear=True
         )
     except Exception as e:
         from tkinter import messagebox

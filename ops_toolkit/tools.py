@@ -5,14 +5,17 @@ import queue
 import re
 import tempfile
 from pathlib import Path
-
-from ops_toolkit.zhconv import convert
 from typing import Union
 
 import PIL.BmpImagePlugin
 import PIL.ImageGrab
 import pyperclip
 from win11toast import notify, clear_toast
+
+from ops_toolkit.zhconv import convert
+from ops_toolkit.config import config
+
+logger = logging.getLogger("ops_toolkit.tools")
 
 
 def get_clipboard_content() -> tuple[str, Union[str, list[str], PIL.BmpImagePlugin.BmpImageFile, None]]:
@@ -154,10 +157,13 @@ class GUIHandler(logging.Handler):
         self.queue_.put(self.format(record))
 
 
-def toolkit_notify(title: str, message: str, group: str = None):
+def toolkit_notify(title: str, message: str = "", tag: str = None, clear: bool = False, **kwargs):
     """
     使用Windows系统通知进行通知
     """
-    notify(title, message, app_id="ops-toolkit", group=group)
-    # if group:
-    #     clear_toast(app_id="ops-toolkit", group=group)
+    group = config.app_name
+    kwargs["group"] = group
+    if clear and tag:
+        logger.info(f"Clear toast: {group=}")
+        # clear_toast(app_id=config.app_name, group=group, tag=tag) ToDo Win11toast更新
+    notify(title, message, app_id=config.app_name, tag=tag, **kwargs)

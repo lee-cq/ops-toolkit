@@ -10,9 +10,9 @@ from typing import TYPE_CHECKING
 import pyperclip
 from PIL import Image
 from PIL import ImageTk
-from win11toast import notify
 
 from ops_toolkit import VERSION
+from ops_toolkit.tools import toolkit_notify
 from ops_toolkit.translate.history import HistoryManager
 from ops_toolkit.app_hotkey import HotkeyListener
 from ops_toolkit.app_tray import SystemTray
@@ -71,10 +71,12 @@ class App:
         self.todoer = TodoManager(self)
         self.notification_monitor_window = TeamsNotificationsListenerWindow(self)
         logger.info(f"{self.config.app_name} started successfully")
-        notify(
-            app_id=self.config.app_name,
-            title=f"{self.config.app_name} @ {VERSION} started successfully"
+        toolkit_notify(
+            title=f"{self.config.app_name} @ {VERSION} started successfully",
+            tag="app",
+            clear=True,
         )
+
         globals()["ops_toolkit_app"] = self
         if Path(__file__).parent.parent.joinpath("scripts", "gui_auto.py").exists():
             sys.path.insert(0, str(Path(__file__).parent.parent.joinpath("scripts")))
@@ -170,17 +172,17 @@ class App:
         sys.exit(0)
 
 
-def quit_app():
-    """退出应用程序"""
-    if globals().get("ops_toolkit_app", None) is not None:
-        globals().get("ops_toolkit_app").quit()
-
-
-def get_app() -> App:
-    """获取应用程序实例"""
-    if globals().get("ops_toolkit_app", None) is None:
-        raise ValueError("App instance not found. Please run the app first.")
-    return globals().get("ops_toolkit_app")
+# def quit_app():
+#     """退出应用程序"""
+#     if globals().get("ops_toolkit_app", None) is not None:
+#         globals().get("ops_toolkit_app").quit()
+#
+#
+# def get_app() -> App:
+#     """获取应用程序实例"""
+#     if globals().get("ops_toolkit_app", None) is None:
+#         raise ValueError("App instance not found. Please run the app first.")
+#     return globals().get("ops_toolkit_app")
 
 # # 主程序入口
 # if __name__ == "__main__":
