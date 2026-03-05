@@ -12,6 +12,8 @@ from tkinter import ttk, messagebox
 from datetime import datetime, timedelta
 import logging
 
+from ops_toolkit.todolist.models import TodolistTaskModel
+
 if typing.TYPE_CHECKING:
     from .main import TodoManager
 logger = logging.getLogger("ops-toolkit.todolist.ui_create_window")
@@ -20,15 +22,20 @@ logger = logging.getLogger("ops-toolkit.todolist.ui_create_window")
 class TodoCreateWindow:
     """待办事项创建窗口"""
 
-    def __init__(self, manager: "TodoManager"):
+    def __init__(self, manager: "TodoManager", task: TodolistTaskModel = None):
         self.window = None
+        self.task = task
         self.manager: "TodoManager" = manager
         self.args = {
-            "title":   ("标题", tk.StringVar()),
-            "desc":    ("描述", tk.StringVar()),
-            "link":    ("连接", tk.StringVar()),
+            "title":   ("标题", tk.StringVar(value=task.title if task else None)),
+            "desc":    ("描述", tk.StringVar(value=task.desc if task else None)),
+            "link":    ("连接", tk.StringVar(value=task.link if task else None)),
             "do_time": ("计划时间",
-                        tk.StringVar(value=(datetime.now() + timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S"))),
+                        tk.StringVar(value=(
+                            task.do_time.strftime("%Y-%m-%d %H:%M:%S")
+                            if task else
+                            (datetime.now() + timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S"))
+                        )),
         }
         self.show()
 
@@ -93,5 +100,10 @@ class TodoCreateWindow:
         except ValueError:
             messagebox.showwarning("提示", "请输入正确的时间格式")
             return
-        self.manager.db_manager.add_task(**kwargs)
-        self.manager.update_window()
+        if self.task:
+            self.manager.db_manager.update_task(self.task.id, **kwargs)
+            self.manager.update_window()
+            self.window.destroy()
+        else:
+            self.manager.db_manager.add_task(**kwargs)
+            self.manager.update_window()

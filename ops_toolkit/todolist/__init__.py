@@ -7,7 +7,7 @@
 """
 
 from .main import TodoManager
-from .models import DBManager, TodolistModel, TodolistHistoryModel, TaskStatus
+from .models import DBManager, TodolistTaskModel, TodolistHistoryModel, TaskStatus
 from .ui_create_window import TodoCreateWindow
 from .ui_floating_window import FloatingWindow
 from .ui_summary import SummaryWindow

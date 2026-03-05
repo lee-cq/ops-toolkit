@@ -17,8 +17,9 @@ from tkinter import messagebox
 from tkinter import ttk
 from typing import Callable
 
+from ops_toolkit.todolist.ui_create_window import TodoCreateWindow
 from ops_toolkit.todolist.models import TaskStatus
-from ops_toolkit.todolist.models import TodolistModel
+from ops_toolkit.todolist.models import TodolistTaskModel
 
 if typing.TYPE_CHECKING:
     from ops_toolkit.todolist.main import TodoManager
@@ -27,9 +28,9 @@ logger = logging.getLogger("ops_toolkit.todolist.ui_floating_window")
 
 
 class TaskItem:
-    def __init__(self, record: TodolistModel, manager: "TodoManager"):
+    def __init__(self, record: TodolistTaskModel, manager: "TodoManager"):
         self.todo: "TodoManager" = manager
-        self.record: TodolistModel = record
+        self.record: TodolistTaskModel = record
 
     def on_link_click(self):
         if self.record.link:
@@ -111,6 +112,9 @@ class TaskItem:
     def on_cancel_reminder(self):
         self.todo.reminder_manager.cancel(self)
         self.todo.floating_window.load_tasks()
+
+    def on_edit_task(self):
+        TodoCreateWindow(self.todo, self.record).show()
 
 
 class FloatingWindow:
@@ -196,7 +200,7 @@ class FloatingWindow:
         for i, task in enumerate(tasks):
             self.create_task_row(task, i)
 
-    def create_task_row(self, task: TodolistModel, id_):
+    def create_task_row(self, task: TodolistTaskModel, id_):
         """创建任务行：核心是让Label背景匹配行背景"""
         # 行容器（设置背景色）
         logger.debug(f"创建任务行 {id_}：{task.title}")
@@ -216,7 +220,7 @@ class FloatingWindow:
             background=bg[id_] if task.do_time >= datetime.now() else "#FF3A30",
         )
         time_label.pack(side="left", padx=5, pady=2)
-        self.show_frame_row_time_menu(time_label, _op)
+        self.show_menu_row_time(time_label, _op)
 
         # 3. 任务名称标签：同理，背景色匹配行背景
         name_label = ttk.Label(
@@ -228,6 +232,7 @@ class FloatingWindow:
             width=20,
         )
         name_label.pack(side="left", fill="x", expand=True, padx=0, pady=2)
+        self.show_menu_row_title(name_label, _op)
 
         # 按钮组：按钮容器背景也匹配行背景
         btn_frame = tk.Frame(row_frame, bg=bg[id_])
@@ -239,12 +244,12 @@ class FloatingWindow:
 
         complete_btn = ttk.Button(btn_frame, text="✅", style="Task.TButton", width=3, command=_op.complete_todo)
         complete_btn.pack(side="left", padx=2)
-        self.show_worktime_menu(complete_btn, _op)
+        self.show_menu_worktime(complete_btn, _op)
 
         delay_btn = ttk.Button(btn_frame, text="⌛️", style="Task.TButton", width=3,
                                command=lambda: _op.delay_time_by_str("1h"))
         delay_btn.pack(side="left", padx=2)
-        self.show_delay_menu(delay_btn, _op)
+        self.show_menu_delay(delay_btn, _op)
 
     @staticmethod
     def show_time(dt: datetime) -> str:
@@ -256,7 +261,7 @@ class FloatingWindow:
             days_diff = (dt.date() - now.date()).days
             return f"{dt.strftime('%H:%M')}({days_diff:+})"
 
-    def show_worktime_menu(self, frame, op: TaskItem):
+    def show_menu_worktime(self, frame, op: TaskItem):
         menu = tk.Menu(frame, tearoff=False)
         _wto_h = op.record.work_time_occupied / 60
         menu.add_command(label=f"完成 ({_wto_h:.1f})", command=lambda: op.complete_todo())
@@ -274,7 +279,7 @@ class FloatingWindow:
         # 2. 绑定鼠标右键事件（<Button-3>是右键，Mac系统是<Button-2>）
         frame.bind("<Button-3>", lambda event: menu.post(event.x_root, event.y_root))
 
-    def show_delay_menu(self, frame, op: TaskItem):
+    def show_menu_delay(self, frame, op: TaskItem):
         menu = tk.Menu(frame, tearoff=False)
         menu.add_command(label="15分钟", command=lambda: op.delay_time_by_str("15m"))
         menu.add_command(label="2 小时", command=lambda: op.delay_time_by_str("2h"))
@@ -293,13 +298,19 @@ class FloatingWindow:
         # 绑定鼠标右键事件（<Button-3>是右键，Mac系统是<Button-2>）
         frame.bind("<Button-3>", lambda event: menu.post(event.x_root, event.y_root))
 
-    def show_frame_row_time_menu(self, frame, op: TaskItem):
+    def show_menu_row_time(self, frame, op: TaskItem):
         menu = tk.Menu(frame, tearoff=False)
         menu.add_command(label="删除", command=lambda: op.on_delete())
         if self.todo.reminder_manager.is_notify(op.record.id):
             menu.add_command(label="取消提醒", command=lambda: op.on_cancel_reminder())
         else:
             menu.add_command(label="添加提醒", command=lambda: op.on_add_reminder())
+        # 绑定鼠标右键事件（<Button-3>是右键，Mac系统是<Button-2>）
+        frame.bind("<Button-3>", lambda event: menu.post(event.x_root, event.y_root))
+
+    def show_menu_row_title(self, frame, op: TaskItem):
+        menu = tk.Menu(frame, tearoff=False)
+        menu.add_command(label="修改", command=lambda: op.on_edit_task())
         # 绑定鼠标右键事件（<Button-3>是右键，Mac系统是<Button-2>）
         frame.bind("<Button-3>", lambda event: menu.post(event.x_root, event.y_root))
 

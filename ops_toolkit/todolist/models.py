@@ -40,7 +40,7 @@ class TaskStatus:
     DELETE = 2
 
 
-class TodolistModel(Base):
+class TodolistTaskModel(Base):
     __tablename__ = 'todolist_tasks'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -143,7 +143,7 @@ class DBManager:
 
         session = self._get_session()
         try:
-            record = TodolistModel(
+            record = TodolistTaskModel(
                 title=title,
                 desc=desc,
                 link=link,
@@ -171,12 +171,11 @@ class DBManager:
         """
         session = self._get_session()
         try:
-            record = session.query(TodolistModel).filter(TodolistModel.id == tid).first()
+            record = session.query(TodolistTaskModel).filter(TodolistTaskModel.id == tid).first()
             if record:
-                old = {k: getattr(record, k) for k in kwargs.keys()}
-                [setattr(record, key, value) for key, value in kwargs.items()]
-                logger.debug(f"todolist New Record: {record.__dict__}")
-                change = {k: [old[k], v] for k, v in kwargs.items() if old[k] != v}
+                old = {k: getattr(record, k) for k in kwargs.keys() if getattr(record, k) != kwargs[k]}
+                [setattr(record, key, kwargs[key]) for key in old.keys()]
+                change = {k: [v, kwargs[k]] for k, v in old.items() if old[k] != kwargs[k]}
                 for k, v in change.items():
                     session.add(TodolistHistoryModel(
                         tid=tid,
@@ -188,7 +187,7 @@ class DBManager:
                 session.commit()
                 c_s = "\n".join(f"{k}: {v[0]} -> {v[1]}" for k, v in change.items())
                 toolkit_notify("todolist", f"更新任务成功: {tid} : {record.title} \n{c_s}")
-                logger.debug(f"create history: {change}")
+                logger.info(f"create history: {change}")
                 logger.info(f"todolist Record updated: {tid=}")
                 session.flush()
             else:
@@ -204,23 +203,23 @@ class DBManager:
         finally:
             session.close()
 
-    def top_10_task(self) -> list[type[TodolistModel] | TodolistModel]:
+    def top_10_task(self) -> list[type[TodolistTaskModel] | TodolistTaskModel]:
         """获取10条未完成的任务"""
         session = self._get_session()
         try:
-            return session.query(TodolistModel).filter(TodolistModel.status == 0) \
-                .order_by(TodolistModel.do_time).limit(10).all()
+            return session.query(TodolistTaskModel).filter(TodolistTaskModel.status == 0) \
+                .order_by(TodolistTaskModel.do_time).limit(10).all()
         except Exception as e:
             logger.error(f"todolist Error getting top 10 todo: {e}")
             return []
         finally:
             session.close()
 
-    def get_task(self, tid) -> type[TodolistModel] | TodolistModel | None:
+    def get_task(self, tid) -> type[TodolistTaskModel] | TodolistTaskModel | None:
         """获取一个待办事项"""
         session = self._get_session()
         try:
-            return session.query(TodolistModel).filter(TodolistModel.id == tid).first()
+            return session.query(TodolistTaskModel).filter(TodolistTaskModel.id == tid).first()
         except Exception as e:
             logger.error(f"todolist Error getting todo {tid=}: {e}")
             return None

@@ -1025,6 +1025,7 @@ interval = 30
 6. [update_version] fix 更新提醒和beta提示
 7. [todolist] add "到期提醒功能" update "history 表结构"
 8. [todolist] add "取消提醒" add "添加提醒的任务添加标记 #30 " op "延时体验"
+9. [todolist] add "添加任务编辑功能 #31 "
 
 ### 1.7
 1. 添加自动更新功能
