@@ -62,9 +62,6 @@ class TodolistHistoryModel(Base):
     c_key = Column(String(255), nullable=False, comment="修改字段")
     c_value = Column(Text, nullable=True, comment="修改值")
     # change = Column(Text, nullable=False, comment="修改内容")  # JSON format string
-    # t_key = Column(String(255), nullable=False, comment="修改字段")
-    # old_value = Column(Text, nullable=True, comment="旧值")
-    # new_value = Column(Text, nullable=True, comment="新值")
 
 
 class TodolistConfigModel(Base):

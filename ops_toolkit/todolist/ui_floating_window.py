@@ -7,6 +7,7 @@
 """
 
 import logging
+import re
 import tkinter as tk
 import typing
 import webbrowser
@@ -14,6 +15,7 @@ from datetime import datetime
 from datetime import timedelta
 from tkinter import messagebox
 from tkinter import ttk
+from typing import Callable
 
 from ops_toolkit.todolist.models import TaskStatus
 from ops_toolkit.todolist.models import TodolistModel
@@ -43,13 +45,46 @@ class TaskItem:
             self.todo.reminder_manager.cancel(self)
             self.todo.floating_window.load_tasks()
 
-    def delay_time(self, hours=1, minutes=0, days=0):
+    def parse_timedelta_by_str(self, t: str) -> tuple[int, int, int]:
+        """解析时间增量字符串
+
+        :param t: timedelta str  exp: 1d2h3m
+        :return:
+        """
+        _m, _h, _d = 0, 0, 0
+        try:
+            if "m" in t:
+                _m = int(re.findall(r"(\d+)m", t)[0])
+            elif "h" in t:
+                _h = int(re.findall(r"(\d+)h", t)[0])
+            elif "d" in t:
+                _d = int(re.findall(r"(\d+)d", t)[0])
+            else:
+                _h = int(t.strip())
+        except (ValueError, IndexError):
+            messagebox.showwarning("提示", "请输入正确的时间格式！ ")
+        return _m, _h, _d
+
+    def delay_time_by_str(self, t: str):
+        """从字符串延迟"""
+        hours, minutes, days = self.parse_timedelta_by_str(t)
+
         do_time = self.record.do_time if self.record.do_time > datetime.now() else datetime.now()
         new_time = do_time + timedelta(hours=hours, minutes=minutes, days=days)
         self.record.do_time = new_time
         self.todo.db_manager.update_task(self.record.id, do_time=new_time)
         self.todo.floating_window.load_tasks()
         self.todo.reminder_manager.change_time(self)
+
+    def delay_time_by_time(self, _t: str):
+        new_time = datetime.strptime(_t, "%Y-%m-%d %H:%M:%S")
+
+        if new_time < datetime.now():
+            messagebox.showwarning("提示", "请输入一个晚于当前时间的时间~")
+            return
+        self.record.do_time = new_time
+        self.todo.db_manager.update_task(self.record.id, do_time=new_time)
+        self.todo.floating_window.load_tasks()
 
     def complete_todo(self):
         """完成待办事项"""
@@ -62,13 +97,20 @@ class TaskItem:
             self.todo.reminder_manager.cancel(self)
             self.todo.floating_window.load_tasks()
 
-    def on_add_worktime(self, minutes=1):
-        minutes = int(minutes)
+    def on_add_worktime(self, s: str):
+        """添加工作时间"""
+        _m, _h, _d = self.parse_timedelta_by_str(s)
+        minutes = _m + _h * 60 + _d * 60 * 24
         self.todo.db_manager.update_task(self.record.id, work_time_occupied=self.record.work_time_occupied + minutes)
         self.todo.floating_window.load_tasks()
 
     def on_add_reminder(self):
         self.todo.reminder_manager.add(self)
+        self.todo.floating_window.load_tasks()
+
+    def on_cancel_reminder(self):
+        self.todo.reminder_manager.cancel(self)
+        self.todo.floating_window.load_tasks()
 
 
 class FloatingWindow:
@@ -164,16 +206,17 @@ class FloatingWindow:
         _op = TaskItem(task, self.todo)
 
         # 2. 时间标签：通过设置label的background为行背景色，实现“透明”
+        _is_n = "*" if self.todo.reminder_manager.is_notify(task.id) else " "
         time_label = ttk.Label(
             row_frame,
-            text=self.show_time(task.do_time),
+            text=_is_n + self.show_time(task.do_time),
             style="Task.TLabel",
             width=8,
             # 关键：强制标签背景色和父Frame一致（ttk.Label需用configure动态设置）
-            background=bg[id_]
+            background=bg[id_] if task.do_time >= datetime.now() else "#FF3A30",
         )
         time_label.pack(side="left", padx=5, pady=2)
-        self.show_frame_row_menu(time_label, _op)
+        self.show_frame_row_time_menu(time_label, _op)
 
         # 3. 任务名称标签：同理，背景色匹配行背景
         name_label = ttk.Label(
@@ -198,7 +241,8 @@ class FloatingWindow:
         complete_btn.pack(side="left", padx=2)
         self.show_worktime_menu(complete_btn, _op)
 
-        delay_btn = ttk.Button(btn_frame, text="⌛️", style="Task.TButton", width=3, command=lambda: _op.delay_time(1, ))
+        delay_btn = ttk.Button(btn_frame, text="⌛️", style="Task.TButton", width=3,
+                               command=lambda: _op.delay_time_by_str("1h"))
         delay_btn.pack(side="left", padx=2)
         self.show_delay_menu(delay_btn, _op)
 
@@ -216,34 +260,50 @@ class FloatingWindow:
         menu = tk.Menu(frame, tearoff=False)
         _wto_h = op.record.work_time_occupied / 60
         menu.add_command(label=f"完成 ({_wto_h:.1f})", command=lambda: op.complete_todo())
-        menu.add_command(label="5分钟", command=lambda: op.on_add_worktime(5))
-        menu.add_command(label="10分钟", command=lambda: op.on_add_worktime(10))
-        menu.add_command(label="15分钟", command=lambda: op.on_add_worktime(15))
-        menu.add_command(label="30分钟", command=lambda: op.on_add_worktime(30))
-        menu.add_command(label="60分钟", command=lambda: op.on_add_worktime(60))
+        menu.add_command(label="5分钟", command=lambda: op.on_add_worktime("5m"))
+        menu.add_command(label="10分钟", command=lambda: op.on_add_worktime("10m"))
+        menu.add_command(label="15分钟", command=lambda: op.on_add_worktime("15m"))
+        menu.add_command(label="30分钟", command=lambda: op.on_add_worktime("30m"))
+        menu.add_command(label="60分钟", command=lambda: op.on_add_worktime("1h"))
         menu.add_command(label="自定义",
-                         command=lambda: self.customize_input("输入消耗的时间(分钟)", op.on_add_worktime))
+                         command=lambda: self.customize_input(
+                             "输入消耗的时间(m,h,d)",
+                             op.on_add_worktime,
+                             "1h"
+                         ))
         # 2. 绑定鼠标右键事件（<Button-3>是右键，Mac系统是<Button-2>）
         frame.bind("<Button-3>", lambda event: menu.post(event.x_root, event.y_root))
 
     def show_delay_menu(self, frame, op: TaskItem):
         menu = tk.Menu(frame, tearoff=False)
-        menu.add_command(label="10分钟", command=lambda: op.delay_time(hours=0, minutes=10))
-        menu.add_command(label="30分钟", command=lambda: op.delay_time(hours=0, minutes=30))
-        menu.add_command(label="2 小时", command=lambda: op.delay_time(hours=2))
-        menu.add_command(label="1 天", command=lambda: op.delay_time(hours=24))
-        menu.add_command(label="自定义", command=lambda: self.customize_input("输入延迟的时间(小时)", op.delay_time))
+        menu.add_command(label="15分钟", command=lambda: op.delay_time_by_str("15m"))
+        menu.add_command(label="2 小时", command=lambda: op.delay_time_by_str("2h"))
+        menu.add_command(label="1 天", command=lambda: op.delay_time_by_str("1d"))
+        menu.add_command(
+            label="自定义",
+            command=lambda: self.customize_input("输入延迟的时间(m,h,d)", op.delay_time_by_str, "2d"))
+        menu.add_command(
+            label="延迟到指定时间",
+            command=lambda: self.customize_input(
+                "延迟到(YYYY-mm-dd HH:MM[:SS])",
+                op.delay_time_by_time,
+                (datetime.now() + timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
+            )
+        )
         # 绑定鼠标右键事件（<Button-3>是右键，Mac系统是<Button-2>）
         frame.bind("<Button-3>", lambda event: menu.post(event.x_root, event.y_root))
 
-    def show_frame_row_menu(self, frame, op: TaskItem):
+    def show_frame_row_time_menu(self, frame, op: TaskItem):
         menu = tk.Menu(frame, tearoff=False)
         menu.add_command(label="删除", command=lambda: op.on_delete())
-        menu.add_command(label="添加提醒", command=lambda: op.on_add_reminder())
+        if self.todo.reminder_manager.is_notify(op.record.id):
+            menu.add_command(label="取消提醒", command=lambda: op.on_cancel_reminder())
+        else:
+            menu.add_command(label="添加提醒", command=lambda: op.on_add_reminder())
         # 绑定鼠标右键事件（<Button-3>是右键，Mac系统是<Button-2>）
         frame.bind("<Button-3>", lambda event: menu.post(event.x_root, event.y_root))
 
-    def customize_input(self, msg, callback):
+    def customize_input(self, msg, callback: Callable[[str], None], default=""):
         """自定义输入"""
         window = tk.Toplevel(self.window)
         window.geometry(f"200x100+{window.winfo_pointerx() - 200}+{window.winfo_pointery()}")
@@ -254,8 +314,12 @@ class FloatingWindow:
 
         label_frame = ttk.LabelFrame(window, text=f"{msg}：")
         label_frame.pack(fill='x', pady=(10, 0))
-        entry = ttk.Entry(label_frame, width=10)
+        entry = ttk.Entry(label_frame, width=20)
+        if default:
+            entry.insert(0, default)
         entry.pack(side='left')
-        butten = tk.Button(label_frame, text="确定",
-                           command=lambda: (callback(float(entry.get().strip())), window.destroy()))
+        butten = tk.Button(
+            label_frame,
+            text="确定",
+            command=lambda: (callback(entry.get().strip()), window.destroy()))
         butten.pack(side='left', padx=(10, 0))

@@ -69,6 +69,7 @@ class ReminderManager:
 
         if op.record.id in self.remainders and self.remainders[op.record.id].is_alive():
             self.remainders[op.record.id].cancel()
+            logger.info(f"任务 {op.record.title} 的定时器已经存在, 旧任务已取消")
 
         self.remainders[op.record.id] = Timer(
             (op.record.do_time - datetime.now()).total_seconds(),
@@ -78,6 +79,11 @@ class ReminderManager:
         )
         self.remainders[op.record.id].start()
         self._save()
+        logger.info(f"任务 {op.record.id}: {op.record.title} 的定时器已经成功添加并启动")
+
+    def is_notify(self, op: TaskItem | int):
+        _id = op.record.id if isinstance(op, TaskItem) else op
+        return _id in self.remainders and self.remainders[_id].is_alive()
 
     def cancel(self, op: TaskItem | int):
         _id = op.record.id if isinstance(op, TaskItem) else op
