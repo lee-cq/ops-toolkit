@@ -43,7 +43,7 @@ echo Update ops-toolkit to {new_version} done.
 pause
  
 start "" "{pyw_exe}" -m ops_toolkit
-exit /b 0
+exit 0
 """
 
 DEFAULT_VERSION = (0, 0, 0, 99)
@@ -98,12 +98,14 @@ class UpdateVersion:
 
         :return:
         """
+        _version = self.version_to_tuple(VERSION)
         if self.skip_version_file.exists():
             _skip_version = self.version_to_tuple(self.skip_version_file.read_text().strip())
+            if _skip_version < _version:
+                return _version
             logger.debug(f"跳过版本文件: {self.skip_version_file} {_skip_version}")
-        else:
-            _skip_version = DEFAULT_VERSION
-        return max(self.version_to_tuple(VERSION), _skip_version)
+            return _skip_version
+        return DEFAULT_VERSION
 
     def write_update_script(self):
         """写入更新脚本"""
@@ -125,7 +127,8 @@ class UpdateVersion:
         :return:
         """
         if self.new_version <= self.old_version:
-            logger.debug(f"当前版本 {self.old_version_str} 大于等于远程版本 {self.new_version_str}, 或已跳过该版本（{config.update_beta=}）")
+            logger.debug(
+                f"当前版本 {self.old_version_str} 大于等于远程版本 {self.new_version_str}, 或已跳过该版本（{config.update_beta=}）")
             return False
 
         logger.info(f"发现新版本: {self.old_version_str} -> {self.new_version_str}")
