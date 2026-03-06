@@ -69,6 +69,7 @@ class Config(BaseModel):
     data_dir: Path = None
     translation_history_path: Path = None
     log_path: Path = None
+    todo_workdir: Path = None
 
     @field_serializer("data_dir", "translation_history_path", "log_path", "config_path")
     def serialize_path(self, v: Path) -> str:
@@ -91,6 +92,9 @@ class Config(BaseModel):
     def model_post_init(self, context: Any, /) -> None:
         if self.data_dir is None:
             self.data_dir = self.config_path.parent
+
+        if self.todo_workdir is None:
+            self.todo_workdir = self.data_dir.joinpath("todos")
 
         if self.translation_history_path is None:
             self.translation_history_path = self.data_dir.joinpath("translation_history.db")
@@ -176,7 +180,7 @@ def find_config_path() -> Path:
     # 5. 在当前目录下创建默认配置文件 (使用toml格式)
     default_config = home_dir / ".config/ops_toolkit/config.toml"
     default_config.parent.mkdir(parents=True, exist_ok=True)
-    default_config.touch()
+    # default_config.touch()
     return default_config.absolute()
 
 

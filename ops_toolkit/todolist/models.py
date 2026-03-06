@@ -40,7 +40,15 @@ class TaskStatus:
     DELETE = 2
 
 
-class TodolistTaskModel(Base):
+class BaseModel(Base):
+    __abstract__ = True
+
+    def to_dict(self):
+        self.__table__.columns: set
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+
+class TodolistTaskModel(BaseModel):
     __tablename__ = 'todolist_tasks'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -53,7 +61,7 @@ class TodolistTaskModel(Base):
     work_time_occupied = Column(Integer, default=0, comment="占用时长（min）")
 
 
-class TodolistHistoryModel(Base):
+class TodolistHistoryModel(BaseModel):
     __tablename__ = 'todolist_history'
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     tid = Column(Integer, ForeignKey('todolist_tasks.id'), comment="task ID")
@@ -64,7 +72,7 @@ class TodolistHistoryModel(Base):
     # change = Column(Text, nullable=False, comment="修改内容")  # JSON format string
 
 
-class TodolistConfigModel(Base):
+class TodolistConfigModel(BaseModel):
     __tablename__ = 'todolist_config'
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)

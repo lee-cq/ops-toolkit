@@ -40,6 +40,7 @@ class SettingsWindow:
         self.data_dir_entry = None
         self.history_path_entry = None
         self.log_path_entry = None
+        self.todo_workdir_path_entry = None
 
         # API设置控件
         self.api_tree = None
@@ -181,6 +182,15 @@ class SettingsWindow:
         self.log_path_entry.insert(0, str(self.app.config.log_path))
         ttk.Button(path_frame, text="浏览...",
                    command=lambda: self.browse_path(self.log_path_entry, is_file=True)).grid(row=3, column=2, padx=5)
+
+        # 日志文件路径
+        ttk.Label(path_frame, text="todolist task工作目录存储路径:").grid(row=4, column=0, sticky=tk.W, pady=(10, 5))
+        self.todo_workdir_path_entry = ttk.Entry(path_frame)
+        self.todo_workdir_path_entry.grid(row=4, column=1, sticky=tk.EW, pady=(10, 5))
+        self.todo_workdir_path_entry.insert(0, str(self.app.config.todo_workdir))
+        ttk.Button(path_frame, text="浏览...",
+                   command=lambda: self.browse_path(self.todo_workdir_path_entry, is_file=True)).grid(row=4, column=2,
+                                                                                                      padx=5)
 
         # ==================== API设置标签页  ====================
         api_frame = ttk.Frame(self.notebook, padding=10)
@@ -415,6 +425,7 @@ class SettingsWindow:
         new_data_dir = Path(self.data_dir_entry.get().strip())
         new_history_path = Path(self.history_path_entry.get().strip())
         new_log_path = Path(self.log_path_entry.get().strip())
+        new_todo_workdir = Path(self.todo_workdir_path_entry.get().strip())
 
         # 验证输入 (修改)
         if not new_app_name:
@@ -436,6 +447,8 @@ class SettingsWindow:
         self.app.config.data_dir = new_data_dir
         self.app.config.translation_history_path = new_history_path
         self.app.config.log_path = new_log_path
+        # old_todo_workdir = self.app.config.todo_workdir TODO 目录迁移
+        self.app.config.todo_workdir = new_todo_workdir
 
         if self.teams_frame and self.teams_frame.winfo_viewable():
             # 获取Teams设置 

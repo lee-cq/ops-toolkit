@@ -17,6 +17,7 @@ from tkinter import messagebox
 from tkinter import ttk
 from typing import Callable
 
+from ops_toolkit.todolist.ui_common import ToolTip
 from ops_toolkit.todolist.ui_create_window import TodoCreateWindow
 from ops_toolkit.todolist.models import TaskStatus
 from ops_toolkit.todolist.models import TodolistTaskModel
@@ -46,11 +47,12 @@ class TaskItem:
             self.todo.reminder_manager.cancel(self)
             self.todo.floating_window.load_tasks()
 
-    def parse_timedelta_by_str(self, t: str) -> tuple[int, int, int]:
+    @staticmethod
+    def parse_timedelta_by_str(t: str) -> tuple[int, int, int]:
         """解析时间增量字符串
 
         :param t: timedelta str  exp: 1d2h3m
-        :return:
+        :return: min, hour, day
         """
         _m, _h, _d = 0, 0, 0
         try:
@@ -64,11 +66,12 @@ class TaskItem:
                 _h = int(t.strip())
         except (ValueError, IndexError):
             messagebox.showwarning("提示", "请输入正确的时间格式！ ")
+        logger.debug(f"timedelta_str解析结果： {t} -> {_m=} {_h=} {_d=}")
         return _m, _h, _d
 
     def delay_time_by_str(self, t: str):
         """从字符串延迟"""
-        hours, minutes, days = self.parse_timedelta_by_str(t)
+        minutes, hours, days = self.parse_timedelta_by_str(t)
 
         do_time = self.record.do_time if self.record.do_time > datetime.now() else datetime.now()
         new_time = do_time + timedelta(hours=hours, minutes=minutes, days=days)
@@ -97,6 +100,7 @@ class TaskItem:
             self.todo.db_manager.complete_task(self.record.id)
             self.todo.reminder_manager.cancel(self)
             self.todo.floating_window.load_tasks()
+            self.todo.update_workdir(self.record.id)
 
     def on_add_worktime(self, s: str):
         """添加工作时间"""
@@ -115,6 +119,11 @@ class TaskItem:
 
     def on_edit_task(self):
         TodoCreateWindow(self.todo, self.record).show()
+
+    def on_open_workdir(self):
+        _ps = self.todo.update_workdir(self.record.id)
+        _ps.mkdir(parents=True, exist_ok=True)
+        webbrowser.open(str(_ps))
 
 
 class FloatingWindow:
@@ -233,6 +242,7 @@ class FloatingWindow:
         )
         name_label.pack(side="left", fill="x", expand=True, padx=0, pady=2)
         self.show_menu_row_title(name_label, _op)
+        ToolTip(name_label, text=task.title + (f"\n{task.desc}" if task.desc else ""))
 
         # 按钮组：按钮容器背景也匹配行背景
         btn_frame = tk.Frame(row_frame, bg=bg[id_])
@@ -311,6 +321,7 @@ class FloatingWindow:
     def show_menu_row_title(self, frame, op: TaskItem):
         menu = tk.Menu(frame, tearoff=False)
         menu.add_command(label="修改", command=lambda: op.on_edit_task())
+        menu.add_command(label="工作目录", command=lambda: op.on_open_workdir())
         # 绑定鼠标右键事件（<Button-3>是右键，Mac系统是<Button-2>）
         frame.bind("<Button-3>", lambda event: menu.post(event.x_root, event.y_root))
 
