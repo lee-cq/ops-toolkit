@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@File Name  : clock.py
+@File Name  : hourly_reminder.py
 @Author     : LeeCQ
 @Date-Time  : 2025/11/12 03:03
 """
@@ -11,7 +11,7 @@ from datetime import datetime
 from datetime import timedelta
 from threading import Timer
 
-from win11toast import notify
+from win11toast import toast
 
 logger = logging.getLogger("ops_toolkit.hourly_reminder")
 
@@ -33,20 +33,33 @@ class HourlyReminder(object):
     def run(self):
         if not self.is_active:
             return
+        delay_time = -1
         try:
-            notify(
+            reply = toast(
                 app_id=self.app.config.app_name,
-                title=f"现在是{datetime.now().hour}点整",
-                body="记得要巡检啊",
+                title=f"巡检提醒",
+                body="记得要完成{datetime.now().hour}点的巡检啊！！！",
                 duration="long",
                 scenario='incomingCall',
-                audio={'src': 'ms-winsoundevent:Notification.Looping.Alarm8', 'loop': 'true'}
+                audio={'src': 'ms-winsoundevent:Notification.Looping.Alarm8', 'loop': 'true'},
+                buttons=['延迟5min', '延迟10min', '完成'],
             )
             logger.info("HourlyReminder notified.")
-            time.sleep(5)
+            if "延迟5min" in reply["arguments"]:
+                delay_time = 300
+            elif "延迟10min" in reply["arguments"]:
+                delay_time = 600
+            elif "完成" in reply["arguments"]:
+                delay_time = 0
 
         finally:
-            self.start()
+            if delay_time > 0:
+                self.timer = Timer(delay_time, self.run)
+                self.timer.start()
+            elif delay_time == 0:
+                self.start(after=1)
+            else:
+                raise ValueError("Invalid delay time.")
 
     def start(self, after=1):
         """启动一个计时器"""

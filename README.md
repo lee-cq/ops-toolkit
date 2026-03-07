@@ -1029,6 +1029,7 @@ interval = 30
 10. [todolist] add "工作目录管理 #33 " op "悬停标题时显示详细信息"
 11. [update_version] fix "无法退出CMD"
 12. [app] op "使用typer优化命令行体验" fix "配置文件序列化错误" fix ""
+13. [hourly_reminder] add "延迟提醒功能"
 
 ### 1.7
 1. 添加自动更新功能
