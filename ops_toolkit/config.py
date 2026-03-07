@@ -71,7 +71,7 @@ class Config(BaseModel):
     log_path: Path = None
     todo_workdir: Path = None
 
-    @field_serializer("data_dir", "translation_history_path", "log_path", "config_path")
+    @field_serializer("data_dir", "translation_history_path", "log_path", "config_path", "todo_workdir")
     def serialize_path(self, v: Path) -> str:
         return v.as_posix()
 

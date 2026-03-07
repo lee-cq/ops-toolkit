@@ -20,6 +20,7 @@ dependencies = [
     "requests>=2.32.5", # HTTP请求
     "sqlalchemy>=2.0.43", # 数据库读写
     "toml>=0.10.2", # toml读写
+    "typer>=0.24.1",
     "win11toast>=0.36.3", # 系统通知
 ]
 dynamic = ["version"]
