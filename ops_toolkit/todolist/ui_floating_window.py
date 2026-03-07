@@ -118,7 +118,7 @@ class TaskItem:
         self.todo.floating_window.load_tasks()
 
     def on_edit_task(self):
-        TodoCreateWindow(self.todo, self.record).show()
+        TodoCreateWindow(self.todo, self.record)
 
     def on_open_workdir(self):
         _ps = self.todo.update_workdir(self.record.id)
@@ -199,13 +199,9 @@ class FloatingWindow:
         """加载任务列表"""
         # 清空现有任务
         logger.info("刷新任务列表")
+        tasks = self.todo.db_manager.top_10_task()
         for item in self.tasks_frame.winfo_children():
             item.destroy()
-
-        # 获取未完成的任务
-        tasks = self.todo.db_manager.top_10_task()
-
-        # 创建任务项
         for i, task in enumerate(tasks):
             self.create_task_row(task, i)
 
@@ -223,10 +219,9 @@ class FloatingWindow:
         time_label = ttk.Label(
             row_frame,
             text=_is_n + self.show_time(task.do_time),
-            style="Task.TLabel",
-            width=8,
-            # 关键：强制标签背景色和父Frame一致（ttk.Label需用configure动态设置）
+            width=10,
             background=bg[id_] if task.do_time >= datetime.now() else "#FF3A30",
+            anchor="center",
         )
         time_label.pack(side="left", padx=5, pady=2)
         self.show_menu_row_time(time_label, _op)
@@ -235,12 +230,11 @@ class FloatingWindow:
         name_label = ttk.Label(
             row_frame,
             text=task.title,
-            style="Task.TLabel",
             anchor="w",
             background=bg[id_],
             width=20,
         )
-        name_label.pack(side="left", fill="x", expand=True, padx=0, pady=2)
+        name_label.pack(side="left", fill="x", expand=True, padx=1, pady=2)
         self.show_menu_row_title(name_label, _op)
         ToolTip(name_label, text=task.title + (f"\n{task.desc}" if task.desc else ""))
 
@@ -310,7 +304,6 @@ class FloatingWindow:
 
     def show_menu_row_time(self, frame, op: TaskItem):
         menu = tk.Menu(frame, tearoff=False)
-        menu.add_command(label="删除", command=lambda: op.on_delete())
         if self.todo.reminder_manager.is_notify(op.record.id):
             menu.add_command(label="取消提醒", command=lambda: op.on_cancel_reminder())
         else:
@@ -320,9 +313,11 @@ class FloatingWindow:
 
     def show_menu_row_title(self, frame, op: TaskItem):
         menu = tk.Menu(frame, tearoff=False)
-        menu.add_command(label="修改", command=lambda: op.on_edit_task())
         menu.add_command(label="工作目录", command=lambda: op.on_open_workdir())
-        # 绑定鼠标右键事件（<Button-3>是右键，Mac系统是<Button-2>）
+        menu.add_command(label="修改", command=lambda: op.on_edit_task())
+        menu.add_command(label="删除", command=lambda: op.on_delete())
+
+    # 绑定鼠标右键事件（<Button-3>是右键，Mac系统是<Button-2>）
         frame.bind("<Button-3>", lambda event: menu.post(event.x_root, event.y_root))
 
     def customize_input(self, msg, callback: Callable[[str], None], default=""):

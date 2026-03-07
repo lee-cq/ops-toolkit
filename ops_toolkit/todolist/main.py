@@ -159,6 +159,7 @@ class WorkdirManager:
                 workdir.joinpath("README.md").unlink(missing_ok=True)
                 workdir.rmdir()
                 logger.info(f"todolist workdir 移除空目录： {workdir.name}")
+                continue
 
             self.update_workdir(workdir)
 
@@ -199,7 +200,8 @@ class WorkdirManager:
         logger.info(f"todolist workdir 创建目录： {workdir.name}")
         return workdir
 
-    def readme_has_data(self, workdir: Path) -> bool:
+    @staticmethod
+    def readme_has_data(workdir: Path) -> bool:
         """判断目录下是否有数据"""
         readme = workdir.joinpath("README.md")
         if not readme.exists():
