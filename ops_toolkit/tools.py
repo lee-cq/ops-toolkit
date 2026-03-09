@@ -5,6 +5,7 @@ import queue
 import re
 import tempfile
 from pathlib import Path
+from threading import Timer
 from typing import Union
 
 import PIL.BmpImagePlugin
@@ -167,3 +168,30 @@ def toolkit_notify(title: str, message: str = "", tag: str = None, clear: bool =
         logger.info(f"Clear toast: {group=}")
         # clear_toast(app_id=config.app_name, group=group, tag=tag) ToDo Win11toast更新
     notify(title, message, app_id=config.app_name, tag=tag, **kwargs)
+
+
+class DaemonTimer(Timer):
+    def __init__(self, interval, function, args=None, kwargs=None):
+        super().__init__(interval, function, args, kwargs)
+        self.daemon = True
+
+
+class TimerManager:
+    def __init__(self, app: "App"):
+        self.app = app
+        self.timers: dict[str, Timer] = dict()
+
+    def new(self, interval, function, args=None, kwargs=None) -> Timer:
+        _t = Timer(interval, function, args, kwargs)
+        _t.name = f"{function.__name__}({args}, {kwargs})"
+        _t.daemon = True
+        self.timers[_t.name] = _t
+        return _t
+
+    def cancel(self, timer: Timer):
+        timer.cancel()
+        self.timers.pop(timer.name)
+
+    def cancel_all(self):
+        for timer in self.timers.values():
+            self.cancel(timer)

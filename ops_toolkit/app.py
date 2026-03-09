@@ -1,4 +1,5 @@
 import atexit
+import signal
 import sys
 import threading
 import tkinter as tk
@@ -13,17 +14,17 @@ from PIL import ImageTk
 
 from ops_toolkit import VERSION
 from ops_toolkit.tools import toolkit_notify
+from ops_toolkit.tools import TimerManager
 from ops_toolkit.translate.history import HistoryManager
 from ops_toolkit.app_hotkey import HotkeyListener
 from ops_toolkit.app_tray import SystemTray
 from ops_toolkit.config import config
 from ops_toolkit.hourly_reminder.hourly_reminder import HourlyReminder
 from ops_toolkit.monitor_clipboard.monitor_clipboard import MonitorClipboard
-from ops_toolkit.tools import trans_lang
 from ops_toolkit.translate.ui_window_history import HistoryWindow
 from ops_toolkit.ui_window_log import LogWindow
 from ops_toolkit.ui_window_settings import SettingsWindow
-from ops_toolkit.translate.ui_window_translate import TranslationWindow
+from ops_toolkit.translate.main import Translater
 from ops_toolkit.monitor_clipboard.ui_window_clipboard import ClipboardWindow
 from ops_toolkit.monitor_teams.ui_windows_teams_notifications import TeamsNotificationsListenerWindow
 from ops_toolkit.keepalive import Keepalive
@@ -45,6 +46,7 @@ class App:
         # 初始化配置
         logger.info(f"APP Start @ {VERSION} ...")
         self.config: "Config" = config
+        self.exit_flag = False
 
         # 初始化GUI
         self.root = tk.Tk()
@@ -56,6 +58,8 @@ class App:
         self.root.iconphoto(True, self.img)
 
         # 初始化组件
+        self.translater = Translater(self)
+        self.timer_manager = TimerManager(self)
         self.keepalive = Keepalive()
         self.hourly_reminder = HourlyReminder(self)
         self.monitor_clipboard = MonitorClipboard(self)
@@ -85,54 +89,14 @@ class App:
             gui_auto(self)
         threading.Thread(target=check_update, args=(self,)).start()
         atexit.register(check_update, self)
+        signal.signal(signal.SIGINT, lambda sig, frame: self.__setattr__("exit_flag", True))
+        self.check_flag()
 
-    def perform_translation(self):
-        """执行翻译操作"""
-        try:
-            # 读取剪贴板内容
-            source_text = pyperclip.paste().strip()
-
-            if not source_text:
-                messagebox.showinfo("提示", "剪贴板为空，无法进行翻译")
-                return
-            src_lang, dst_lang = trans_lang(source_text)
-            # 查询该src是否有翻译记录，如果有走历史记录。
-            dst_text = self.history_manager.get_record_by_src(source_text).get("dst")
-            if dst_text is None:
-                logger.info("NOT Found src from history.")
-                # 调用翻译API
-                translated_text = config.api.translate_text(
-                    source_text,
-                    to_lang=dst_lang,
-                    from_lang=src_lang,
-                )
-                dst_text = translated_text.dst
-
-                # 记录翻译结果
-                self.history_manager.add_record(
-                    source_text,
-                    dst_text,
-                    src_lang,
-                    dst_lang
-                )
-            else:
-                logger.info(f"Found src from history. / Use History.")
-
-            # 显示翻译结果
-            TranslationWindow(self).show(
-                source_text,
-                dst_text,
-                src_lang,
-                dst_lang
-            )
-        except IndexError:
-            logger.info("IndexError: 请先在设置中添加API密钥", exc_info=True)
-            messagebox.showinfo("提示", "请先在设置中添加API密钥")
-            return
-
-        except Exception as _e:
-            logger.error(f"Error during translation: {_e}", exc_info=_e)
-            messagebox.showerror("错误", f"翻译过程中发生错误:\n{str(_e)}")
+    def check_flag(self):
+        if self.exit_flag:
+            logger.info(f"Check {self.exit_flag=}")
+            self.quit()
+        self.root.after(2000, self.check_flag)
 
     def show_history_window(self):
         """显示历史记录窗口"""
@@ -167,10 +131,12 @@ class App:
         """退出应用程序"""
         logger.info(f"{self.config.app_name} is exiting")
         self.hotkey_listener.stop()
+        self.hourly_reminder.stop()
+        self.keepalive.stop()
+        self.monitor_clipboard.stop()
         self.root.destroy()
         logger.info(f"{self.config.app_name} is exited.")
         sys.exit(0)
-
 
 # def quit_app():
 #     """退出应用程序"""

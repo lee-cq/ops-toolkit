@@ -5,9 +5,10 @@
 @Author     : LeeCQ
 @Date-Time  : 2025/9/19 22:09
 """
+import threading
+
 from pynput import keyboard
 from logging import getLogger
-from ops_toolkit.todolist.main import TodoManager
 
 logger = getLogger("ops_toolkit.app.hotkey")
 
@@ -26,7 +27,8 @@ class HotkeyListener:
         logger.info("Hotkey activated: %s", self.app.config.hotkey_translate)
 
         # 在主线程中执行GUI操作
-        self.app.root.after(0, self.app.perform_translation)
+        # self.app.root.after(0, self.app.translater.perform_translation)
+        threading.Thread(target=self.app.translater.perform_translation).start()
 
     def on_todo_create_activate(self):
         """待办事项快捷键激活时的处理函数"""
@@ -80,4 +82,3 @@ class HotkeyListener:
             self.start()
             self.old_keys = new_keys
             logger.info(f"热键更新成功: {new_keys}")
-

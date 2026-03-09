@@ -6,12 +6,12 @@
 @Date-Time  : 2025/11/12 03:03
 """
 import logging
-import time
 from datetime import datetime
 from datetime import timedelta
-from threading import Timer
 
 from win11toast import toast
+
+from ops_toolkit.tools import DaemonTimer
 
 logger = logging.getLogger("ops_toolkit.hourly_reminder")
 
@@ -20,7 +20,7 @@ class HourlyReminder(object):
     def __init__(self, app=None):
         self.app = app
         self.is_active = False
-        self.timer: Timer | None = None
+        self.timer: DaemonTimer | None = None
         self.next_hour: str = ""
 
     def _get_seconds_to_next_hour(self, after=1):
@@ -54,7 +54,7 @@ class HourlyReminder(object):
 
         finally:
             if delay_time > 0:
-                self.timer = Timer(delay_time, self.run)
+                self.timer = DaemonTimer(delay_time, self.run)
                 self.timer.start()
             elif delay_time == 0:
                 self.start(after=1)
@@ -66,7 +66,7 @@ class HourlyReminder(object):
         self.is_active = True
         if self.timer is not None:
             self.timer.cancel()
-        self.timer = Timer(self._get_seconds_to_next_hour(after), self.run)
+        self.timer = DaemonTimer(self._get_seconds_to_next_hour(after), self.run)
         self.timer.start()
         logger.info(f"HourlyReminder started. {after=} {self.next_hour=}")
 

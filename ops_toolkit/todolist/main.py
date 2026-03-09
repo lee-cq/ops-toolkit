@@ -5,7 +5,6 @@ import typing
 import logging
 from datetime import datetime
 from pathlib import Path
-from threading import Timer
 from tkinter import messagebox
 
 from ops_toolkit.todolist.models import TodolistTaskModel
@@ -13,6 +12,7 @@ from ops_toolkit.todolist.models import DBManager
 from ops_toolkit.todolist.ui_create_window import TodoCreateWindow
 from ops_toolkit.todolist.ui_floating_window import FloatingWindow
 from ops_toolkit.todolist.ui_floating_window import TaskItem
+from ops_toolkit.tools import DaemonTimer
 from ops_toolkit.tools import toolkit_notify
 
 if typing.TYPE_CHECKING:
@@ -53,7 +53,7 @@ class ReminderManager:
     def __init__(self, todo_manager: TodoManager):
         self.todo_manager = todo_manager
         self.remainder_tid_old = set()
-        self.remainders: dict[int, Timer] = {}
+        self.remainders: dict[int, DaemonTimer] = {}
         self._init()
 
     def _init(self):
@@ -79,7 +79,7 @@ class ReminderManager:
             self.remainders[op.record.id].cancel()
             logger.info(f"任务 {op.record.title} 的定时器已经存在, 旧任务已取消")
 
-        self.remainders[op.record.id] = Timer(
+        self.remainders[op.record.id] = DaemonTimer(
             (op.record.do_time - datetime.now()).total_seconds(),
             toolkit_notify,
             (op.record.title, op.record.desc),
@@ -127,7 +127,7 @@ class WorkdirManager:
         self.todo = todo
         self.todo_workdir = self.todo.app.config.todo_workdir
         self.re_name = re.compile(r"(\d{4})-\[(.*?)]-\((.*?)\)-(.*)")
-        Timer(120, self.flush_all).start()
+        DaemonTimer(120, self.flush_all).start()
 
     def to_name(self, task: TodolistTaskModel) -> str:
         return f"{task.id:04d}-[{self.map_int_to_status.get(task.status)}]-({task.work_time_occupied})-{self.title_to_filename(task.title)}"
