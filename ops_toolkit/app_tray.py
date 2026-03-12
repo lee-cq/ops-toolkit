@@ -113,7 +113,7 @@ class SystemTray:
         """显示待办事项管理器"""
         try:
             # 在主线程中显示创建窗口
-            self.app.root.after(0, self.app.todoer.show_create_window)
+            self.app.root.after(0, self.app.todoer.show_summary_window)
         except Exception as e:
             logger.error(f"Show todo manager failed: {e}")
 

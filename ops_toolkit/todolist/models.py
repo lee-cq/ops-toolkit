@@ -10,12 +10,14 @@ import logging
 from datetime import datetime
 from datetime import timedelta
 from pathlib import Path
+from typing import Iterable
 
 from sqlalchemy import Column
 from sqlalchemy import create_engine
 from sqlalchemy import DateTime
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
+from sqlalchemy import or_, desc, asc
 from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import text
@@ -44,8 +46,8 @@ class BaseModel(Base):
     __abstract__ = True
 
     def to_dict(self):
-        self.__table__.columns: set
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        # self.__table__.columns: set
+        return {c.name: getattr(self, c.name) for c in set(self.__table__.columns)}
 
 
 class TodolistTaskModel(BaseModel):
@@ -144,8 +146,15 @@ class DBManager:
             logger.info("todolist Database connection closed")
 
     # 添加记录
-    def add_task(self, title, desc="", link="", do_time: datetime = None):
-        """"""
+    def add_task(self, title, details="", link="", do_time: datetime = None):
+        """
+
+        :param title:
+        :param details: 描述
+        :param link:
+        :param do_time:
+        :return:
+        """
         if do_time is None:
             do_time = datetime.now() + timedelta(hours=1)
 
@@ -153,7 +162,7 @@ class DBManager:
         try:
             record = TodolistTaskModel(
                 title=title,
-                desc=desc,
+                desc=details,
                 link=link,
                 create_time=datetime.now(),
                 do_time=do_time
@@ -234,10 +243,41 @@ class DBManager:
         finally:
             session.close()
 
-    def complete_task(self, tid) -> bool:
+    def query_task(
+            self,
+            query: str,
+            order_bys: list[tuple[str, str]] = None
+    ) -> Iterable[type[TodolistTaskModel] | TodolistTaskModel]:
+        """查询待办事项
+
+        :param query:
+        :param order_bys: list[tuple[name, desc/asc]]
+        :return:
+        """
+        session = self._get_session()
+        order_bys = order_bys or []
+        try:
+            order_bys = [
+                desc(getattr(TodolistTaskModel, name)) if order == "desc" else asc(getattr(TodolistTaskModel, name))
+                for name, order in order_bys
+            ]
+
+            return session.query(TodolistTaskModel).filter(
+                or_(
+                    TodolistTaskModel.title.like(f"%{query}%"),
+                    TodolistTaskModel.desc.like(f"%{query}%"),
+                )
+            ).order_by(*order_bys)
+        except Exception as e:
+            logger.error(f"todolist Error querying todo {query=}: {e}")
+            return []
+        finally:
+            session.close()
+
+    def complete_task(self, tid, status: int = 1) -> bool:
         """完成待办事项"""
         try:
-            self.update_task(tid, status=1)
+            self.update_task(tid, status=status)
             logger.info("任务 {tid} 已经完成")
             toolkit_notify("todolist", f"任务 {tid} 已经完成")
             return True

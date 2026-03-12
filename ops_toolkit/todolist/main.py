@@ -12,6 +12,7 @@ from ops_toolkit.todolist.models import DBManager
 from ops_toolkit.todolist.ui_create_window import TodoCreateWindow
 from ops_toolkit.todolist.ui_floating_window import FloatingWindow
 from ops_toolkit.todolist.ui_floating_window import TaskItem
+from ops_toolkit.todolist.ui_summary import SummaryWindow
 from ops_toolkit.tools import DaemonTimer
 from ops_toolkit.tools import toolkit_notify
 
@@ -25,12 +26,17 @@ class TodoManager:
     """待办事项管理器"""
 
     def __init__(self, app: "App"):
-        self.app = app
-        self.db_manager = DBManager(self.app)
+        self.app: "App" = app
+        self.db_manager: DBManager = DBManager(self.app)
 
         self.floating_window: FloatingWindow = FloatingWindow(self.app, self)
         self.reminder_manager: ReminderManager = ReminderManager(self)
         self.workdir_manager: WorkdirManager = WorkdirManager(self)
+        self.summary: SummaryWindow = SummaryWindow(self.app, self)
+
+    def show_summary_window(self):
+        """显示默认窗口"""
+        self.summary.show()
 
     def show_create_window(self):
         """显示创建窗口"""
@@ -179,7 +185,7 @@ class WorkdirManager:
             return self.create_workdir(new_info)
 
         old_info = self.to_task(workdir.name)
-        # new_info = self.todo.db_manager.get_task(old_info.id)
+        # new_info = self.todoer.db_manager.get_task(old_info.id)
         if new_info and (
                 new_info.status != old_info.status
                 or new_info.work_time_occupied != old_info.work_time_occupied

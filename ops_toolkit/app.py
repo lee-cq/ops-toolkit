@@ -5,10 +5,8 @@ import threading
 import tkinter as tk
 from logging import getLogger
 from pathlib import Path
-from tkinter import messagebox
 from typing import TYPE_CHECKING
 
-import pyperclip
 from PIL import Image
 from PIL import ImageTk
 
@@ -28,7 +26,7 @@ from ops_toolkit.translate.main import Translater
 from ops_toolkit.monitor_clipboard.ui_window_clipboard import ClipboardWindow
 from ops_toolkit.monitor_teams.ui_windows_teams_notifications import TeamsNotificationsListenerWindow
 from ops_toolkit.keepalive import Keepalive
-from ops_toolkit.todolist import TodoManager
+from ops_toolkit.todolist.main import TodoManager
 from ops_toolkit.update_version import check_update
 
 if TYPE_CHECKING:
@@ -47,6 +45,7 @@ class App:
         logger.info(f"APP Start @ {VERSION} ...")
         self.config: "Config" = config
         self.exit_flag = False
+        self.exited = False
 
         # 初始化GUI
         self.root = tk.Tk()
@@ -58,21 +57,21 @@ class App:
         self.root.iconphoto(True, self.img)
 
         # 初始化组件
-        self.translater = Translater(self)
-        self.timer_manager = TimerManager(self)
-        self.keepalive = Keepalive()
-        self.hourly_reminder = HourlyReminder(self)
-        self.monitor_clipboard = MonitorClipboard(self)
-        self.clipboard_window = ClipboardWindow(self)
+        self.translater: Translater = Translater(self)
+        self.timer_manager: TimerManager = TimerManager(self)
+        self.keepalive: Keepalive = Keepalive()
+        self.hourly_reminder: HourlyReminder = HourlyReminder(self)
+        self.monitor_clipboard: MonitorClipboard = MonitorClipboard(self)
+        self.clipboard_window: ClipboardWindow = ClipboardWindow(self)
 
-        self.history_manager = HistoryManager(self.config)
-        self.history_window = HistoryWindow(self)
+        self.history_manager: HistoryManager = HistoryManager(self.config)
+        self.history_window: HistoryWindow = HistoryWindow(self)
 
-        self.log_window = LogWindow(self)
-        self.settings_window = SettingsWindow(self)
-        self.hotkey_listener = HotkeyListener(self)
-        self.system_tray = SystemTray(self)
-        self.todoer = TodoManager(self)
+        self.log_window: LogWindow = LogWindow(self)
+        self.settings_window: SettingsWindow = SettingsWindow(self)
+        self.hotkey_listener: HotkeyListener = HotkeyListener(self)
+        self.system_tray: SystemTray = SystemTray(self)
+        self.todoer: TodoManager = TodoManager(self)
         self.notification_monitor_window = TeamsNotificationsListenerWindow(self)
         logger.info(f"{self.config.app_name} started successfully")
         toolkit_notify(
@@ -96,7 +95,7 @@ class App:
         if self.exit_flag:
             logger.info(f"Check {self.exit_flag=}")
             self.quit()
-        self.root.after(2000, self.check_flag)
+        self.root.after(1000, self.check_flag)
 
     def show_history_window(self):
         """显示历史记录窗口"""
@@ -136,6 +135,7 @@ class App:
         self.monitor_clipboard.stop()
         self.root.destroy()
         logger.info(f"{self.config.app_name} is exited.")
+        self.exited = True
         sys.exit(0)
 
 # def quit_app():
