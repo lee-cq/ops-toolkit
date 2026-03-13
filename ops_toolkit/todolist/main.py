@@ -49,6 +49,7 @@ class TodoManager:
     def update_window(self):
         """更新窗口"""
         self.floating_window.load_tasks()
+        self.summary.load_tasks()
 
     def update_workdir(self, tid: Path | int) -> Path:
         """更新工作目录"""

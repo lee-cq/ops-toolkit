@@ -29,6 +29,19 @@ from ops_toolkit.tools import toolkit_notify
 logger = logging.getLogger("ops_toolkit.todolist.models")
 Base = declarative_base()
 
+map_status_to_emoji = {
+    0: "🔄",
+    1: "🎉",
+    2: "❌",
+}
+
+map_status_to_int = {
+    "进行中": 0,
+    "已完成": 1,
+    "已取消": 2,
+}
+map_int_to_status = {v: k for k, v in map_status_to_int.items()}
+
 
 def json_serializer(obj):
     if isinstance(obj, (datetime,)):
@@ -61,6 +74,12 @@ class TodolistTaskModel(BaseModel):
     link = Column(String(500), nullable=True, comment="关联链接")
     status = Column(Integer, default=0, comment="0: 未完成 1: 已完成 2: 删除")
     work_time_occupied = Column(Integer, default=0, comment="占用时长（min）")
+
+    def status_string(self):
+        return map_int_to_status.get(self.status, "未知")
+
+    def status_emoji(self):
+        return map_status_to_emoji.get(self.status, "")
 
 
 class TodolistHistoryModel(BaseModel):
@@ -146,26 +165,29 @@ class DBManager:
             logger.info("todolist Database connection closed")
 
     # 添加记录
-    def add_task(self, title, details="", link="", do_time: datetime = None):
+    def add_task(self, title, details="", link="", do_time: datetime = None, status: str | int = 0):
         """
 
         :param title:
         :param details: 描述
         :param link:
         :param do_time:
+        :param status:
         :return:
         """
         if do_time is None:
             do_time = datetime.now() + timedelta(hours=1)
 
         session = self._get_session()
+        status = map_status_to_int.get(status, 0)
         try:
             record = TodolistTaskModel(
                 title=title,
                 desc=details,
                 link=link,
                 create_time=datetime.now(),
-                do_time=do_time
+                do_time=do_time,
+                status=status if status in [0, 1, 2] else 0,
             )
             session.add(record)
             session.commit()
@@ -187,6 +209,8 @@ class DBManager:
         :return:
         """
         session = self._get_session()
+        if "status" in kwargs:
+            kwargs["status"] = map_status_to_int.get(kwargs["status"], 0)
         try:
             record = session.query(TodolistTaskModel).filter(TodolistTaskModel.id == tid).first()
             if record:

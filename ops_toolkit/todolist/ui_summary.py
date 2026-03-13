@@ -12,7 +12,6 @@ from tkinter import messagebox
 from tkinter import ttk
 
 from .ui_common import CommonUI
-from .ui_common import map_status_to_emoji
 from .ui_common import TaskItem
 from .ui_common import ToolTip
 
@@ -123,7 +122,13 @@ class SummaryWindow(CommonUI):
         self.window.destroy()
 
     def load_tasks(self, query: str = "", order_bys: list[str] = None):
-        if self.tasks_tree is None:
+        if not (
+                self.tasks_tree
+                and self.window
+                and self.tasks_frame
+                and self.tasks_frame.winfo_exists()
+                and self.tasks_tree.winfo_exists()
+        ):
             return
         if query:
             self.query_var.set(query)
@@ -148,7 +153,7 @@ class SummaryWindow(CommonUI):
             logger.debug(f"添加列：{task.id}, {task.title}")
             self.tasks_tree.insert("", "end", values=(
                 task.id,
-                map_status_to_emoji[task.status],
+                task.status_emoji(),
                 task.title,
                 task.create_time.strftime("%Y-%m-%d %H:%M:%S"),
                 task.do_time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -168,7 +173,8 @@ class SummaryWindow(CommonUI):
 
     def show_task_detail(self, event):
         _, row = self.get_row_info(event)
-        ToolTip(self.window, text=self.cached_tasks[row[0]].desc)
+        op = TaskItem(self.cached_tasks[row[0]], self.todoer)
+        op.on_edit_task()
 
     def show_menu_set_status(self, frame, op: "TaskItem"):
         menu = tk.Menu(frame, tearoff=0)

@@ -15,6 +15,7 @@ from datetime import timedelta
 from tkinter import messagebox
 from tkinter import ttk
 
+from ops_toolkit.todolist.models import map_int_to_status
 from ops_toolkit.todolist.ui_create_window import TodoCreateWindow
 from ops_toolkit.todolist.models import TaskStatus
 
@@ -24,19 +25,6 @@ if typing.TYPE_CHECKING:
     from ops_toolkit.app import App
 
 logger = logging.getLogger("ops_toolkit.todolist.ui_common")
-
-map_status_to_emoji = {
-    0: "🔄",
-    1: "🎉",
-    2: "❌",
-}
-
-map_status_to_int = {
-    "进行中": 0,
-    "已完成": 1,
-    "已取消": 2,
-}
-map_int_to_status = {v: k for k, v in map_status_to_int.items()}
 
 
 class ToolTip:
@@ -107,13 +95,13 @@ class TaskItem:
         if self.record.link:
             webbrowser.open(self.record.link)
 
-    def on_delete(self):
+    def on_cancel(self):
         if messagebox.askyesno(
                 "提示",
-                f"确定要删除任务吗？\n"
+                f"确定要删除/取消{self.record.status_string()}的任务吗？\n"
                 f"{self.record.id} {self.record.title} (已经花费{self.record.work_time_occupied / 60:.2f}小时)"
         ):
-            self.todoer.db_manager.update_task(self.record, status=TaskStatus.DELETE)
+            self.todoer.db_manager.update_task(self.record.id, status=TaskStatus.DELETE)
             self.todoer.reminder_manager.cancel(self)
             self.todoer.floating_window.load_tasks()
             self.todoer.summary.load_tasks()
@@ -148,9 +136,8 @@ class TaskItem:
         new_time = do_time + timedelta(hours=hours, minutes=minutes, days=days)
         self.record.do_time = new_time
         self.todoer.db_manager.update_task(self.record.id, do_time=new_time)
-        self.todoer.floating_window.load_tasks()
-        self.todoer.summary.load_tasks()
         self.todoer.reminder_manager.change_time(self)
+        self.todoer.update_window()
 
     def delay_time_by_time(self, _t: str):
         new_time = datetime.strptime(_t, "%Y-%m-%d %H:%M:%S")
@@ -160,8 +147,7 @@ class TaskItem:
             return
         self.record.do_time = new_time
         self.todoer.db_manager.update_task(self.record.id, do_time=new_time)
-        self.todoer.floating_window.load_tasks()
-        self.todoer.summary.load_tasks()
+        self.todoer.update_window()
 
     def complete_todo(self):
         """完成待办事项"""
@@ -180,8 +166,7 @@ class TaskItem:
         ):
             self.todoer.db_manager.update_task(self.record.id, status=status)
             self.todoer.reminder_manager.cancel(self)
-            self.todoer.floating_window.load_tasks()
-            self.todoer.summary.load_tasks()
+            self.todoer.update_window()
             self.todoer.update_workdir(self.record.id)
             return
 
@@ -190,18 +175,22 @@ class TaskItem:
         _m, _h, _d = self.parse_timedelta_by_str(s)
         minutes = _m + _h * 60 + _d * 60 * 24
         self.todoer.db_manager.update_task(self.record.id, work_time_occupied=self.record.work_time_occupied + minutes)
-        self.todoer.floating_window.load_tasks()
-        self.todoer.summary.load_tasks()
+        self.todoer.update_window()
+
+    def on_add_remark(self, s: str):
+        s = datetime.now().strftime("[%m-%d %H:%M]") + " " + s
+        if self.record.desc or not self.record.desc.endswith("\n"):
+            s = "\n" + s
+        self.todoer.db_manager.update_task(self.record.id, desc=self.record.desc + s)
+        self.todoer.update_window()
 
     def on_add_reminder(self):
         self.todoer.reminder_manager.add(self)
-        self.todoer.floating_window.load_tasks()
-        self.todoer.summary.load_tasks()
+        self.todoer.update_window()
 
     def on_cancel_reminder(self):
         self.todoer.reminder_manager.cancel(self)
-        self.todoer.floating_window.load_tasks()
-        self.todoer.summary.load_tasks()
+        self.todoer.update_window()
 
     def on_edit_task(self):
         TodoCreateWindow(self.todoer, self.record)
@@ -293,17 +282,20 @@ class CommonUI:
     def show_menu_row_title(self, frame, op: TaskItem):
         menu = tk.Menu(frame, tearoff=False)
         menu.add_command(label="工作目录", command=lambda: op.on_open_workdir())
+        menu.add_command(label="追加备注",
+                         command=lambda: self.customize_input("输入备注", op.on_add_remark, "", (300, 100)))
         menu.add_command(label="修改", command=lambda: op.on_edit_task())
-        menu.add_command(label="删除", command=lambda: op.on_delete())
+        menu.add_command(label="删除/取消", command=lambda: op.on_cancel())
 
         if type(self).__name__ == "FloatingWindow":
             frame.bind("<Button-3>", lambda event: menu.post(event.x_root, event.y_root))
         return menu
 
-    def customize_input(self, msg, callback: typing.Callable[[str], None], default=""):
+    def customize_input(self, msg, callback: typing.Callable[[str], None], default="", window_size=(200, 100)):
         """自定义输入"""
         window = tk.Toplevel(self.app.root)
-        window.geometry(f"200x100+{window.winfo_pointerx() - 200}+{window.winfo_pointery()}")
+        window.geometry(
+            f"{window_size[0]}x{window_size[1]}+{window.winfo_pointerx() - window_size[0]}+{window.winfo_pointery()}")
         # window.overrideredirect(True)  # 无边框
         window.attributes("-topmost", True)  # 窗口置顶
         # window.resizable(False, False)
@@ -311,12 +303,23 @@ class CommonUI:
 
         label_frame = ttk.LabelFrame(window, text=f"{msg}：")
         label_frame.pack(fill='x', pady=(10, 0))
-        entry = ttk.Entry(label_frame, width=20)
+        entry = ttk.Entry(label_frame)
         if default:
             entry.insert(0, default)
-        entry.pack(side='left')
+        entry.pack(side='top', expand=True, fill='x')
+
+        button = tk.Button(
+            label_frame,
+            text="从剪切板获取",
+            command=lambda: entry.insert(0, self.app.root.clipboard_get()))
+        button.pack(side='left', padx=(10, 0))
         butten = tk.Button(
             label_frame,
             text="确定",
             command=lambda: (callback(entry.get().strip()), window.destroy()))
         butten.pack(side='left', padx=(10, 0))
+        butten = tk.Button(
+            label_frame,
+            text="取消",
+            command=lambda: window.destroy())
+        butten.pack(side='right', padx=(10, 0))
