@@ -131,7 +131,7 @@ class FloatingWindow(CommonUI):
         link_btn = ttk.Button(btn_frame, text="🔗", style="Task.TButton", width=3, command=_op.on_link_click)
         link_btn.pack(side="left", padx=2)
 
-        complete_btn = ttk.Button(btn_frame, text="✅", style="Task.TButton", width=3, command=_op.complete_todo)
+        complete_btn = ttk.Button(btn_frame, text="✅", style="Task.TButton", width=3, command=_op.complete_task)
         complete_btn.pack(side="left", padx=2)
         self.show_menu_worktime(complete_btn, _op)
 

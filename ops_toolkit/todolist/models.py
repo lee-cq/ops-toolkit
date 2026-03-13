@@ -81,6 +81,9 @@ class TodolistTaskModel(BaseModel):
     def status_emoji(self):
         return map_status_to_emoji.get(self.status, "")
 
+    def set_status(self, status):
+        self.status = map_status_to_int.get(status, 0)
+
 
 class TodolistHistoryModel(BaseModel):
     __tablename__ = 'todolist_history'
@@ -209,7 +212,7 @@ class DBManager:
         :return:
         """
         session = self._get_session()
-        if "status" in kwargs:
+        if "status" in kwargs and isinstance(kwargs["status"], str):
             kwargs["status"] = map_status_to_int.get(kwargs["status"], 0)
         try:
             record = session.query(TodolistTaskModel).filter(TodolistTaskModel.id == tid).first()
@@ -298,17 +301,9 @@ class DBManager:
         finally:
             session.close()
 
-    def complete_task(self, tid, status: int = 1) -> bool:
+    def complete_task(self, tid, status: int = 1):
         """完成待办事项"""
-        try:
-            self.update_task(tid, status=status)
-            logger.info("任务 {tid} 已经完成")
-            toolkit_notify("todolist", f"任务 {tid} 已经完成")
-            return True
-        except Exception as e:
-            logger.error(f"todolist Error completing todo {tid=}: {e}")
-            toolkit_notify("todolist", f"任务 {tid} 完成失败\n{e}")
-            return False
+        return self.update_task(tid, status=status)
 
     def get_setting(self, key, default: str = None) -> str:
         """从设置表中获取一个值.

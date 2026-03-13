@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from tkinter import messagebox
 
+from ops_toolkit.todolist.models import map_status_to_int
 from ops_toolkit.todolist.models import TodolistTaskModel
 from ops_toolkit.todolist.models import DBManager
 from ops_toolkit.todolist.ui_create_window import TodoCreateWindow
@@ -122,13 +123,6 @@ class WorkdirManager:
             0001-[status]-(worktime)-title
 
     """
-    map_status_to_int = {
-        "未开始": 0,
-        "进行中": 1,
-        "已完成": 2,
-        "已取消": 3,
-    }
-    map_int_to_status = {v: k for k, v in map_status_to_int.items()}
 
     def __init__(self, todo: TodoManager):
         self.todo = todo
@@ -137,7 +131,7 @@ class WorkdirManager:
         DaemonTimer(120, self.flush_all).start()
 
     def to_name(self, task: TodolistTaskModel) -> str:
-        return f"{task.id:04d}-[{self.map_int_to_status.get(task.status)}]-({task.work_time_occupied})-{self.title_to_filename(task.title)}"
+        return f"{task.id:04d}-[{task.status_string()}]-({task.work_time_occupied})-{self.title_to_filename(task.title)}"
 
     def to_task(self, workdir: str):
         """将目录名转换为任务
@@ -151,7 +145,7 @@ class WorkdirManager:
 
         return TodolistTaskModel(
             id=int(match.group(1)),
-            status=self.map_status_to_int.get(match.group(2)),
+            status=map_status_to_int.get(match.group(2)),
             work_time_occupied=int(match.group(3)),
             title=match.group(4),
         )

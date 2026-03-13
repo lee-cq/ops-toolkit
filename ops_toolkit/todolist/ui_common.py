@@ -95,17 +95,6 @@ class TaskItem:
         if self.record.link:
             webbrowser.open(self.record.link)
 
-    def on_cancel(self):
-        if messagebox.askyesno(
-                "提示",
-                f"确定要删除/取消{self.record.status_string()}的任务吗？\n"
-                f"{self.record.id} {self.record.title} (已经花费{self.record.work_time_occupied / 60:.2f}小时)"
-        ):
-            self.todoer.db_manager.update_task(self.record.id, status=TaskStatus.DELETE)
-            self.todoer.reminder_manager.cancel(self)
-            self.todoer.floating_window.load_tasks()
-            self.todoer.summary.load_tasks()
-
     @staticmethod
     def parse_timedelta_by_str(t: str) -> tuple[int, int, int]:
         """解析时间增量字符串
@@ -149,9 +138,19 @@ class TaskItem:
         self.todoer.db_manager.update_task(self.record.id, do_time=new_time)
         self.todoer.update_window()
 
-    def complete_todo(self):
+    def complete_task(self):
         """完成待办事项"""
         return self.set_status(1)
+
+    def cancel_task(self):
+        if messagebox.askyesno(
+                "提示",
+                f"确定要删除/取消{self.record.status_string()}的任务吗？\n"
+                f"{self.record.id} {self.record.title} (已经花费{self.record.work_time_occupied / 60:.2f}小时)"
+        ):
+            self.todoer.db_manager.update_task(self.record.id, status=TaskStatus.DELETE)
+            self.todoer.reminder_manager.cancel(self)
+            self.todoer.update_window()
 
     def set_status(self, status: int):
         """设置任务状态"""
@@ -233,7 +232,7 @@ class CommonUI:
     def show_menu_worktime(self, frame, op: TaskItem):
         menu = tk.Menu(frame, tearoff=False)
         _wto_h = op.record.work_time_occupied / 60
-        menu.add_command(label=f"完成 ({_wto_h:.1f})", command=lambda: op.complete_todo())
+        menu.add_command(label=f"完成 ({_wto_h:.1f})", command=lambda: op.complete_task())
         menu.add_command(label="5分钟", command=lambda: op.on_add_worktime("5m"))
         menu.add_command(label="10分钟", command=lambda: op.on_add_worktime("10m"))
         menu.add_command(label="15分钟", command=lambda: op.on_add_worktime("15m"))
@@ -285,7 +284,7 @@ class CommonUI:
         menu.add_command(label="追加备注",
                          command=lambda: self.customize_input("输入备注", op.on_add_remark, "", (300, 100)))
         menu.add_command(label="修改", command=lambda: op.on_edit_task())
-        menu.add_command(label="删除/取消", command=lambda: op.on_cancel())
+        menu.add_command(label="删除/取消", command=lambda: op.set_status(2))
 
         if type(self).__name__ == "FloatingWindow":
             frame.bind("<Button-3>", lambda event: menu.post(event.x_root, event.y_root))
