@@ -14,7 +14,7 @@ import typing
 from pathlib import Path
 
 import requests
-from ops_toolkit import VERSION
+from ops_toolkit import VERSION, DEBUGGER
 from ops_toolkit.config import config
 
 if typing.TYPE_CHECKING:

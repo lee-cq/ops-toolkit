@@ -1,7 +1,7 @@
-import atexit
 import signal
 import sys
 import threading
+import time
 import tkinter as tk
 from logging import getLogger
 from pathlib import Path
@@ -27,7 +27,7 @@ from ops_toolkit.monitor_clipboard.ui_window_clipboard import ClipboardWindow
 from ops_toolkit.monitor_teams.ui_windows_teams_notifications import TeamsNotificationsListenerWindow
 from ops_toolkit.keepalive import Keepalive
 from ops_toolkit.todolist.main import TodoManager
-from ops_toolkit.update_version import check_update
+from ops_toolkit.update_version import check_update as _check_update
 
 if TYPE_CHECKING:
     from ops_toolkit.config import Config
@@ -35,6 +35,7 @@ if TYPE_CHECKING:
 logger = getLogger("ops_toolkit.app.main")
 
 
+# noinspection PyTypeChecker
 class App:
     def __init__(self):
 
@@ -86,10 +87,27 @@ class App:
             # noinspection PyUnresolvedReferences
             from gui_auto import gui_auto
             gui_auto(self)
-        threading.Thread(target=check_update, args=(self,)).start()
-        atexit.register(check_update, self)
+        self.check_update()
         signal.signal(signal.SIGINT, lambda sig, frame: self.__setattr__("exit_flag", True))
         self.check_flag()
+
+    def check_update(self):
+        def check_update(app: "App" = None) -> bool:
+            if app is None:
+                app = self
+            lst_check = Path(self.config.data_dir) / "lst_check_update.txt"
+            try:
+                if lst_check.exists() and time.time() - int(lst_check.read_text(encoding="utf-8")) < 3600:
+                    logger.debug(f"距离上次检查更新不足1小时，跳过检查")
+                    return False
+                lst_check.write_text(str(int(time.time())))
+                return _check_update(app)
+            except Exception as e:
+                logger.error(f"Check update error: {e}")
+                lst_check.unlink(missing_ok=True)
+
+        threading.Thread(target=check_update, args=(self,), daemon=True).start()
+        self.root.after(3600_000, self.check_update)
 
     def check_flag(self):
         if self.exit_flag:
@@ -137,24 +155,3 @@ class App:
         logger.info(f"{self.config.app_name} is exited.")
         self.exited = True
         sys.exit(0)
-
-# def quit_app():
-#     """退出应用程序"""
-#     if globals().get("ops_toolkit_app", None) is not None:
-#         globals().get("ops_toolkit_app").quit()
-#
-#
-# def get_app() -> App:
-#     """获取应用程序实例"""
-#     if globals().get("ops_toolkit_app", None) is None:
-#         raise ValueError("App instance not found. Please run the app first.")
-#     return globals().get("ops_toolkit_app")
-
-# # 主程序入口
-# if __name__ == "__main__":
-#     try:
-#         app = App()
-#         app.run()
-#     except Exception as e:
-#         logger.critical(f"Application crashed: {e}", exc_info=True)
-#         sys.exit(1)

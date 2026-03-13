@@ -42,6 +42,7 @@ UPDATE_LOG = """
 16b1. [todolist] add "添加task管理窗口"
 16b3. [todolist] add "Remake #34 " op "Create 窗口描述使用长文本框"
 16b4. [todolist] fix "无法更新状态" op "status 和 str 的关系"
+16b5. [app] op "每小时自动检查更新"
 
 ### 1.7
 1. 添加自动更新功能
