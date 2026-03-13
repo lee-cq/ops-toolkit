@@ -40,7 +40,7 @@ class TreeTip(ToolTip):
 
 class SummaryWindow(CommonUI):
 
-    def __init__(self, app: App, todoer: "TodoManager"):
+    def __init__(self, app: "App", todoer: "TodoManager"):
         super().__init__(app, todoer=todoer)
         self.window: tk.Toplevel | None = None
         self.tasks_frame: ttk.Frame | None = None
