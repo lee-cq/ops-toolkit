@@ -7,6 +7,8 @@
 """
 
 import logging
+import re
+import time
 import tkinter as tk
 import typing
 from datetime import datetime
@@ -31,6 +33,12 @@ class FloatingWindow(CommonUI):
         self.window: tk.Toplevel | None = None
         self.tasks_frame: ttk.Frame | None = None
         self.window_size = (405, 230)
+        self.window_offset = (30, 30)
+        self.last_drag_time = 0
+        self.default_geometry = (
+            f"{self.window_size[0]}x{self.window_size[1]}"
+            f"+{self.app.root.winfo_screenwidth() - self.window_size[0] - self.window_offset[0]}+{self.window_offset[1]}")
+        logger.debug(f"todo浮动窗口初始化成功: {self.default_geometry}")
 
     def show(self):
         """创建浮动窗口"""
@@ -43,11 +51,7 @@ class FloatingWindow(CommonUI):
         self.window.overrideredirect(True)  # 无边框
         self.window.attributes("-topmost", True)  # 窗口置顶
         self.window.configure(bg='black')
-        x, y = self.app.root.winfo_x() + 10, self.app.root.winfo_y() + 10
-        self.window.geometry(
-            f"{self.window_size[0]}x{self.window_size[1]}+"
-            f"{self.app.root.winfo_screenwidth() - self.window_size[0] - 30}+{30}"
-        )
+        self.window_geometry()
 
         # 主框架
         self.tasks_frame = ttk.Frame(self.window, padding="10")
@@ -58,11 +62,55 @@ class FloatingWindow(CommonUI):
         # 允许拖动窗口
         self.window.bind("<Button-1>", self.start_drag)
         self.window.bind("<B1-Motion>", self.on_drag_overlay1)
+        self.window.bind("<ButtonRelease-1>", self.on_drag_end)
         # 双击改变窗口大小
         self.window.bind("<Double-Button-1>", self.on_double_click)
 
         self.load_tasks()
         self.window.focus_force()
+
+    def start_drag(self, event):
+        """开始拖动浮窗1"""
+        self.x1 = event.x
+        self.y1 = event.y
+
+    def on_drag_overlay1(self, event):
+        """拖动浮窗1时更新位置"""
+        self.window_offset = (
+            self.window.winfo_x() + event.x - self.x1,
+            self.window.winfo_y() + event.y - self.y1
+        )
+        self.last_drag_time = time.time()
+        self.window_geometry(f"+{self.window_offset[0]}+{self.window_offset[1]}")
+        # logger.debug(f"浮窗1位置更新: x={x}, y={y}")
+
+    def on_drag_end(self, event):
+        """拖动浮窗1结束"""
+        if time.time() - self.last_drag_time < 2:
+            self.todoer.db_manager.set_setting(
+                f"window_geometry_{type(self).__name__}",
+                f"{self.window.winfo_width()}x{self.window.winfo_height()}"
+                f"+{self.window.winfo_x()}+{self.window.winfo_y()}",
+            )
+            self.last_drag_time = 0
+
+    def window_geometry(self, gs: str = None):
+        """设置窗口位置"""
+        set_key = f"window_geometry_{type(self).__name__}"
+        _gs = gs
+        if gs is None:
+            gs = self.todoer.db_manager.get_setting(
+                set_key,
+                default=f"{self.window_size[0]}x{self.window_size[1]}+{self.window_offset[0]}+{self.window_offset[1]}",
+            )
+
+        if gs.startswith("+"):
+            gs = f"{self.window_size[0]}x{self.window_size[1]}" + gs
+        if "+" not in gs:
+            gs = gs + f"+{self.window_offset[0]}+{self.window_offset[1]}"
+        self.window.geometry(gs)
+        self.window_size = tuple(map(int, re.findall(r"(\d+)x(\d+)", gs)[0]))
+        self.window_offset = tuple(map(int, re.findall(r"\+(\d+)\+(\d+)", gs)[0]))
 
     def on_close(self, event):
         """关闭窗口"""
@@ -72,11 +120,12 @@ class FloatingWindow(CommonUI):
 
     def on_double_click(self, event):
         """双击改变窗口大小"""
+
         if self.window.winfo_height() == self.window_size[1]:
-            logger.debug("扩大窗口")
+            logger.debug(f"扩大窗口: {self.window.winfo_height()=}, {self.window_size[1]=}")
             self.window.geometry(f"{self.window_size[0]}x{self.window_size[1] * 2}")
         else:
-            logger.debug("缩小窗口")
+            logger.debug(f"缩小窗口: {self.window.winfo_height()=}, {self.window_size[1]=}")
             self.window.geometry(f"{self.window_size[0]}x{self.window_size[1]}")
 
     def load_tasks(self):

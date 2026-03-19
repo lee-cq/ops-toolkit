@@ -104,6 +104,15 @@ class TodolistConfigModel(BaseModel):
     value = Column(Text, nullable=True, comment="配置值")
 
 
+class DayShift(BaseModel):
+    __tablename__ = 'day_shifts'
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    date = Column(String(9), index=True, comment="日期: YYYY-mm-dd")
+    shift = Column(String(255), nullable=False, comment="班次：night|day|mid")
+    day_type = Column(String(255), nullable=False, comment="日期类型：工作日|节假日|带薪节假日")
+
+
 class DBManager:
 
     def __init__(self, app):
@@ -168,7 +177,14 @@ class DBManager:
             logger.info("todolist Database connection closed")
 
     # 添加记录
-    def add_task(self, title, details="", link="", do_time: datetime = None, status: str | int = 0):
+    def add_task(
+            self,
+            title,
+            details="",
+            link="",
+            do_time: datetime = None,
+            status: str | int = 0
+    ) -> TodolistTaskModel:
         """
 
         :param title:
@@ -182,7 +198,6 @@ class DBManager:
             do_time = datetime.now() + timedelta(hours=1)
 
         session = self._get_session()
-        status = map_status_to_int.get(status, 0)
         try:
             record = TodolistTaskModel(
                 title=title,
@@ -190,13 +205,13 @@ class DBManager:
                 link=link,
                 create_time=datetime.now(),
                 do_time=do_time,
-                status=status if status in [0, 1, 2] else 0,
+                status=map_status_to_int.get(status, 0) if isinstance(status, str) else 0,
             )
             session.add(record)
             session.commit()
             toolkit_notify("todolist", f"添加任务成功: {title} \n {do_time}")
             logger.info(f"todolist Record added: {record.id}")
-            return record.id
+            return record
         except Exception as e:
             logger.error(f"todolist Error adding record: {e}")
             session.rollback()
@@ -340,6 +355,43 @@ class DBManager:
             logger.error(f"Error updating todolist_config {key=}: {e}")
             session.rollback()
             raise e
+        finally:
+            session.close()
+
+    def set_day_shift(self, date: str | datetime, shift, day_type):
+        """设置班次信息"""
+        session = self._get_session()
+        date = date if isinstance(date, str) else date.strftime("%Y-%m-%d")
+        try:
+            req = session.query(DayShift).filter(DayShift.date == date).first()
+            if req is not None:
+                req.shift = shift
+                req.day_type = day_type
+            else:
+                req = DayShift(date=date, shift=shift, day_type=day_type)
+                session.add(req)
+            session.commit()
+        except Exception as e:
+            logger.error(f"Error updating todolist_config {date=}: {e}")
+            raise e
+        finally:
+            session.close()
+
+    def get_day_shift(self, date: str | datetime):
+        """获取班次信息
+        :param date: 日期字符串 YYYY-mm-dd
+        """
+        session = self._get_session()
+        if not isinstance(date, str):
+            date = date.strftime("%Y-%m-%d")
+        try:
+            req = session.query(DayShift).filter(DayShift.date == date).first()
+            if req is not None:
+                return req.shift, req.day_type
+            return None, None
+        except Exception as e:
+            logger.error(f"Error updating todolist_config {date=}: {e}")
+            return None, None
         finally:
             session.close()
 

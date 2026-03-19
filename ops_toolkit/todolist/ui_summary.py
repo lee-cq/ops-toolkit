@@ -79,8 +79,8 @@ class SummaryWindow(CommonUI):
         # 绑定窗口关闭事件
         self.window.bind("<Escape>", self.on_close)
         # 允许拖动窗口
-        self.window.bind("<Button-1>", self.start_drag)
-        self.window.bind("<B1-Motion>", self.on_drag_overlay1)
+        # self.window.bind("<Button-1>", self.start_drag)
+        # self.window.bind("<B1-Motion>", self.on_drag_overlay1)
 
         # 查询框架
         query_frame = ttk.LabelFrame(self.window, text="查询", padding=10)

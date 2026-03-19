@@ -10,6 +10,7 @@ from tkinter import messagebox
 from ops_toolkit.todolist.models import map_status_to_int
 from ops_toolkit.todolist.models import TodolistTaskModel
 from ops_toolkit.todolist.models import DBManager
+from ops_toolkit.todolist.schedule import ScheduleManager
 from ops_toolkit.todolist.ui_create_window import TodoCreateWindow
 from ops_toolkit.todolist.ui_floating_window import FloatingWindow
 from ops_toolkit.todolist.ui_floating_window import TaskItem
@@ -33,6 +34,7 @@ class TodoManager:
         self.floating_window: FloatingWindow = FloatingWindow(self.app, self)
         self.reminder_manager: ReminderManager = ReminderManager(self)
         self.workdir_manager: WorkdirManager = WorkdirManager(self)
+        self.scheduler = ScheduleManager(self)
         self.summary: SummaryWindow = SummaryWindow(self.app, self)
 
     def show_summary_window(self):
@@ -63,6 +65,7 @@ class ReminderManager:
         self.remainder_tid_old = set()
         self.remainders: dict[int, DaemonTimer] = {}
         self._init()
+        logger.debug("ReminderManager 初始化完成")
 
     def _init(self):
         for tid in json.loads(self.todo_manager.db_manager.get_setting("remainders", "[]")):
@@ -78,31 +81,42 @@ class ReminderManager:
             self.remainder_tid_old = self.remainders.keys()
             logger.info("Reminder list 已经更新...")
 
-    def add(self, op: TaskItem):
-        if op.record.do_time <= datetime.now():
-            messagebox.showinfo("提示", f"任务{op.record.title}已过期")
+    def add(self, op: TaskItem | TodolistTaskModel):
+        record = op.record if isinstance(op, TaskItem) else op
+        if record.do_time <= datetime.now():
+            messagebox.showinfo("提示", f"任务{record.title}已过期")
             return
 
-        if op.record.id in self.remainders and self.remainders[op.record.id].is_alive():
-            self.remainders[op.record.id].cancel()
-            logger.info(f"任务 {op.record.title} 的定时器已经存在, 旧任务已取消")
+        if record.id in self.remainders and self.remainders[record.id].is_alive():
+            self.remainders[record.id].cancel()
+            logger.info(f"任务 {record.title} 的定时器已经存在, 旧任务已取消")
 
-        self.remainders[op.record.id] = DaemonTimer(
-            (op.record.do_time - datetime.now()).total_seconds(),
+        self.remainders[record.id] = DaemonTimer(
+            (record.do_time - datetime.now()).total_seconds(),
             toolkit_notify,
-            (op.record.title, op.record.desc),
+            (record.title, record.desc),
             # {"launch": True}
         )
-        self.remainders[op.record.id].start()
+        self.remainders[record.id].start()
         self._save()
-        logger.info(f"任务 {op.record.id}: {op.record.title} 的定时器已经成功添加并启动")
+        logger.info(f"任务 {record.id}: {record.title} 的定时器已经成功添加并启动")
 
-    def is_notify(self, op: TaskItem | int):
-        _id = op.record.id if isinstance(op, TaskItem) else op
+    def is_notify(self, op: TaskItem | TodolistTaskModel | int):
+        if isinstance(op, TaskItem):
+            _id = op.record.id
+        elif isinstance(op, TodolistTaskModel):
+            _id = op.id
+        else:
+            _id = op
         return _id in self.remainders and self.remainders[_id].is_alive()
 
-    def cancel(self, op: TaskItem | int):
-        _id = op.record.id if isinstance(op, TaskItem) else op
+    def cancel(self, op: TaskItem | TodolistTaskModel | int):
+        if isinstance(op, TaskItem):
+            _id = op.record.id
+        elif isinstance(op, TodolistTaskModel):
+            _id = op.id
+        else:
+            _id = op
         if _id in self.remainders:
             if self.remainders[_id].is_alive():
                 self.remainders[_id].cancel()
@@ -129,6 +143,7 @@ class WorkdirManager:
         self.todo_workdir = self.todo.app.config.todo_workdir
         self.re_name = re.compile(r"(\d{4})-\[(.*?)]-\((.*?)\)-(.*)")
         DaemonTimer(120, self.flush_all).start()
+        logger.debug("WorkdirManager 初始化完成")
 
     def to_name(self, task: TodolistTaskModel) -> str:
         return f"{task.id:04d}-[{task.status_string()}]-({task.work_time_occupied})-{self.title_to_filename(task.title)}"

@@ -54,6 +54,8 @@ class SettingsWindow:
         self.teams_team_entry = None
         self.teams_interval_entry = None
 
+        # 计划任务设置控件
+
     def show(self, callback_close=None):
         """显示设置窗口"""
 
@@ -279,7 +281,18 @@ class SettingsWindow:
                   ).grid(
             row=5, column=0, columnspan=self.teams_frame.grid_size()[0], sticky='ew')
 
-        # 按钮区域
+        # ==================== 计划任务列 ===================
+        schedule_frame = ttk.Frame(self.notebook, padding=10)
+        self.notebook.add(schedule_frame, text="计划任务")
+        schedule_frame.columnconfigure(1, weight=1, minsize=300)
+        sch_config_btn = ttk.Button(schedule_frame, text="计划任务配置",
+                                    command=self.app.todoer.scheduler.show_edit_shift_info_window)
+        sch_config_btn.grid(row=0, column=0, sticky=tk.W, pady=(10, 5))
+        add_work_btn = ttk.Button(schedule_frame, text="添加班次信息",
+                                  command=self.app.todoer.scheduler.show_add_work_window)
+        add_work_btn.grid(row=0, column=1, sticky=tk.W, pady=(10, 5))
+
+        # ==================== 底部按钮  ====================
         button_frame = ttk.Frame(self.window)
         button_frame.pack(fill="x", pady=10)
 

@@ -207,18 +207,6 @@ class CommonUI:
         self.todoer: "TodoManager" = todoer
         self.window: tk.Toplevel | None = None
 
-    def start_drag(self, event):
-        """开始拖动浮窗1"""
-        self.x1 = event.x
-        self.y1 = event.y
-
-    def on_drag_overlay1(self, event):
-        """拖动浮窗1时更新位置"""
-        x = self.window.winfo_x() + event.x - self.x1
-        y = self.window.winfo_y() + event.y - self.y1
-        self.window.geometry(f"+{x}+{y}")
-        # logger.debug(f"浮窗1位置更新: x={x}, y={y}")
-
     @staticmethod
     def show_time(dt: datetime) -> str:
         now = datetime.now()
