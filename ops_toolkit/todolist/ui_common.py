@@ -50,16 +50,11 @@ class ToolTip:
         if self.tooltip or not self.text:
             return
 
-        # 获取组件的位置，让提示框显示在组件右下方
-        x = self.widget.winfo_rootx() + 20
-        y = self.widget.winfo_rooty() + 20
-
         # 创建顶级临时窗口作为提示框
         self.tooltip = tk.Toplevel(self.widget)
         # 设置为无标题栏的临时窗口
         self.tooltip.wm_overrideredirect(True)
         self.tooltip.attributes("-topmost", True)  # 窗口置顶
-        self.tooltip.wm_geometry(f"+{x}+{y}")
 
         # 创建提示框内容标签
         label = ttk.Label(
@@ -72,6 +67,40 @@ class ToolTip:
             padding=(5, 2)  # 内边距
         )
         label.pack()
+
+        # 强制更新窗口以获取实际尺寸
+        self.tooltip.update_idletasks()
+
+        # 获取 tooltip 的实际宽度和高度
+        tooltip_width = self.tooltip.winfo_reqwidth()
+        tooltip_height = self.tooltip.winfo_reqheight()
+
+        # 获取屏幕尺寸
+        screen_width = self.tooltip.winfo_screenwidth()
+        screen_height = self.tooltip.winfo_screenheight()
+
+        # 获取鼠标指针的位置作为默认位置
+        x = self.widget.winfo_pointerx()
+        y = self.widget.winfo_pointery()
+
+        # 在鼠标位置下方添加适当的偏移，避免遮挡鼠标指针
+        x = x + 15
+        y = y + 15
+
+        # 检查是否超出右边界，如果是则向左调整
+        if x + tooltip_width > screen_width:
+            # 向左调整，与屏幕右侧保持 20px 距离
+            x = screen_width - tooltip_width - 20
+
+        # 检查是否超出底边界，如果是则向上显示
+        if y + tooltip_height > screen_height - 20:
+            # 尝试显示在鼠标上方
+            y = y - tooltip_height - 30
+            # 如果上方也不够空间，则贴近上边界
+            if y < 20:
+                y = 20
+
+        self.tooltip.wm_geometry(f"+{x}+{y}")
 
     def _hide_tooltip(self, event=None):
         """隐藏提示框"""
