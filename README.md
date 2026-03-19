@@ -1032,10 +1032,12 @@ interval = 30
 13. [hourly_reminder] add "延迟提醒功能"
 14. [todolist] fix "文件管理重复创建目录" op "界面展示"
 15b1. [app] op "重构翻译在App中的位置" op "优化退出机制和定时器机制" 
+15. [15b1]
 16b1. [todolist] add "添加task管理窗口"
 16b3. [todolist] add "Remake #34 " op "Create 窗口描述使用长文本框"
 16b4. [todolist] fix "无法更新状态" op "status 和 str 的关系"
 16b5. [app] op "每小时自动检查更新"
+16. [15b1, 16b1, 16b3, 16b4, 16b5]
 
 ### 1.7
 1. 添加自动更新功能
