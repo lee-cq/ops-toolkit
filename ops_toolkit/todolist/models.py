@@ -12,6 +12,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Iterable
 
+from sqlalchemy import and_
 from sqlalchemy import Column
 from sqlalchemy import create_engine
 from sqlalchemy import DateTime
@@ -231,27 +232,31 @@ class DBManager:
             kwargs["status"] = map_status_to_int.get(kwargs["status"], 0)
         try:
             record = session.query(TodolistTaskModel).filter(TodolistTaskModel.id == tid).first()
-            if record:
-                old = {k: getattr(record, k) for k in kwargs.keys() if getattr(record, k) != kwargs[k]}
-                [setattr(record, key, kwargs[key]) for key in old.keys()]
-                change = {k: [v, kwargs[k]] for k, v in old.items() if old[k] != kwargs[k]}
-                for k, v in change.items():
-                    session.add(TodolistHistoryModel(
-                        tid=tid,
-                        c_table="todolist_tasks",
-                        c_key=k,
-                        c_value=json.dumps(v, ensure_ascii=False, default=json_serializer)
-                    ))
-                session.flush()
-                session.commit()
-                c_s = "\n".join(f"{k}: {v[0]} -> {v[1]}" for k, v in change.items())
-                toolkit_notify("todolist", f"更新任务成功: {tid} : {record.title} \n{c_s}")
-                logger.info(f"create history: {change}")
-                logger.info(f"todolist Record updated: {tid=}")
-                session.flush()
-            else:
+            if not record:
                 logger.error(f"todolist Record not found: {tid=}")
                 raise ValueError("todolist Record not found")
+
+            old = {k: getattr(record, k) for k in kwargs.keys() if getattr(record, k) != kwargs[k]}
+            [setattr(record, key, kwargs[key]) for key in old.keys()]
+            change = {k: [v, kwargs[k]] for k, v in old.items() if old[k] != kwargs[k]}
+            if not change:
+                logger.debug(f"todolist No changes found: {tid=}")
+                return
+            for k, v in change.items():
+                session.add(TodolistHistoryModel(
+                    tid=tid,
+                    c_table="todolist_tasks",
+                    c_key=k,
+                    c_value=json.dumps(v, ensure_ascii=False, default=json_serializer)
+                ))
+            session.flush()
+            session.commit()
+            c_s = "\n".join(f"{k}: {v[0]} -> {v[1]}" for k, v in change.items())
+            toolkit_notify("todolist", f"更新任务成功: {tid} : {record.title} \n{c_s}")
+            logger.info(f"create history: {change}")
+            logger.info(f"todolist Record updated: {tid=}")
+            session.flush()
+
         except ValueError:
             pass
         except Exception as e:
@@ -392,6 +397,34 @@ class DBManager:
         except Exception as e:
             logger.error(f"Error updating todolist_config {date=}: {e}")
             return None, None
+        finally:
+            session.close()
+
+    def get_day_shift_list(
+            self,
+            start_date: str | datetime,
+            end_date: str | datetime = None
+    ) -> Iterable[type[DayShift] | DayShift]:
+        """获取班次信息列表
+        :param start_date: 起始日期字符串 YYYY-mm-dd
+        :param end_date: 结束日期字符串 YYYY-mm-dd
+        """
+        session = self._get_session()
+        start_date = start_date if isinstance(start_date, str) else start_date.strftime("%Y-%m-%d")
+        if end_date is None:
+            end_date = "9999-99-99"
+        end_date = end_date if isinstance(end_date, str) else end_date.strftime("%Y-%m-%d")
+        try:
+            req = session.query(DayShift).filter(
+                and_(
+                    DayShift.date >= start_date,
+                    DayShift.date <= end_date
+                )
+            ).all()
+            return req
+        except Exception as e:
+            logger.error(f"Error updating todolist_config {start_date=}: {e}")
+            return []
         finally:
             session.close()
 

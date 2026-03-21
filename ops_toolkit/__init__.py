@@ -48,6 +48,9 @@ UPDATE_LOG = """
 17b1. [todolist] add "按班次周期任务提醒 #35 " op "记忆浮窗位置 #37 "
 17b2. [todolist] op "ToolTip 显示位置，防止溢出屏幕 #36 "
 17b3. [todolist] fix "管理窗口，工时展示错误 #39 "
+17b4. [hourly_reminder] fix "通知界面格式化字符串异常"
+17b5. [todolist.models] op "DB.update_task 通知逻辑优化"
+17b6. [todolist.scheduler] fix "编码错误" op "调整默认值"
 
 ### 1.7
 1. 添加自动更新功能

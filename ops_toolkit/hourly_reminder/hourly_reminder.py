@@ -38,7 +38,7 @@ class HourlyReminder(object):
             reply = toast(
                 app_id=self.app.config.app_name,
                 title=f"巡检提醒",
-                body="记得要完成{datetime.now().hour}点的巡检啊！！！",
+                body=f"记得要完成{datetime.now().hour}点的巡检啊！！！",
                 duration="long",
                 scenario='incomingCall',
                 audio={'src': 'ms-winsoundevent:Notification.Looping.Alarm8', 'loop': 'true'},
@@ -53,11 +53,10 @@ class HourlyReminder(object):
                 delay_time = 0
 
         finally:
+            self.start(after=1)
             if delay_time > 0:
                 self.timer = DaemonTimer(delay_time, self.run)
                 self.timer.start()
-            elif delay_time == 0:
-                self.start(after=1)
             else:
                 raise ValueError("Invalid delay time.")
 

@@ -150,7 +150,7 @@ class SummaryWindow(CommonUI):
         self.cached_tasks = {}
         for task in tasks:
             self.cached_tasks[task.id] = task
-            logger.debug(f"添加列：{task.id}, {task.title}")
+            logger.debug(f"添加行：{task.id}, {task.title}")
             self.tasks_tree.insert("", "end", values=(
                 task.id,
                 task.status_emoji(),

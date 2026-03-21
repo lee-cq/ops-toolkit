@@ -40,6 +40,7 @@ DEFAULT_SCHEDULE_SETTING = json.dumps({
             "end":   "18:00",
             "tasks": [
                 "day_end",
+                "hour_health_check",
             ]
         },
         "mid":   {
@@ -48,7 +49,8 @@ DEFAULT_SCHEDULE_SETTING = json.dumps({
             "end":   "25:00",
             "tasks": [
                 "retail_email",
-                "production_issues"
+                "production_issues",
+                "hour_health_check",
             ]
         }
     },
@@ -91,6 +93,13 @@ DEFAULT_SCHEDULE_SETTING = json.dumps({
                 "+06:00",
             ],
             "message":  "请检查并通知今日无进展的生产问题"
+        },
+        "hour_health_check": {
+            "name":     "小时健康检查",
+            "day_type": "ALL",
+            "crons":    [
+                "+0:00", "+1:00", "+2:00", "+3:00", "+4:00", "+5:00", "+6:00", "+7:00", "+8:00"
+            ]
         }
     }
 }, indent=2, ensure_ascii=False)
@@ -101,6 +110,7 @@ class Task(BaseModel):
     name: str
     link: str = ""
     day_type: str | list = "ALL"
+    task_type: str = "ALL"
     crons: list[str]
     message: str = ""
 
@@ -159,9 +169,25 @@ class Shift(BaseModel):
 
     @property
     def start_datetime(self, now: datetime = datetime.now()):
-        if not self.on_shift(now):
-            raise ValueError(f"{now.strftime('%Y-%m-%d %H:%M')} 不在班次时间段内")
-        return datetime(now.year, now.month, now.day, *self.start_tuple)
+        start_datetime = datetime(now.year, now.month, now.day, *self.start_tuple)
+        logger.debug(f"计算属性： self.start_datetime =  {start_datetime.strftime('%Y-%m-%d %H:%M')}")
+        return start_datetime
+
+    @property
+    def end_datetime(self, now: datetime = datetime.now()):
+        hh, mm = self.end_tuple
+        a_dd = 0
+        if hh < 0:
+            hh += 24
+            a_dd -= 1
+        elif hh >= 24:
+            hh -= 24
+            a_dd += 1
+
+        end_datetime = datetime(now.year, now.month, now.day, hh, mm)
+        end_datetime += timedelta(days=a_dd)
+        logger.debug(f"计算属性： self.end_datetime =  {end_datetime.strftime('%Y-%m-%d %H:%M')}")
+        return end_datetime
 
     def on_shift(self, _t: datetime = datetime.now()) -> bool:
         _now = (_t.hour, _t.minute)
@@ -198,7 +224,7 @@ class Shifts(BaseModel):
         if max_end[0] >= 24:
             max_end[0] -= 24
         if min_start == max_end:
-            logger.debug(f"确定班次时间偏移量： 「{min_start[0]}:{min_start[1]}」")
+            logger.debug(f"确定班次时间偏移量： 「{min_start[0]:02d}:{min_start[1]:02d}」")
             return timedelta(hours=min_start[0], minutes=min_start[1])
 
         raise ValueError(f"班次时间段有重叠： {min_start=} {max_end=}")
@@ -252,12 +278,20 @@ class ScheduleManager:
             return shift
         raise ValueError("未找到当前班次")
 
+    def is_remote(self, day_shift, shift) -> str:
+        """判断是否为远程班"""
+        if shift.name in ["夜班", "中班"]:
+            return "remote"
+        if shift.name in ["白班"] and day_shift.day_type != "工作日":
+            return "remote"
+        return "office"
+
     def scheduler_start(self):
         DaemonTimer(300, self.scheduler_start, ).start()
         try:
             self.scheduler_run()
-        except Exception as e:
-            logger.error(e)
+        except Exception as _e:
+            logger.error(f"Scheduler error: {_e}", exc_info=True)
 
     def scheduler_run(self):
         """运行任务"""
@@ -266,9 +300,12 @@ class ScheduleManager:
         for task in shift.get_tasks():
             if task.day_type == "ALL" or day_type in task.day_type:
                 self.check_remainder(task, shift)
+            elif task.task_type == "ALL" or self.is_remote(day_shift, shift) == task.task_type:
+                self.check_remainder(task, shift)
 
     def check_remainder(self, task: Task, shift: Shift):
-        next_cron: datetime = shift.next_cron(datetime.now(), task.next_cron(shift.start_datetime))
+        now = datetime.now()
+        next_cron: datetime = task.next_cron(shift.start_datetime, now)
         if not next_cron:
             return
 
@@ -286,7 +323,8 @@ class ScheduleManager:
 
         for r_task in r_tasks:
             self.todoer.db_manager.update_task(r_task.id, status=0, do_time=next_cron)
-            self.todoer.reminder_manager.add(r_task)
+            if not self.todoer.reminder_manager.is_notify(r_task):
+                self.todoer.reminder_manager.add(r_task)
 
     def scheduler_reload(self, new_config: str | None = None):
         self.scheduler = Scheduler.load(self.todoer, new_config)
@@ -309,13 +347,14 @@ class ScheduleManager:
                 self.todoer.db_manager.set_day_shift(ds[0].replace("/", "-"), ds[1], ds[2])
             except Exception as e:
                 rest.append(str(ds) + " E: " + str(e))
-            else:
-                logger.info(f"全部每日班次信息添加或更新成功。")
         if rest:
             logger.error("添加失败：\n" + "\n".join(rest))
             messagebox.showwarning("提示",
                                    "格式：^(\\d{4}[-/]\\d{2}[-/]\\d{2})[\\t ]+(day|mid|night)[\\t ]+(工作日|节假日|带薪节假日)$ \n"
                                    "例如：2026-03-03 day 工作日\n下面的内容添加失败：\n" + "\n".join(rest))
+        else:
+            logger.info(f"全部每日班次信息添加或更新成功。")
+            messagebox.showinfo("提示", "添加成功")
 
     def show_edit_shift_info_window(self):
         _w = tk.Toplevel(self.todoer.app.root)
@@ -323,8 +362,9 @@ class ScheduleManager:
         _w.geometry("500x650")
 
         # 创建ScrolledText
-        text_area = ScrolledText(_w, wrap=tk.WORD, font=("Arial", 12))
+        text_area = ScrolledText(_w, wrap=tk.WORD, font=("Consolas", 12))
         text_area.pack(pady=10, expand=True)
+        text_area.insert("1.0", DEFAULT_SCHEDULE_SETTING)
 
         # 创建按钮框架
         button_frame = tk.Frame(_w)
@@ -333,10 +373,21 @@ class ScheduleManager:
         # 创建“从配置中重载”按钮
         reload_button = tk.Button(
             button_frame,
+            text="从默认值重载",
+            command=lambda: (
+                text_area.delete("1.0", tk.END),
+                text_area.insert("1.0", DEFAULT_SCHEDULE_SETTING)
+            )
+        )
+        reload_button.pack(side='left', padx=5)
+
+        # 创建“从配置中重载”按钮
+        reload_button = tk.Button(
+            button_frame,
             text="从配置中重载",
             command=lambda: (
                 text_area.delete("1.0", tk.END),
-                text_area.insert("1.0", self.scheduler.model_dump_json(exclude={"todoer"}))
+                text_area.insert("1.0", self.scheduler.model_dump_json(indent=2, ensure_ascii=False))
             )
         )
         reload_button.pack(side='left', padx=5)
@@ -359,12 +410,25 @@ class ScheduleManager:
         _w.geometry("500x650")
 
         # 创建ScrolledText
-        text_area = ScrolledText(_w, wrap=tk.WORD, font=("Arial", 12))
+        text_area = ScrolledText(_w, wrap=tk.WORD, font=("Consolas", 12))
         text_area.pack(pady=10, expand=True)
 
         # 创建按钮框架
         button_frame = tk.Frame(_w)
         button_frame.pack(pady=10)
+
+        # 创建“保存”按钮
+        reload_button = tk.Button(
+            button_frame,
+            text="重载已保存数据",
+            command=lambda: (
+                text_area.delete("1.0", tk.END),
+                text_area.insert("1.0", "\n".join(
+                    " ".join([ds.date, ds.shift, ds.day_type]) for ds in
+                    self.todoer.db_manager.get_day_shift_list(datetime.now())
+                ))
+            ))
+        reload_button.pack(side='left', padx=5)
 
         # 创建“保存”按钮
         save_button = tk.Button(
