@@ -157,7 +157,7 @@ class SummaryWindow(CommonUI):
                 task.title,
                 task.create_time.strftime("%Y-%m-%d %H:%M:%S"),
                 task.do_time.strftime("%Y-%m-%d %H:%M:%S"),
-                f"{task.work_time_occupied:.2f} h"
+                f"{task.work_time_occupied/60:.2f} h"
             ))
 
     def get_row_info(self, event) -> tuple[str, list]:
