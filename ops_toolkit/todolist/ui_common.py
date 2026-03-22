@@ -195,7 +195,7 @@ class TaskItem:
             self.todoer.db_manager.update_task(self.record.id, status=status)
             self.todoer.reminder_manager.cancel(self)
             self.todoer.update_window()
-            self.todoer.update_workdir(self.record.id)
+            # self.todoer.update_workdir(self.record.id)
             return
 
     def on_add_worktime(self, s: str):

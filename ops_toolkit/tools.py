@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import concurrent.futures
 import logging
 import queue
 import re
 import tempfile
 from pathlib import Path
 from threading import Timer
+from typing import Callable
 from typing import Union
 
 import PIL.BmpImagePlugin
 import PIL.ImageGrab
 import pyperclip
-from win11toast import notify, clear_toast
+import win11toast
 
 from ops_toolkit.zhconv import convert
 from ops_toolkit.config import config
@@ -167,7 +169,46 @@ def toolkit_notify(title: str, message: str = "", tag: str = None, clear: bool =
     if clear and tag:
         logger.info(f"Clear toast: {group=}")
         # clear_toast(app_id=config.app_name, group=group, tag=tag) ToDo Win11toast更新
-    notify(title, message, app_id=config.app_name, tag=tag, **kwargs)
+    win11toast.notify(title, message, app_id=config.app_name, tag=tag, **kwargs)
+
+
+def toolkit_notify_callback(
+        title: str,
+        message: str = "",
+        tag: str = None,
+        clear: bool = False,
+        callbacks: dict[str, Callable[[], None]] = None,
+        timeout: int = 30,
+        timeout_callback: Callable[[], None] = None,
+        **kwargs):
+    """
+    使用Windows系统通知进行通知
+    """
+    group = config.app_name
+    kwargs["group"] = group
+    if clear and tag:
+        logger.info(f"Clear toast: {group=}")
+        # clear_toast(app_id=config.app_name, group=group, tag=tag) ToDo Win11toast更新
+
+    try:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(
+                win11toast.toast,
+                title,
+                message,
+                app_id=config.app_name,
+                buttons=callbacks.keys(),
+                tag=tag, **kwargs
+            )
+            result = future.result(timeout=timeout)
+            if callbacks:
+                callbacks[result["arguments"]]()
+    except concurrent.futures.TimeoutError:
+        logger.info("Timeout")
+        if callable(timeout_callback):
+            timeout_callback()
+
+    rest = win11toast.toast(title, message, app_id=config.app_name, buttons=callbacks.keys(), tag=tag, **kwargs)
 
 
 class DaemonTimer(Timer):

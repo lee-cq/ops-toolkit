@@ -116,22 +116,30 @@ class DayShift(BaseModel):
 
 class DBManager:
 
-    def __init__(self, app):
+    def __init__(self, db_file: str | Path = None):
         self.engine = None
-        self.app = app
         self.started = False
         self.thread = None
         self._last_content = None
         self.auto_sls_split = False
 
-        self._init_database()
+        self._init_database(db_file)
 
-    def _init_database(self):
+    def _init_database(self, db_file: str | Path = None):
         """初始化数据库连接"""
         try:
-            self.app.config.data_dir.mkdir(parents=True, exist_ok=True)
-            db_path = Path(self.app.config.data_dir) / "todolist.db"
-            self.engine = create_engine(f'sqlite:///{db_path.as_posix()}')
+            if db_file is None:
+                db_path = ":memory:"
+            else:
+                db_file = Path(db_file)
+                if db_file.is_dir():
+                    db_path = db_file.joinpath("todolist.db").as_posix()
+                elif db_file.is_file():
+                    db_path = db_file.as_posix()
+                else:
+                    raise FileNotFoundError(f"todolist Database file not found: {db_file}")
+
+            self.engine = create_engine(f'sqlite:///{db_path}')
             self._update_tables()
             Base.metadata.create_all(self.engine)
             self.Session = sessionmaker(bind=self.engine)
@@ -160,7 +168,7 @@ class DBManager:
                 session.commit()
 
         except Exception as e:
-            logger.error(f"todolist Error updating tables: {e}")
+            logger.error(f"todolist Error updating tables: {e}", exc_info=True)
             session.rollback()
         finally:
             session.close()
@@ -214,7 +222,7 @@ class DBManager:
             logger.info(f"todolist Record added: {record.id}")
             return record
         except Exception as e:
-            logger.error(f"todolist Error adding record: {e}")
+            logger.error(f"todolist Error adding record: {e}", exc_info=True)
             session.rollback()
             raise e
         finally:
@@ -260,7 +268,7 @@ class DBManager:
         except ValueError:
             pass
         except Exception as e:
-            logger.error(f"todolist Error updating record: {e}")
+            logger.error(f"todolist Error updating record: {e}", exc_info=True)
             session.rollback()
             raise e
 
@@ -285,7 +293,7 @@ class DBManager:
         try:
             return session.query(TodolistTaskModel).filter(TodolistTaskModel.id == tid).first()
         except Exception as e:
-            logger.error(f"todolist Error getting todo {tid=}: {e}")
+            logger.error(f"todolist Error getting todo {tid=}: {e}", exc_info=True)
             return None
         finally:
             session.close()
@@ -316,7 +324,7 @@ class DBManager:
                 )
             ).order_by(*order_bys)
         except Exception as e:
-            logger.error(f"todolist Error querying todo {query=}: {e}")
+            logger.error(f"todolist Error querying todo {query=}: {e}", exc_info=True)
             return []
         finally:
             session.close()
@@ -357,7 +365,7 @@ class DBManager:
             logger.info(f'todolist_config "{key}" updated:  {value}')
             return True
         except Exception as e:
-            logger.error(f"Error updating todolist_config {key=}: {e}")
+            logger.error(f"Error updating todolist_config {key=}: {e}", exc_info=True)
             session.rollback()
             raise e
         finally:
@@ -377,7 +385,7 @@ class DBManager:
                 session.add(req)
             session.commit()
         except Exception as e:
-            logger.error(f"Error updating todolist_config {date=}: {e}")
+            logger.error(f"Error updating todolist_config {date=}: {e}", exc_info=True)
             raise e
         finally:
             session.close()
@@ -395,7 +403,7 @@ class DBManager:
                 return req.shift, req.day_type
             return None, None
         except Exception as e:
-            logger.error(f"Error updating todolist_config {date=}: {e}")
+            logger.error(f"Error get day shift info {date=}: {e}", exc_info=True)
             return None, None
         finally:
             session.close()
@@ -423,7 +431,7 @@ class DBManager:
             ).all()
             return req
         except Exception as e:
-            logger.error(f"Error updating todolist_config {start_date=}: {e}")
+            logger.error(f"Error get day shift list {start_date=}: {e}", exc_info=True)
             return []
         finally:
             session.close()
@@ -432,11 +440,5 @@ class DBManager:
 if __name__ == '__main__':
     from ops_toolkit.config import config
 
-
-    class _APP:
-        def __init__(self):
-            self.config = config
-
-
-    db = DBManager(_APP())
+    db = DBManager(config.data_dir)
     print(db.get_setting("test", "000"))

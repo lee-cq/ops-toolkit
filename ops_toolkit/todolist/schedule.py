@@ -11,6 +11,7 @@ import re
 import typing
 import tkinter as tk
 from datetime import datetime, timedelta
+from functools import lru_cache
 from tkinter import messagebox
 from tkinter.scrolledtext import ScrolledText
 
@@ -31,7 +32,7 @@ DEFAULT_SCHEDULE_SETTING = json.dumps({
             "end":   "09:00",
             "tasks": [
                 "night_check",
-                "morning_check",
+                "morning_check"
             ]
         },
         "day":   {
@@ -40,7 +41,7 @@ DEFAULT_SCHEDULE_SETTING = json.dumps({
             "end":   "18:00",
             "tasks": [
                 "day_end",
-                "hour_health_check",
+                "hour_health_check"
             ]
         },
         "mid":   {
@@ -50,59 +51,75 @@ DEFAULT_SCHEDULE_SETTING = json.dumps({
             "tasks": [
                 "retail_email",
                 "production_issues",
-                "hour_health_check",
+                "hour_health_check"
             ]
         }
     },
     "tasks":       {
         "night_check":       {
-            "name":    "夜班检查",
-            "crons":   [
-                "+0:00", "+6:30"
+            "name":      "夜班检查",
+            "link":      "",
+            "day_type":  "ALL",
+            "task_type": "ALL",
+            "crons":     [
+                "+0:00",
+                "+7:30"
             ],
-            "message": "请检查夜班任务是否完成"
+            "message":   "请检查夜班任务是否完成"
         },
         "morning_check":     {
-            "name":     "交易日晨检",
-            "day_type": "工作日",
-            "crons":    [
-                "07:40"
+            "name":      "交易日晨检",
+            "link":      "",
+            "day_type":  "工作日",
+            "task_type": "ALL",
+            "crons":     [
+                "07:50",
+                "09:00",
+                "09:15"
             ],
-            "message":  "准备开始晨检"
+            "message":   "准备开始晨检"
         },
         "day_end":           {
-            "name":     "交易日DayEnd",
-            "day_type": "工作日",
-            "crons":    [
-                "+0:00", "+6:30"
+            "name":      "交易日DayEnd",
+            "link":      "",
+            "day_type":  "工作日",
+            "task_type": "ALL",
+            "crons":     [
+                "14:30", "15:00", "16:10", "17:10"
             ],
-            "message":  "请检查日班任务是否完成"
+            "message":   "请检查日班任务是否完成"
         },
         "retail_email":      {
-            "name":     "Retail邮件",
-            "day_type": "ALL",
-            "crons":    [
-                "+07:00",
+            "name":      "Retail邮件",
+            "link":      "",
+            "day_type":  "ALL",
+            "task_type": "ALL",
+            "crons":     [
+                "+07:00"
             ],
-            "message":  "请检查Retail未回复邮件"
+            "message":   "请检查Retail未回复邮件"
         },
         "production_issues": {
-            "name":     "生产问题",
-            "day_type": "ALL",
-            "crons":    [
-                "+06:00",
+            "name":      "生产问题",
+            "link":      "",
+            "day_type":  "ALL",
+            "task_type": "ALL",
+            "crons":     [
+                "+06:00"
             ],
-            "message":  "请检查并通知今日无进展的生产问题"
+            "message":   "请检查并通知今日无进展的生产问题"
         },
         "hour_health_check": {
             "name":     "小时健康检查",
+            "link":     "",
             "day_type": "ALL",
             "crons":    [
                 "+0:00", "+1:00", "+2:00", "+3:00", "+4:00", "+5:00", "+6:00", "+7:00", "+8:00"
             ]
         }
     }
-}, indent=2, ensure_ascii=False)
+}
+    , indent=2, ensure_ascii=False)
 
 
 class Task(BaseModel):
@@ -150,6 +167,9 @@ class Shift(BaseModel):
     end: str
     tasks: list[Task | str]
 
+    def __hash__(self):
+        return hash(self.name + self.start + self.end)
+
     def get_tasks(self) -> typing.Iterable[Task]:
         for task in self.tasks:
             if isinstance(task, str):
@@ -167,40 +187,39 @@ class Shift(BaseModel):
     def end_tuple(self) -> tuple[int, int]:
         return to_time_tuple(self.end)
 
-    @property
-    def start_datetime(self, now: datetime = datetime.now()):
-        start_datetime = datetime(now.year, now.month, now.day, *self.start_tuple)
+    @lru_cache(5)
+    def start_datetime(self, now: datetime = None):
+        """计算班次开始时间"""
+        now = now or datetime.now()
+
+        day = now.day - 1 if now.hour + 24 < self.end_tuple[0] else now.day
+        start_datetime = datetime(now.year, now.month, day, *self.start_tuple)
         logger.debug(f"计算属性： self.start_datetime =  {start_datetime.strftime('%Y-%m-%d %H:%M')}")
         return start_datetime
 
-    @property
-    def end_datetime(self, now: datetime = datetime.now()):
+    @lru_cache(5)
+    def end_datetime(self, now: datetime = None):
+
         hh, mm = self.end_tuple
-        a_dd = 0
+        _start = self.start_datetime(now)
         if hh < 0:
             hh += 24
-            a_dd -= 1
+            _start -= timedelta(days=1)
         elif hh >= 24:
             hh -= 24
-            a_dd += 1
+            _start += timedelta(days=1)
 
-        end_datetime = datetime(now.year, now.month, now.day, hh, mm)
-        end_datetime += timedelta(days=a_dd)
+        end_datetime = datetime(_start.year, _start.month, _start.day, hh, mm)
         logger.debug(f"计算属性： self.end_datetime =  {end_datetime.strftime('%Y-%m-%d %H:%M')}")
         return end_datetime
 
-    def on_shift(self, _t: datetime = datetime.now()) -> bool:
-        _now = (_t.hour, _t.minute)
-        if self.end_tuple[0] <= 24:
-            if self.start_tuple <= _now < self.end_tuple:
-                return True
-            else:
-                return False
-        else:
-            _new_end = (self.end_tuple[0] - 24, self.end_tuple[1])
-            if self.start_tuple <= _now or _new_end > _now:
-                return True
-            return False
+    @lru_cache(5)
+    def on_shift(self, _t: datetime = None) -> bool:
+        """判断是否在班次时间段内"""
+        _t = _t or datetime.now()
+        _start = self.start_datetime(_t) - timedelta(minutes=15)
+        _end = self.end_datetime(_t)
+        return _start <= _t <= _end
 
 
 def to_time_tuple(t: str) -> tuple[int, int]:
@@ -246,7 +265,7 @@ class Scheduler(BaseModel):
             setattr(v, "_all_tasks", self.tasks)
 
     def save(self):
-        self.todoer.db_manager.set_setting(
+        return self.todoer.db_manager.set_setting(
             "SchedulerShiftInfo",
             self.model_dump_json(indent=2, ensure_ascii=False)
         )
@@ -268,17 +287,25 @@ class ScheduleManager:
         self.scheduler: Scheduler = Scheduler.load(self.todoer, DEFAULT_SCHEDULE_SETTING)
         self.scheduler_start()
 
-    def get_shift(self) -> Shift:
-        """"""
-        shift, _ = self.todoer.db_manager.get_day_shift(datetime.now() - self.scheduler.shifts_info.get_offset())
-        if not shift:
-            raise ValueError("未找到当前班次")
-        shift = self.scheduler.shifts_info.get_shift(shift)
-        if shift.on_shift():
-            return shift
-        raise ValueError("未找到当前班次")
+        self.now = datetime.now()
 
-    def is_remote(self, day_shift, shift) -> str:
+    def get_shift(self) -> Shift | None:
+        """"""
+        _now_time = self.now - self.scheduler.shifts_info.get_offset()
+        shift, _ = self.todoer.db_manager.get_day_shift(_now_time)
+        if not shift:
+            logger.warning(f"未找到当前班次: {_now_time.strftime('%Y-%m-%d')}")
+            return None
+
+        shift = self.scheduler.shifts_info.get_shift(shift)
+        if not shift.on_shift():
+            logger.debug(f"当前时间[{_now_time.strftime('%Y-%m-%d %H:%M')}]不在班次时间段内: "
+                         f"{shift.name} [{shift.start} - {shift.end}]")
+            return None
+        return shift
+
+    @staticmethod
+    def is_remote(day_shift, shift) -> str:
         """判断是否为远程班"""
         if shift.name in ["夜班", "中班"]:
             return "remote"
@@ -295,8 +322,11 @@ class ScheduleManager:
 
     def scheduler_run(self):
         """运行任务"""
+        self.now = datetime.now()
         shift = self.get_shift()
-        day_shift, day_type = self.todoer.db_manager.get_day_shift(datetime.now())
+        if not shift:
+            return
+        day_shift, day_type = self.todoer.db_manager.get_day_shift(self.now)
         for task in shift.get_tasks():
             if task.day_type == "ALL" or day_type in task.day_type:
                 self.check_remainder(task, shift)
@@ -304,8 +334,8 @@ class ScheduleManager:
                 self.check_remainder(task, shift)
 
     def check_remainder(self, task: Task, shift: Shift):
-        now = datetime.now()
-        next_cron: datetime = task.next_cron(shift.start_datetime, now)
+
+        next_cron: datetime = task.next_cron(shift.start_datetime(self.now), self.now)
         if not next_cron:
             return
 

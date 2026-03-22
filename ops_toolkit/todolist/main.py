@@ -4,6 +4,7 @@ import tkinter as tk
 import typing
 import logging
 from datetime import datetime
+from datetime import timedelta
 from pathlib import Path
 from tkinter import messagebox
 
@@ -16,7 +17,7 @@ from ops_toolkit.todolist.ui_floating_window import FloatingWindow
 from ops_toolkit.todolist.ui_floating_window import TaskItem
 from ops_toolkit.todolist.ui_summary import SummaryWindow
 from ops_toolkit.tools import DaemonTimer
-from ops_toolkit.tools import toolkit_notify
+from ops_toolkit.tools import toolkit_notify_callback
 
 if typing.TYPE_CHECKING:
     from ops_toolkit.app import App
@@ -29,7 +30,7 @@ class TodoManager:
 
     def __init__(self, app: "App"):
         self.app: "App" = app
-        self.db_manager: DBManager = DBManager(self.app)
+        self.db_manager: DBManager = DBManager(self.app.config.data_dir)
 
         self.floating_window: FloatingWindow = FloatingWindow(self.app, self)
         self.reminder_manager: ReminderManager = ReminderManager(self)
@@ -81,6 +82,11 @@ class ReminderManager:
             self.remainder_tid_old = self.remainders.keys()
             logger.info("Reminder list 已经更新...")
 
+    def delay(self, task: TodolistTaskModel, delay_min: int):
+        self.todo_manager.db_manager.update_task(task.id, do_time=datetime.now() + timedelta(minutes=delay_min))
+        task.do_time = task.do_time + timedelta(minutes=delay_min)
+        self.add(task)
+
     def add(self, op: TaskItem | TodolistTaskModel):
         record = op.record if isinstance(op, TaskItem) else op
         if record.do_time <= datetime.now():
@@ -89,17 +95,27 @@ class ReminderManager:
 
         if record.id in self.remainders and self.remainders[record.id].is_alive():
             self.remainders[record.id].cancel()
-            logger.info(f"任务 {record.title} 的定时器已经存在, 旧任务已取消")
 
         self.remainders[record.id] = DaemonTimer(
             (record.do_time - datetime.now()).total_seconds(),
-            toolkit_notify,
+            toolkit_notify_callback,
             (record.title, record.desc),
-            # {"launch": True}
+            dict(
+                duration="long",
+                scenario='incomingCall',
+                audio={'src': 'ms-winsoundevent:Notification.Looping.Alarm8', 'loop': 'true'},
+                callbacks={
+                    '延迟5min通知':  lambda: self.delay(record, 5),
+                    '延迟10min通知': lambda: self.delay(record, 10),
+                    '清除通知':      lambda: self.cancel(record.id),
+                },
+                timeout=60,
+                timeout_callback=lambda: self.delay(record, 5),
+            )
         )
         self.remainders[record.id].start()
         self._save()
-        logger.info(f"任务 {record.id}: {record.title} 的定时器已经成功添加并启动")
+        logger.info(f"任务 {record.id}: {record.title} 的定时器已经成功添加/更新")
 
     def is_notify(self, op: TaskItem | TodolistTaskModel | int):
         if isinstance(op, TaskItem):
@@ -146,7 +162,7 @@ class WorkdirManager:
         logger.debug("WorkdirManager 初始化完成")
 
     def to_name(self, task: TodolistTaskModel) -> str:
-        return f"{task.id:04d}-[{task.status_string()}]-({task.work_time_occupied})-{self.title_to_filename(task.title)}"
+        return f"{task.id:04d}-[{task.status_string()}]-({task.work_time_occupied})-{self.title_to_filename(task.title)}".strip()
 
     def to_task(self, workdir: str):
         """将目录名转换为任务
@@ -243,7 +259,7 @@ class WorkdirManager:
         """
         将标题转换为文件名
         """
-        return re.sub(r"[\\/:*?\"<>|]", "_", name)
+        return re.sub(r"[\\/:*?\"<>|]", "_", name).strip()
 
 
 if __name__ == '__main__':
