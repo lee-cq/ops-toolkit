@@ -14,7 +14,7 @@ import typing
 from pathlib import Path
 
 import requests
-from ops_toolkit import VERSION, DEBUGGER
+from ops_toolkit import VERSION
 from ops_toolkit.config import config
 
 if typing.TYPE_CHECKING:
@@ -29,7 +29,7 @@ set pid={pid}
 echo Try to close the process after waiting for 5 seconds ...
 timeout /T 5 && taskkill /F /PID %pid%
 
-echo update ops-toolkit {old_version} -> {new_version}
+echo "update ops-toolkit {old_version} -> {new_version}"
 
 where uv >nul 2>&1
 if %errorlevel% equ 0 (
@@ -99,13 +99,14 @@ class UpdateVersion:
         :return:
         """
         _version = self.version_to_tuple(VERSION)
-        if self.skip_version_file.exists():
-            _skip_version = self.version_to_tuple(self.skip_version_file.read_text().strip())
-            if _skip_version < _version:
-                return _version
-            logger.debug(f"跳过版本文件: {self.skip_version_file} {_skip_version}")
-            return _skip_version
-        return DEFAULT_VERSION
+        if not self.skip_version_file.exists():
+            return _version
+        _skip_version = self.version_to_tuple(self.skip_version_file.read_text().strip())
+        if _skip_version < _version:
+            return _version
+        logger.debug(f"跳过版本文件: {self.skip_version_file} {_skip_version}")
+        return _skip_version
+        # return DEFAULT_VERSION
 
     def write_update_script(self):
         """写入更新脚本"""

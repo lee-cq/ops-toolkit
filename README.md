@@ -1045,6 +1045,7 @@ interval = 30
 17b5. [todolist.models] op "DB.update_task 通知逻辑优化"
 17b6. [todolist.scheduler] fix "编码错误" op "调整默认值"
 17b7. [todolist.reminder] op "延时的通知"
+17b8. [update_version] fix "升级脚本"
 
 ### 1.7
 1. 添加自动更新功能
