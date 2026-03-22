@@ -644,13 +644,13 @@ class ScreenSelector:
         self.root.destroy()
 
 
-if __name__ == '__main__':
-    def _callback(x):
-        print(x)
-        _app.destroy()
-
-
-    _app = tk.Tk()
-    _app.withdraw()
-    ScreenSelector(_callback)
-    _app.mainloop()
+# if __name__ == '__main__':
+#     def _callback(x):
+#         print(x)
+#         _app.destroy()
+#
+#
+#     _app = tk.Tk()
+#     _app.withdraw()
+#     ScreenSelector(_callback)
+#     _app.mainloop()

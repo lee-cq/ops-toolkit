@@ -53,6 +53,8 @@ UPDATE_LOG = """
 17b6. [todolist.scheduler] fix "编码错误" op "调整默认值"
 17b7. [todolist.reminder] op "延时的通知"
 17b8. [update_version] fix "升级脚本"
+17b9. [todolist.model] op "重构session"
+17b10. [todolist.scheduler] fix "通知回调错误"
 
 ### 1.7
 1. 添加自动更新功能

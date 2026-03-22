@@ -256,9 +256,7 @@ class WorkdirManager:
 
     @staticmethod
     def title_to_filename(name: str) -> str:
-        """
-        将标题转换为文件名
-        """
+        """将标题转换为文件名"""
         return re.sub(r"[\\/:*?\"<>|]", "_", name).strip()
 
 

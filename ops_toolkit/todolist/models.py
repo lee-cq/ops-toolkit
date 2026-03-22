@@ -12,6 +12,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Iterable
 
+import sqlalchemy.exc
 from sqlalchemy import and_
 from sqlalchemy import Column
 from sqlalchemy import create_engine
@@ -185,6 +186,20 @@ class DBManager:
             del self.Session
             logger.info("todolist Database connection closed")
 
+    def sql_exec(self, func, defaults=None, **kwargs):
+        with self._get_session() as session:
+            try:
+                return func(session, **kwargs)
+
+            except sqlalchemy.exc.TimeoutError as _e:
+                logger.error(f"todolist Error executing {func.__name__}: {_e}\n"
+                             f"sessions = ")
+
+            except Exception as e:
+                logger.error(f"todolist Error executing {func.__name__}: {e}", exc_info=True)
+                session.rollback()
+                return defaults
+
     # 添加记录
     def add_task(
             self,
@@ -206,8 +221,8 @@ class DBManager:
         if do_time is None:
             do_time = datetime.now() + timedelta(hours=1)
 
-        session = self._get_session()
-        try:
+        def _add_task(session):
+            # session = self._get_session()
             record = TodolistTaskModel(
                 title=title,
                 desc=details,
@@ -221,12 +236,8 @@ class DBManager:
             toolkit_notify("todolist", f"添加任务成功: {title} \n {do_time}")
             logger.info(f"todolist Record added: {record.id}")
             return record
-        except Exception as e:
-            logger.error(f"todolist Error adding record: {e}", exc_info=True)
-            session.rollback()
-            raise e
-        finally:
-            session.close()
+
+        return self.sql_exec(_add_task)
 
     def update_task(self, tid, **kwargs):
         """title="", desc="", link="", do_time: datetime = None
@@ -235,10 +246,10 @@ class DBManager:
         :param kwargs:
         :return:
         """
-        session = self._get_session()
         if "status" in kwargs and isinstance(kwargs["status"], str):
             kwargs["status"] = map_status_to_int.get(kwargs["status"], 0)
-        try:
+
+        def _update_task(session):
             record = session.query(TodolistTaskModel).filter(TodolistTaskModel.id == tid).first()
             if not record:
                 logger.error(f"todolist Record not found: {tid=}")
@@ -265,38 +276,26 @@ class DBManager:
             logger.info(f"todolist Record updated: {tid=}")
             session.flush()
 
-        except ValueError:
-            pass
-        except Exception as e:
-            logger.error(f"todolist Error updating record: {e}", exc_info=True)
-            session.rollback()
-            raise e
-
-        finally:
-            session.close()
+        return self.sql_exec(_update_task)
 
     def top_10_task(self) -> list[type[TodolistTaskModel] | TodolistTaskModel]:
         """获取10条未完成的任务"""
-        session = self._get_session()
-        try:
+
+        # session = self._get_session()
+        def _top_10_task(session):
             return session.query(TodolistTaskModel).filter(TodolistTaskModel.status == 0) \
                 .order_by(TodolistTaskModel.do_time).limit(10).all()
-        except Exception as e:
-            logger.error(f"todolist Error getting top 10 todo: {e}")
-            return []
-        finally:
-            session.close()
+
+        return self.sql_exec(_top_10_task, [])
 
     def get_task(self, tid) -> type[TodolistTaskModel] | TodolistTaskModel | None:
         """获取一个待办事项"""
-        session = self._get_session()
-        try:
+
+        # session = self._get_session()
+        def _get_task(session):
             return session.query(TodolistTaskModel).filter(TodolistTaskModel.id == tid).first()
-        except Exception as e:
-            logger.error(f"todolist Error getting todo {tid=}: {e}", exc_info=True)
-            return None
-        finally:
-            session.close()
+
+        return self.sql_exec(_get_task, None)
 
     def query_task(
             self,
@@ -309,25 +308,22 @@ class DBManager:
         :param order_bys: list[tuple[name, desc/asc]]
         :return:
         """
-        session = self._get_session()
+        # session = self._get_session()
         order_bys = order_bys or []
-        try:
-            order_bys = [
-                desc(getattr(TodolistTaskModel, name)) if order == "desc" else asc(getattr(TodolistTaskModel, name))
-                for name, order in order_bys
-            ]
+        order_bys = [
+            desc(getattr(TodolistTaskModel, name)) if order == "desc" else asc(getattr(TodolistTaskModel, name))
+            for name, order in order_bys
+        ]
 
+        def _query_task(session):
             return session.query(TodolistTaskModel).filter(
                 or_(
                     TodolistTaskModel.title.like(f"%{query}%"),
                     TodolistTaskModel.desc.like(f"%{query}%"),
                 )
-            ).order_by(*order_bys)
-        except Exception as e:
-            logger.error(f"todolist Error querying todo {query=}: {e}", exc_info=True)
-            return []
-        finally:
-            session.close()
+            ).order_by(*order_bys).all()
+
+        return self.sql_exec(_query_task, [])
 
     def complete_task(self, tid, status: int = 1):
         """完成待办事项"""
@@ -353,8 +349,8 @@ class DBManager:
 
     def set_setting(self, key: str, value: str):
         """设置一个值"""
-        session = self._get_session()
-        try:
+        # session = self._get_session()
+        def _set_setting(session):
             req = session.query(TodolistConfigModel).filter(TodolistConfigModel.key == key).first()
             if req is not None:
                 req.value = value
@@ -364,18 +360,15 @@ class DBManager:
             session.commit()
             logger.info(f'todolist_config "{key}" updated:  {value}')
             return True
-        except Exception as e:
-            logger.error(f"Error updating todolist_config {key=}: {e}", exc_info=True)
-            session.rollback()
-            raise e
-        finally:
-            session.close()
+
+        return self.sql_exec(_set_setting, False)
 
     def set_day_shift(self, date: str | datetime, shift, day_type):
         """设置班次信息"""
-        session = self._get_session()
+        # session = self._get_session()
         date = date if isinstance(date, str) else date.strftime("%Y-%m-%d")
-        try:
+
+        def _set_day_shift(session):
             req = session.query(DayShift).filter(DayShift.date == date).first()
             if req is not None:
                 req.shift = shift
@@ -384,29 +377,25 @@ class DBManager:
                 req = DayShift(date=date, shift=shift, day_type=day_type)
                 session.add(req)
             session.commit()
-        except Exception as e:
-            logger.error(f"Error updating todolist_config {date=}: {e}", exc_info=True)
-            raise e
-        finally:
-            session.close()
+            return True
+
+        return self.sql_exec(_set_day_shift, False)
 
     def get_day_shift(self, date: str | datetime):
         """获取班次信息
         :param date: 日期字符串 YYYY-mm-dd
         """
-        session = self._get_session()
+        # session = self._get_session()
         if not isinstance(date, str):
             date = date.strftime("%Y-%m-%d")
-        try:
+
+        def _get_day_shift(session):
             req = session.query(DayShift).filter(DayShift.date == date).first()
             if req is not None:
                 return req.shift, req.day_type
             return None, None
-        except Exception as e:
-            logger.error(f"Error get day shift info {date=}: {e}", exc_info=True)
-            return None, None
-        finally:
-            session.close()
+
+        return self.sql_exec(_get_day_shift, (None, None))
 
     def get_day_shift_list(
             self,
@@ -417,12 +406,13 @@ class DBManager:
         :param start_date: 起始日期字符串 YYYY-mm-dd
         :param end_date: 结束日期字符串 YYYY-mm-dd
         """
-        session = self._get_session()
+        # session = self._get_session()
         start_date = start_date if isinstance(start_date, str) else start_date.strftime("%Y-%m-%d")
         if end_date is None:
             end_date = "9999-99-99"
         end_date = end_date if isinstance(end_date, str) else end_date.strftime("%Y-%m-%d")
-        try:
+
+        def _get_day_shift_list(session):
             req = session.query(DayShift).filter(
                 and_(
                     DayShift.date >= start_date,
@@ -430,11 +420,8 @@ class DBManager:
                 )
             ).all()
             return req
-        except Exception as e:
-            logger.error(f"Error get day shift list {start_date=}: {e}", exc_info=True)
-            return []
-        finally:
-            session.close()
+
+        return self.sql_exec(_get_day_shift_list, [])
 
 
 if __name__ == '__main__':

@@ -202,13 +202,11 @@ def toolkit_notify_callback(
             )
             result = future.result(timeout=timeout)
             if callbacks:
-                callbacks[result["arguments"]]()
+                callbacks[result["arguments"].replace("http:", "")]()
     except concurrent.futures.TimeoutError:
         logger.info("Timeout")
         if callable(timeout_callback):
             timeout_callback()
-
-    rest = win11toast.toast(title, message, app_id=config.app_name, buttons=callbacks.keys(), tag=tag, **kwargs)
 
 
 class DaemonTimer(Timer):

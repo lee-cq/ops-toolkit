@@ -299,7 +299,7 @@ class ScheduleManager:
 
         shift = self.scheduler.shifts_info.get_shift(shift)
         if not shift.on_shift():
-            logger.debug(f"当前时间[{_now_time.strftime('%Y-%m-%d %H:%M')}]不在班次时间段内: "
+            logger.debug(f"当前时间[{self.now.strftime('%Y-%m-%d %H:%M')}]不在班次时间段内: "
                          f"{shift.name} [{shift.start} - {shift.end}]")
             return None
         return shift
