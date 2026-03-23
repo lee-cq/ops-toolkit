@@ -118,8 +118,7 @@ DEFAULT_SCHEDULE_SETTING = json.dumps({
             ]
         }
     }
-}
-    , indent=2, ensure_ascii=False)
+}, indent=2, ensure_ascii=False)
 
 
 class Task(BaseModel):

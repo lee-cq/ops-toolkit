@@ -55,6 +55,7 @@ UPDATE_LOG = """
 17b8. [update_version] fix "升级脚本"
 17b9. [todolist.model] op "重构session"
 17b10. [todolist.scheduler] fix "通知回调错误"
+17b11. [todolist.TaskItem] fix "延迟时间后通知未更新"  fix [17b10]
 
 ### 1.7
 1. 添加自动更新功能

@@ -5,6 +5,7 @@ import logging
 import queue
 import re
 import tempfile
+import typing
 from pathlib import Path
 from threading import Timer
 from typing import Callable
@@ -17,6 +18,9 @@ import win11toast
 
 from ops_toolkit.zhconv import convert
 from ops_toolkit.config import config
+
+if typing.TYPE_CHECKING:
+    from ops_toolkit.app import App
 
 logger = logging.getLogger("ops_toolkit.tools")
 
@@ -198,13 +202,15 @@ def toolkit_notify_callback(
                 message,
                 app_id=config.app_name,
                 buttons=callbacks.keys(),
-                tag=tag, **kwargs
+                tag=tag,
+                **kwargs
             )
             result = future.result(timeout=timeout)
+            logger.debug(f"Notify Result: {result}")
             if callbacks:
-                callbacks[result["arguments"].replace("http:", "")]()
-    except concurrent.futures.TimeoutError:
-        logger.info("Timeout")
+                callbacks.get(result["arguments"].replace("http:", ""), timeout_callback)()
+    except concurrent.futures.TimeoutError or KeyError or TypeError:
+        logger.info("Timeout Or KeyError")
         if callable(timeout_callback):
             timeout_callback()
 

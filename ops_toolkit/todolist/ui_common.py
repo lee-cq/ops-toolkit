@@ -152,10 +152,7 @@ class TaskItem:
 
         do_time = self.record.do_time if self.record.do_time > datetime.now() else datetime.now()
         new_time = do_time + timedelta(hours=hours, minutes=minutes, days=days)
-        self.record.do_time = new_time
-        self.todoer.db_manager.update_task(self.record.id, do_time=new_time)
-        self.todoer.reminder_manager.change_time(self)
-        self.todoer.update_window()
+        return self._delay_to(new_time)
 
     def delay_time_by_time(self, _t: str):
         new_time = datetime.strptime(_t, "%Y-%m-%d %H:%M:%S")
@@ -163,8 +160,12 @@ class TaskItem:
         if new_time < datetime.now():
             messagebox.showwarning("提示", "请输入一个晚于当前时间的时间~")
             return
-        self.record.do_time = new_time
-        self.todoer.db_manager.update_task(self.record.id, do_time=new_time)
+        self._delay_to(new_time)
+
+    def _delay_to(self, _t: datetime):
+        self.record.do_time = _t
+        self.todoer.db_manager.update_task(self.record.id, do_time=_t)
+        self.todoer.reminder_manager.change_time(self)
         self.todoer.update_window()
 
     def complete_task(self):
