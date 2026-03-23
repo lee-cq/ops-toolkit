@@ -257,22 +257,24 @@ class DBManager:
 
             old = {k: getattr(record, k) for k in kwargs.keys() if getattr(record, k) != kwargs[k]}
             [setattr(record, key, kwargs[key]) for key in old.keys()]
-            change = {k: [v, kwargs[k]] for k, v in old.items() if old[k] != kwargs[k]}
-            if not change:
+            changes = {k: [v, kwargs[k]] for k, v in old.items() if old[k] != kwargs[k]}
+            if not changes:
                 logger.debug(f"todolist No changes found: {tid=}")
                 return
-            for k, v in change.items():
+            for k, v in changes.items():
+                _p_v = json.dumps(v, ensure_ascii=False, default=json_serializer)
                 session.add(TodolistHistoryModel(
                     tid=tid,
                     c_table="todolist_tasks",
                     c_key=k,
-                    c_value=json.dumps(v, ensure_ascii=False, default=json_serializer)
+                    c_value=_p_v
                 ))
+                logger.info(f"create history: {tid}: {_p_v}")
             session.flush()
             session.commit()
-            c_s = "\n".join(f"{k}: {v[0]} -> {v[1]}" for k, v in change.items())
+            c_s = "\n".join(f"{k}: {v[0]} -> {v[1]}" for k, v in changes.items())
             toolkit_notify("todolist", f"更新任务成功: {tid} : {record.title} \n{c_s}")
-            logger.info(f"create history: {change}")
+
             logger.info(f"todolist Record updated: {tid=}")
             session.flush()
 
@@ -349,6 +351,7 @@ class DBManager:
 
     def set_setting(self, key: str, value: str):
         """设置一个值"""
+
         # session = self._get_session()
         def _set_setting(session):
             req = session.query(TodolistConfigModel).filter(TodolistConfigModel.key == key).first()

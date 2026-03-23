@@ -1,6 +1,5 @@
 import json
 import re
-import tkinter as tk
 import typing
 import logging
 from datetime import datetime
@@ -38,6 +37,8 @@ class TodoManager:
         self.scheduler = ScheduleManager(self)
         self.summary: SummaryWindow = SummaryWindow(self.app, self)
 
+        self.after_id_window_update = None
+
     def show_summary_window(self):
         """显示默认窗口"""
         self.summary.show()
@@ -52,8 +53,17 @@ class TodoManager:
 
     def update_window(self):
         """更新窗口"""
-        self.floating_window.load_tasks()
-        self.summary.load_tasks()
+
+        def _update():
+            self.floating_window.load_tasks()
+            self.summary.load_tasks()
+            logger.debug("Todolist 窗口列表已经更新")
+            self.timer_window_update = None
+
+        if self.after_id_window_update:
+            self.app.root.after_cancel(self.after_id_window_update)
+
+        self.after_id_window_update = self.app.root.after(1000, _update)
 
     def update_workdir(self, tid: Path | int) -> Path:
         """更新工作目录"""
@@ -61,29 +71,31 @@ class TodoManager:
 
 
 class ReminderManager:
-    def __init__(self, todo_manager: TodoManager):
-        self.todo_manager = todo_manager
+    def __init__(self, todoer: TodoManager):
+        self.todoer = todoer
         self.remainder_tid_old = set()
         self.remainders: dict[int, DaemonTimer] = {}
-        self._init()
+        DaemonTimer(2, self._init, )
         logger.debug("ReminderManager 初始化完成")
 
     def _init(self):
-        for tid in json.loads(self.todo_manager.db_manager.get_setting("remainders", "[]")):
-            record = self.todo_manager.db_manager.get_task(tid)
+        for tid in json.loads(self.todoer.db_manager.get_setting("remainders", "[]")):
+            record = self.todoer.db_manager.get_task(tid)
             if record:
                 self.remainder_tid_old.add(tid)
-                self.add(TaskItem(record, self.todo_manager))
+                self.add(TaskItem(record, self.todoer))
         self._save()
 
     def _save(self):
-        if self.remainder_tid_old != self.remainders.keys():
-            self.todo_manager.db_manager.set_setting("remainders", json.dumps(list(self.remainders.keys())))
-            self.remainder_tid_old = self.remainders.keys()
+        if self.remainder_tid_old != set(self.remainders.keys()):
+            self.todoer.db_manager.set_setting("remainders", json.dumps(list(self.remainders.keys())))
+            self.remainder_tid_old = set(self.remainders.keys())
             logger.info("Reminder list 已经更新...")
+        # else:
+        #     logger.debug(f"Reminder list 没有变化: {self.remainder_tid_old} != {set(self.remainders.keys())}")
 
     def delay(self, task: TodolistTaskModel, delay_min: int):
-        self.todo_manager.db_manager.update_task(task.id, do_time=datetime.now() + timedelta(minutes=delay_min))
+        self.todoer.db_manager.update_task(task.id, do_time=datetime.now() + timedelta(minutes=delay_min))
         task.do_time = task.do_time + timedelta(minutes=delay_min)
         self.add(task)
 
@@ -94,6 +106,7 @@ class ReminderManager:
             return
 
         if record.id in self.remainders and self.remainders[record.id].is_alive():
+            logger.debug(f"任务 {record.id}: {record.title} 的通知存在且等待中，已取消")
             self.remainders[record.id].cancel()
 
         self.remainders[record.id] = DaemonTimer(
@@ -107,7 +120,7 @@ class ReminderManager:
                 callbacks={
                     '延迟5min通知':  lambda: self.delay(record, 5),
                     '延迟10min通知': lambda: self.delay(record, 10),
-                    '清除通知':      lambda: self.cancel(record.id),
+                    '清除通知':      lambda: self.cancel(record),
                 },
                 timeout=60,
                 timeout_callback=lambda: self.delay(record, 5),
@@ -115,7 +128,10 @@ class ReminderManager:
         )
         self.remainders[record.id].start()
         self._save()
-        logger.info(f"任务 {record.id}: {record.title} 的定时器已经成功添加/更新")
+        logger.info(
+            f"任务 {record.id}: {record.title} 的定时器已经成功添加/更新到 「{record.do_time.strftime('%m-%d %H:%M')}」"
+        )
+        self.todoer.update_window()
 
     def is_notify(self, op: TaskItem | TodolistTaskModel | int):
         if isinstance(op, TaskItem):
@@ -126,21 +142,24 @@ class ReminderManager:
             _id = op
         return _id in self.remainders and self.remainders[_id].is_alive()
 
-    def cancel(self, op: TaskItem | TodolistTaskModel | int):
+    def cancel(self, op: TaskItem | TodolistTaskModel):
         if isinstance(op, TaskItem):
             _id = op.record.id
+            op = op.record
         elif isinstance(op, TodolistTaskModel):
             _id = op.id
         else:
-            _id = op
+            raise ValueError("Invalid task")
+
         if _id in self.remainders:
             if self.remainders[_id].is_alive():
                 self.remainders[_id].cancel()
             del self.remainders[_id]
             self._save()
-            logger.info(f"已经取消/完成任务 {_id}: {op.record.title} 的定时器")
+            logger.info(f"已经取消/完成任务 {_id}: {op.title} 的定时器")
+            self.todoer.update_window()
         else:
-            logger.debug(f"未找到任务 {_id}: {op.record.title} 的定时器")
+            logger.debug(f"未找到任务 {_id}: {op.title} 的定时器")
 
     def change_time(self, op: TaskItem):
         if op.record.id not in self.remainders:
@@ -259,28 +278,27 @@ class WorkdirManager:
         """将标题转换为文件名"""
         return re.sub(r"[\\/:*?\"<>|]", "_", name).strip()
 
+# if __name__ == '__main__':
+#     from ops_toolkit.config import config
+#
+#     logging.basicConfig(level=logging.INFO)
+#
+#
+#     class App:
+#         def __init__(self):
+#             self.root = tk.Tk()
+#             self.root.overrideredirect(True)  # 无边框
+#             self.root.withdraw()  # 隐藏主窗口
+#             self.config = config
+#
+#
+#     _app = App()
+#     tm = TodoManager(_app)
+# tm.db_manager.add_record(title="测试任务 这是一个长任务", link="https://www.baidu.com")
+# tm.show_display_window()
+# work = WorkdirManager(tm)
+# _tt = work.to_task("0001-[1]-(1)-test")
+# print(_tt.__dict__)
+# print(work.to_name(_tt))
 
-if __name__ == '__main__':
-    from ops_toolkit.config import config
-
-    logging.basicConfig(level=logging.INFO)
-
-
-    class App:
-        def __init__(self):
-            self.root = tk.Tk()
-            self.root.overrideredirect(True)  # 无边框
-            self.root.withdraw()  # 隐藏主窗口
-            self.config = config
-
-
-    _app = App()
-    tm = TodoManager(_app)
-    # tm.db_manager.add_record(title="测试任务 这是一个长任务", link="https://www.baidu.com")
-    # tm.show_display_window()
-    work = WorkdirManager(tm)
-    _tt = work.to_task("0001-[1]-(1)-test")
-    print(_tt.__dict__)
-    print(work.to_name(_tt))
-
-    # _app.root.mainloop()
+# _app.root.mainloop()

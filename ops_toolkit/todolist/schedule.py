@@ -284,9 +284,10 @@ class ScheduleManager:
     def __init__(self, todoer: "TodoManager"):
         self.todoer = todoer
         self.scheduler: Scheduler = Scheduler.load(self.todoer, DEFAULT_SCHEDULE_SETTING)
-        self.scheduler_start()
-
+        self.last_check_on_shift = False
         self.now = datetime.now()
+
+        DaemonTimer(3, self.scheduler_start, ).start()
 
     def get_shift(self) -> Shift | None:
         """"""
@@ -301,7 +302,24 @@ class ScheduleManager:
             logger.debug(f"当前时间[{self.now.strftime('%Y-%m-%d %H:%M')}]不在班次时间段内: "
                          f"{shift.name} [{shift.start} - {shift.end}]")
             return None
+        logger.debug(f"当前时间[{self.now.strftime('%Y-%m-%d %H:%M')}]在班次时间段内: "
+                     f"{shift.name} [{shift.start} - {shift.end}]")
         return shift
+
+    def on_off_duty(self):
+        """下班执行的动作"""
+        if not self.last_check_on_shift:
+            return
+        self.last_check_on_shift = False
+        self.todoer.app.keepalive.stop()
+
+    def on_start_shift(self):
+        """上班执行的动作"""
+        if self.last_check_on_shift:
+            return
+
+        self.last_check_on_shift = True
+        self.todoer.app.keepalive.start()
 
     @staticmethod
     def is_remote(day_shift, shift) -> str:
@@ -323,8 +341,12 @@ class ScheduleManager:
         """运行任务"""
         self.now = datetime.now()
         shift = self.get_shift()
+
         if not shift:
+            self.on_off_duty()
             return
+        self.on_start_shift()
+
         day_shift, day_type = self.todoer.db_manager.get_day_shift(self.now)
         for task in shift.get_tasks():
             if task.day_type == "ALL" or day_type in task.day_type:
@@ -351,7 +373,10 @@ class ScheduleManager:
             return
 
         for r_task in r_tasks:
-            self.todoer.db_manager.update_task(r_task.id, status=0, do_time=next_cron)
+            if r_task.do_time != next_cron:
+                self.todoer.db_manager.update_task(r_task.id, status=0, do_time=next_cron)
+                r_task.do_time = next_cron
+
             if not self.todoer.reminder_manager.is_notify(r_task):
                 self.todoer.reminder_manager.add(r_task)
 

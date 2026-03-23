@@ -209,8 +209,8 @@ def toolkit_notify_callback(
             logger.debug(f"Notify Result: {result}")
             if callbacks:
                 callbacks.get(result["arguments"].replace("http:", ""), timeout_callback)()
-    except concurrent.futures.TimeoutError or KeyError or TypeError:
-        logger.info("Timeout Or KeyError")
+    except (concurrent.futures.TimeoutError or KeyError or TypeError) as _e:
+        logger.info(f"Timeout Or KeyError, {_e}")
         if callable(timeout_callback):
             timeout_callback()
 

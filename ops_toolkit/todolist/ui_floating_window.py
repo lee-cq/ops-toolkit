@@ -65,6 +65,8 @@ class FloatingWindow(CommonUI):
         self.window.bind("<ButtonRelease-1>", self.on_drag_end)
         # 双击改变窗口大小
         self.window.bind("<Double-Button-1>", self.on_double_click)
+        # 右键更新列表
+        self.window.bind("<Button-3>", lambda e: self.load_tasks())
 
         self.load_tasks()
         self.window.focus_force()

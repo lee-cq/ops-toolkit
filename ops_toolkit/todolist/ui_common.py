@@ -215,11 +215,9 @@ class TaskItem:
 
     def on_add_reminder(self):
         self.todoer.reminder_manager.add(self)
-        self.todoer.update_window()
 
     def on_cancel_reminder(self):
         self.todoer.reminder_manager.cancel(self)
-        self.todoer.update_window()
 
     def on_edit_task(self):
         TodoCreateWindow(self.todoer, self.record)
