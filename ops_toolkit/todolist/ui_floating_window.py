@@ -65,8 +65,8 @@ class FloatingWindow(CommonUI):
         self.window.bind("<ButtonRelease-1>", self.on_drag_end)
         # 双击改变窗口大小
         self.window.bind("<Double-Button-1>", self.on_double_click)
-        # 右键更新列表
-        self.window.bind("<Button-3>", lambda e: self.load_tasks())
+        # # 右键更新列表
+        # self.window.bind("<Button-3>", lambda e: self.load_tasks())
 
         self.load_tasks()
         self.window.focus_force()
@@ -132,6 +132,8 @@ class FloatingWindow(CommonUI):
 
     def load_tasks(self):
         """加载任务列表"""
+        if self.window is None or not self.window.winfo_exists():
+            return
         if self.tasks_frame is None:
             return
         logger.info("刷新任务列表")

@@ -308,16 +308,17 @@ class ScheduleManager:
 
     def on_off_duty(self):
         """下班执行的动作"""
-        if not self.last_check_on_shift:
+        if self.last_check_on_shift:
             return
+        logger.debug("下班执行动作")
         self.last_check_on_shift = False
         self.todoer.app.keepalive.stop()
 
     def on_start_shift(self):
         """上班执行的动作"""
-        if self.last_check_on_shift:
+        if not self.last_check_on_shift:
             return
-
+        logger.debug("上班执行动作")
         self.last_check_on_shift = True
         self.todoer.app.keepalive.start()
 
@@ -373,12 +374,17 @@ class ScheduleManager:
             return
 
         for r_task in r_tasks:
-            if r_task.do_time != next_cron:
-                self.todoer.db_manager.update_task(r_task.id, status=0, do_time=next_cron)
-                r_task.do_time = next_cron
+            if r_task.do_time >= next_cron and r_task.status == 0 and self.todoer.reminder_manager.is_notify(r_task):
+                continue
 
             if not self.todoer.reminder_manager.is_notify(r_task):
+                logger.debug(f"创建提醒： {r_task.title} ")
                 self.todoer.reminder_manager.add(r_task)
+                if r_task.do_time != next_cron or r_task.status != 0:
+                    self.todoer.db_manager.update_task(r_task.id, status=0, do_time=next_cron)
+                    r_task.do_time = next_cron
+            else:
+                logger.debug(f"{r_task.title} 已提醒")
 
     def scheduler_reload(self, new_config: str | None = None):
         self.scheduler = Scheduler.load(self.todoer, new_config)
