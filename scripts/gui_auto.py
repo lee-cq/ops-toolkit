@@ -13,6 +13,8 @@ if typing.TYPE_CHECKING:
 
 def gui_auto(self: "App"):
     """"""
-    # self.root.after(1000, self.settings_window.show)
+    self.root.after(1000, self.settings_window.show)
     # self.root.after(2000, self.notification_monitor_window.show)
-    self.root.after(1000, self.todoer.show_display_window)
+    # self.root.after(1000, self.todoer.show_create_window)
+    # self.root.after(0, self.todoer.show_summary_window)
+

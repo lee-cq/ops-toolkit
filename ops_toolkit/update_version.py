@@ -40,9 +40,9 @@ if %errorlevel% equ 0 (
     {py_exe} -m pip install --upgrade ops-toolkit=={new_version} -i {registry}
 )
 echo Update ops-toolkit to {new_version} done.
-pause
+echo "5秒后重启ops-toolkit ..."
+timeout /T 5 && start "" "{pyw_exe}" -m ops_toolkit
  
-start "" "{pyw_exe}" -m ops_toolkit
 exit 0
 """
 
@@ -173,5 +173,5 @@ def check_update(app: "App" = None) -> bool:
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
-    # VERSION = "1.0.0"
+    VERSION = "1.0.0"
     UpdateVersion().check()

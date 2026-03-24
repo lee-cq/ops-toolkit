@@ -58,6 +58,7 @@ UPDATE_LOG = """
 17b11. [todolist.TaskItem] fix "延迟时间后通知未更新reminder"  fix [17b10]
 17. [17b1, 17b2, 17b3, 17b4, 17b5, 17b6, 17b7, 17b8, 17b9, 17b10, 17b11]
 18. [todolist] op 窗口延时更新 op "异步初始化" op "添加日志" op "添加上班下班的触发函数" op "右键更新窗口"
+19. [update_version] op "更新完成后5秒自动重启"
 
 ### 1.7
 1. 添加自动更新功能
