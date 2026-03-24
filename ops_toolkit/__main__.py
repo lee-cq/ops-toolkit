@@ -112,6 +112,7 @@ def _default_command(config: Optional[str] = None):
 
 @tp.callback(invoke_without_command=True)
 def main(
+    ctx: typer.Context,
     config: Annotated[Optional[str], typer.Argument(help="指定配置文件路径")] = None,
     version: Annotated[bool, typer.Option("--version", "-v", help="显示版本信息")] = False,
 ):
@@ -120,7 +121,7 @@ def main(
         print(f"{VERSION}")
         raise typer.Exit()
 
-    if typer.context.invoked_subcommand is not None:
+    if ctx.invoked_subcommand is not None:
         return
 
     # 没有子命令 → 默认启动主程序（GUI 模式）
@@ -147,6 +148,7 @@ def _require_server_running():
 
 @cli_tp.callback(invoke_without_command=True)
 def cli_main(
+    ctx: typer.Context,
     foreground: Annotated[bool, typer.Option("--foreground", "-f", help="前台启动模式（实时日志）")] = False,
 ):
     """ops-toolkit CLI 管理工具
@@ -154,7 +156,7 @@ def cli_main(
     不带子命令时，前台启动主程序并输出实时日志。
     使用子命令时，先检查主程序是否运行。
     """
-    if typer.context.invoked_subcommand is not None:
+    if ctx.invoked_subcommand is not None:
         # 有子命令 → 先检查主程序是否运行
         _require_server_running()
         return
