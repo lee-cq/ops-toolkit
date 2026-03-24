@@ -28,6 +28,7 @@ from ops_toolkit.monitor_teams.ui_windows_teams_notifications import TeamsNotifi
 from ops_toolkit.keepalive import Keepalive
 from ops_toolkit.todolist.main import TodoManager
 from ops_toolkit.update_version import check_update as _check_update
+from ops_toolkit.cli_server import CLIServer
 
 if TYPE_CHECKING:
     from ops_toolkit.config import Config
@@ -87,6 +88,10 @@ class App:
             # noinspection PyUnresolvedReferences
             from gui_auto import gui_auto
             gui_auto(self)
+        # 启动 CLI Server（FastAPI）
+        self.cli_server = CLIServer(app_ref=self)
+        self.cli_server.start()
+
         self.check_update()
         signal.signal(signal.SIGINT, lambda sig, frame: self.__setattr__("exit_flag", True))
         self.check_flag()
@@ -151,6 +156,8 @@ class App:
         self.hourly_reminder.stop()
         self.keepalive.stop()
         self.monitor_clipboard.stop()
+        # 停止 CLI Server
+        self.cli_server.stop()
         self.root.destroy()
         logger.info(f"{self.config.app_name} is exited.")
         self.exited = True
