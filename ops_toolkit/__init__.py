@@ -60,6 +60,7 @@ UPDATE_LOG = """
 18. [todolist] op 窗口延时更新 op "异步初始化" op "添加日志" op "添加上班下班的触发函数" op "右键更新窗口"
 19. [update_version] op "更新完成后5秒自动重启"
 20. [todolist] fix "浮窗界面右键菜单失效" op "优化提醒逻辑"
+21b1. [todolist.scheduler] fix 超时后无法更新计划
 
 ### 1.7
 1. 添加自动更新功能

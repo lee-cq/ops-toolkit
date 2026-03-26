@@ -86,6 +86,16 @@ class TodolistTaskModel(BaseModel):
     def set_status(self, status):
         self.status = map_status_to_int.get(status, 0)
 
+    def do_time_str(self) -> str:
+        return self.do_time.strftime("%m-%d %H:%M") if self.do_time else ""
+
+    def create_time_str(self) -> str:
+        return self.create_time.strftime("%Y-%m-%d %H:%M") if self.create_time else ""
+
+    def work_time_occupied_human(self) -> str:
+        hh, mm = divmod(self.work_time_occupied, 60)
+        return f"{hh}h {mm}m"
+
 
 class TodolistHistoryModel(BaseModel):
     __tablename__ = 'todolist_history'

@@ -377,14 +377,14 @@ class ScheduleManager:
             if r_task.do_time >= next_cron and r_task.status == 0 and self.todoer.reminder_manager.is_notify(r_task):
                 continue
 
-            if not self.todoer.reminder_manager.is_notify(r_task):
+            if not self.todoer.reminder_manager.is_notify(r_task) or r_task.do_time < next_cron:
                 logger.debug(f"创建提醒： {r_task.title} ")
                 self.todoer.reminder_manager.add(r_task)
                 if r_task.do_time != next_cron or r_task.status != 0:
                     self.todoer.db_manager.update_task(r_task.id, status=0, do_time=next_cron)
                     r_task.do_time = next_cron
             else:
-                logger.debug(f"{r_task.title} 已提醒")
+                logger.debug(f"{r_task.title} [{r_task.do_time_str()}]已提醒")
 
     def scheduler_reload(self, new_config: str | None = None):
         self.scheduler = Scheduler.load(self.todoer, new_config)

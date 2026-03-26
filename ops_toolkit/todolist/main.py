@@ -55,10 +55,13 @@ class TodoManager:
         """更新窗口"""
 
         def _update():
-            self.floating_window.load_tasks()
-            self.summary.load_tasks()
-            logger.debug("Todolist 窗口列表已经更新")
-            self.timer_window_update = None
+            try:
+                self.floating_window.load_tasks()
+                self.summary.load_tasks()
+                logger.debug("Todolist 窗口列表已经更新")
+                self.timer_window_update = None
+            except Exception as _e:
+                logger.error(f"Todolist 窗口列表更新失败: {_e}", exc_info=True)
 
         if self.after_id_window_update:
             self.app.root.after_cancel(self.after_id_window_update)
