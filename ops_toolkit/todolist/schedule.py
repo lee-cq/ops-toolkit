@@ -11,7 +11,6 @@ import re
 import typing
 import tkinter as tk
 from datetime import datetime, timedelta
-from functools import lru_cache
 from tkinter import messagebox
 from tkinter.scrolledtext import ScrolledText
 
@@ -186,7 +185,6 @@ class Shift(BaseModel):
     def end_tuple(self) -> tuple[int, int]:
         return to_time_tuple(self.end)
 
-    @lru_cache(5)
     def start_datetime(self, now: datetime = None):
         """计算班次开始时间"""
         now = now or datetime.now()
@@ -196,7 +194,6 @@ class Shift(BaseModel):
         logger.debug(f"计算属性： self.start_datetime =  {start_datetime.strftime('%Y-%m-%d %H:%M')}")
         return start_datetime
 
-    @lru_cache(5)
     def end_datetime(self, now: datetime = None):
 
         hh, mm = self.end_tuple
@@ -212,12 +209,12 @@ class Shift(BaseModel):
         logger.debug(f"计算属性： self.end_datetime =  {end_datetime.strftime('%Y-%m-%d %H:%M')}")
         return end_datetime
 
-    @lru_cache(5)
     def on_shift(self, _t: datetime = None) -> bool:
         """判断是否在班次时间段内"""
         _t = _t or datetime.now()
         _start = self.start_datetime(_t) - timedelta(minutes=15)
         _end = self.end_datetime(_t)
+        logger.debug(f"计算的shift time: {_start.strftime('%Y-%m-%d %H:%M')} -- {_end.strftime('%Y-%m-%d %H:%M')}")
         return _start <= _t <= _end
 
 
