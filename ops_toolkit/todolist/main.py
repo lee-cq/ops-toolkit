@@ -1,5 +1,6 @@
 import json
 import re
+import threading
 import typing
 import logging
 from datetime import datetime
@@ -105,7 +106,9 @@ class ReminderManager:
     def add(self, op: TaskItem | TodolistTaskModel):
         record = op.record if isinstance(op, TaskItem) else op
         if record.do_time <= datetime.now():
-            messagebox.showinfo("提示", f"任务{record.title}已过期")
+            threading.Thread(
+                target=messagebox.showinfo, args=("提示", f"任务{record.title}已过期"), daemon=True
+            ).start()
             return
 
         if record.id in self.remainders and self.remainders[record.id].is_alive():
@@ -121,9 +124,9 @@ class ReminderManager:
                 scenario='incomingCall',
                 audio={'src': 'ms-winsoundevent:Notification.Looping.Alarm8', 'loop': 'true'},
                 callbacks={
-                    '延迟5min通知':  lambda: self.delay(record, 5),
+                    '延迟5min通知': lambda: self.delay(record, 5),
                     '延迟10min通知': lambda: self.delay(record, 10),
-                    '清除通知':      lambda: self.cancel(record),
+                    '清除通知': lambda: self.cancel(record),
                 },
                 timeout=60,
                 timeout_callback=lambda: self.delay(record, 5),

@@ -7,6 +7,7 @@
 """
 import logging
 import typing
+import re
 
 import pyperclip
 from tkinter import messagebox
@@ -29,6 +30,19 @@ class Translater:
     def __init__(self, app: "App"):
         self.app = app
 
+    @staticmethod
+    def src_text_cat(st: str) -> str:
+        """"""
+        # 移除连续的换行
+        st = "\n".join(i for i in st.strip().split("\n") if i.strip() != "")
+        # 处理驼峰
+        for i in re.finditer(r'[a-z][A-Z][a-z]', st):
+            _old = i.group(0)
+            st = st.replace(_old, "".join((_old[0], " ", _old[1], _old[2])))
+        # 处理下划线
+        st = st.replace("_", " ")
+        return st
+
     def perform_translation(self):
         """执行翻译操作"""
         try:
@@ -38,6 +52,7 @@ class Translater:
             if not source_text:
                 messagebox.showinfo("提示", "剪贴板为空，无法进行翻译")
                 return
+            source_text = self.src_text_cat(source_text)
             src_lang, dst_lang = trans_lang(source_text)
             # 查询该src是否有翻译记录，如果有走历史记录。
             dst_text = self.app.history_manager.get_record_by_src(source_text).get("dst")
