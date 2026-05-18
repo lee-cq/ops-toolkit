@@ -5,6 +5,7 @@
 @Author     : LeeCQ
 @Date-Time  : 2025/9/19 22:05
 """
+import ctypes
 import logging
 import re
 import time
@@ -504,6 +505,14 @@ class SettingsWindow:
 
         ScreenSelector(callback=callback)
 
+def get_windows_scale():
+    # 告诉系统本程序感知 DPI
+    ctypes.windll.shcore.SetProcessDpiAwareness(1)
+    # 取主显示器 DPI
+    hdc = ctypes.windll.user32.GetDC(0)
+    dpi = ctypes.windll.gdi32.GetDeviceCaps(hdc, 88)  # LOGPIXELSX
+    ctypes.windll.user32.ReleaseDC(0, hdc)
+    return dpi / 96.0
 
 class ScreenSelector:
     def __init__(self, callback):
@@ -527,8 +536,10 @@ class ScreenSelector:
         self.screen_width = self.root.winfo_screenwidth()
         self.screen_height = self.root.winfo_screenheight()
         logger.debug(f"屏幕大小：{self.screen_width}x{self.screen_height}， 截图大小：{_grab.width}x{_grab.height}")
+        self.scale =  _grab.width / self.screen_width
+
         _grab = _grab.resize((self.screen_width, self.screen_height))
-        logger.debug(f"缩放后的大小：{_grab.width}x{_grab.height}")
+        logger.debug(f"缩放后的大小：{_grab.width}x{_grab.height}, 缩放比例：{self.scale}")
         self.img = ImageTk.PhotoImage(_grab)
 
         # 创建画布
@@ -573,6 +584,8 @@ class ScreenSelector:
 
         # 禁用窗口管理器的关闭按钮
         self.root.protocol("WM_DELETE_WINDOW", lambda: None)
+
+
 
     def on_start(self, event):
         # 记录起始点
@@ -625,7 +638,7 @@ class ScreenSelector:
         width = max(abs(x2 - x1), 10)
         height = max(abs(y2 - y1), 10)
 
-        self.callback(f"{int(x)}x{int(y)}+{int(width)}+{int(height)}")
+        self.callback(f"{int(x * self.scale) }x{int(y* self.scale)}+{int(width* self.scale)}+{int(height* self.scale)}")
         self.close()
 
     def key_press(self, _event):
