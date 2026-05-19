@@ -26,27 +26,27 @@ logger = logging.getLogger("ops_toolkit.todolist.scheduler")
 DEFAULT_SCHEDULE_SETTING = json.dumps({
     "shifts_info": {
         "night": {
-            "name":  "夜班",
+            "name": "夜班",
             "start": "01:00",
-            "end":   "09:00",
+            "end": "09:00",
             "tasks": [
                 "night_check",
                 "morning_check"
             ]
         },
-        "day":   {
-            "name":  "日班",
+        "day": {
+            "name": "日班",
             "start": "09:00",
-            "end":   "18:00",
+            "end": "18:00",
             "tasks": [
                 "day_end",
                 "hour_health_check"
             ]
         },
-        "mid":   {
-            "name":  "中班",
+        "mid": {
+            "name": "中班",
             "start": "17:00",
-            "end":   "25:00",
+            "end": "25:00",
             "tasks": [
                 "retail_email",
                 "production_issues",
@@ -54,66 +54,66 @@ DEFAULT_SCHEDULE_SETTING = json.dumps({
             ]
         }
     },
-    "tasks":       {
-        "night_check":       {
-            "name":      "夜班检查",
-            "link":      "",
-            "day_type":  "ALL",
+    "tasks": {
+        "night_check": {
+            "name": "夜班检查",
+            "link": "",
+            "day_type": "ALL",
             "task_type": "ALL",
-            "crons":     [
+            "crons": [
                 "+0:00",
                 "+7:30"
             ],
-            "message":   "请检查夜班任务是否完成"
+            "message": "请检查夜班任务是否完成"
         },
-        "morning_check":     {
-            "name":      "交易日晨检",
-            "link":      "",
-            "day_type":  "工作日",
+        "morning_check": {
+            "name": "交易日晨检",
+            "link": "",
+            "day_type": "工作日",
             "task_type": "ALL",
-            "crons":     [
+            "crons": [
                 "07:50",
                 "09:00",
                 "09:15"
             ],
-            "message":   "准备开始晨检"
+            "message": "准备开始晨检"
         },
-        "day_end":           {
-            "name":      "交易日DayEnd",
-            "link":      "",
-            "day_type":  "工作日",
+        "day_end": {
+            "name": "交易日DayEnd",
+            "link": "",
+            "day_type": "工作日",
             "task_type": "ALL",
-            "crons":     [
+            "crons": [
                 "14:30", "15:00", "16:10", "17:10"
             ],
-            "message":   "请检查日班任务是否完成"
+            "message": "请检查日班任务是否完成"
         },
-        "retail_email":      {
-            "name":      "Retail邮件",
-            "link":      "",
-            "day_type":  "ALL",
+        "retail_email": {
+            "name": "Retail邮件",
+            "link": "",
+            "day_type": "ALL",
             "task_type": "ALL",
-            "crons":     [
+            "crons": [
                 "+07:00"
             ],
-            "message":   "请检查Retail未回复邮件"
+            "message": "请检查Retail未回复邮件"
         },
         "production_issues": {
-            "name":      "生产问题",
-            "link":      "",
-            "day_type":  "ALL",
+            "name": "生产问题",
+            "link": "",
+            "day_type": "ALL",
             "task_type": "ALL",
-            "crons":     [
-                "+06:00"
+            "crons": [
+                "+03:00"
             ],
-            "message":   "请检查并通知今日无进展的生产问题"
+            "message": "请检查并通知今日无进展的生产问题"
         },
         "hour_health_check": {
-            "name":     "小时健康检查",
-            "link":     "",
+            "name": "小时健康检查",
+            "link": "",
             "day_type": "ALL",
-            "crons":    [
-                "+0:00", "+1:00", "+2:00", "+3:00", "+4:00", "+5:00", "+6:00", "+7:00", "+8:00"
+            "crons": [
+                "+0:00", "+2:00",  "+4:00", "+7:00"
             ]
         }
     }
@@ -269,7 +269,7 @@ class Scheduler(BaseModel):
     @classmethod
     def load(cls, todoer: "TodoManager", new_config: str | None = None) -> "Scheduler":
         self = cls.model_validate_json(
-            new_config if new_config else todoer.db_manager.get_setting("SchedulerShiftInfo", )
+            new_config if new_config else todoer.db_manager.get_setting("SchedulerShiftInfo", DEFAULT_SCHEDULE_SETTING)
         )
         self._todoer = todoer
         return self
@@ -280,7 +280,7 @@ class ScheduleManager:
 
     def __init__(self, todoer: "TodoManager"):
         self.todoer = todoer
-        self.scheduler: Scheduler = Scheduler.load(self.todoer, DEFAULT_SCHEDULE_SETTING)
+        self.scheduler: Scheduler = Scheduler.load(self.todoer)
         self.last_check_on_shift = False
         self.now = datetime.now()
 

@@ -1061,7 +1061,7 @@ interval = 30
 26. [todolist] 将过期通知改为非阻塞式的通知 #43
 27. [monitor_teams] 支持屏幕缩放的区域选择
 28. [todolist.ui_floating_window] 可以在副屏上保存位置 #45
-
+29. [todolist.schedule] 修复启动时配置文件永远默认配置
 
 ### 1.7
 1. 添加自动更新功能
