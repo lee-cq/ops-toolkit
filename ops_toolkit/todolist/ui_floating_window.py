@@ -112,7 +112,7 @@ class FloatingWindow(CommonUI):
             gs = gs + f"+{self.window_offset[0]}+{self.window_offset[1]}"
         self.window.geometry(gs)
         self.window_size = tuple(map(int, re.findall(r"(\d+)x(\d+)", gs)[0]))
-        self.window_offset = tuple(map(int, re.findall(r"\+(\d+)\+(\d+)", gs)[0]))
+        self.window_offset = tuple(map(int, re.findall(r"\+(\d+)\+([\-0-9]+)", gs)[0]))
 
     def on_close(self, event):
         """关闭窗口"""
