@@ -69,6 +69,7 @@ UPDATE_LOG = """
 27. [monitor_teams] 支持屏幕缩放的区域选择
 28. [todolist.ui_floating_window] 可以在副屏上保存位置 #45
 29. [todolist.schedule] 修复启动时配置文件永远默认配置
+30. [todolist.schedule] 修复上下班脚本的逻辑
 
 ### 1.7
 1. 添加自动更新功能

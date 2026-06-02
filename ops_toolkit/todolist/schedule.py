@@ -305,7 +305,7 @@ class ScheduleManager:
 
     def on_off_duty(self):
         """下班执行的动作"""
-        if self.last_check_on_shift:
+        if not self.last_check_on_shift:
             return
         logger.debug("下班执行动作")
         self.last_check_on_shift = False
@@ -313,7 +313,7 @@ class ScheduleManager:
 
     def on_start_shift(self):
         """上班执行的动作"""
-        if not self.last_check_on_shift:
+        if self.last_check_on_shift:
             return
         logger.debug("上班执行动作")
         self.last_check_on_shift = True
