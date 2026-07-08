@@ -72,6 +72,7 @@ UPDATE_LOG = """
 30. [todolist.schedule] 修复上下班脚本的逻辑
 31. [todolist.main] 修复Windows路径不支持[] 
 32. [monitor_teams] 在点击取消通知后立即再次检查
+33. [translate] 修复安装字体路径，减小显示字号
 
 ### 1.7
 1. 添加自动更新功能

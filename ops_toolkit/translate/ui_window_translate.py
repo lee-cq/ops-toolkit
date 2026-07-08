@@ -18,9 +18,9 @@ from win11toast import notify
 
 logger = logging.getLogger("ops_toolkit.ui.overlay")
 
-font_dir = Path(__file__).parent.joinpath("resources")
+font_dir = Path(__file__).parent.parent.joinpath("resources")
 
-en_font = ('霞鹜文楷等宽 Medium', 13,)
+en_font = ('霞鹜文楷等宽 Medium', 11,)
 zn_font = ('霞鹜文楷等宽 Medium', 12,)
 
 
