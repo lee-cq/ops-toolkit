@@ -1,0 +1,7 @@
+
+## config.toml
+pushgateway_url = "https://"
+job = "http_monitor"
+test_items_dir = "."
+hostname = ""
+

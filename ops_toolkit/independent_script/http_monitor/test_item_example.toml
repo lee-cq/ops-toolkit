@@ -1,0 +1,23 @@
+
+## test_item_*.toml
+
+[[test_item]]
+name = "t1"
+remark = "描述"
+service = "URL所属服务"
+url = "http://test.com"
+timeout = 3     # 可选： 默认： 3s
+verify_tls = false  # 可选： 默认 true
+expected_body = ""  # 可选：留空或不写，忽略
+expected_code = 200  # 可选 ，默认200
+
+[[test_item]]
+name = "t1"
+remark = "描述"
+service = "URL所属服务"
+url = "http://test.com"
+timeout = 3     # 可选： 默认： 3s
+verify_tls = false  # 可选： 默认 true
+expected_body = ""  # 可选：留空或不写，忽略
+expected_code = 200  # 可选 ，默认200
+
