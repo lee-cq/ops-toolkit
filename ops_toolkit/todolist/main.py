@@ -182,12 +182,12 @@ class WorkdirManager:
     def __init__(self, todo: TodoManager):
         self.todo = todo
         self.todo_workdir = self.todo.app.config.todo_workdir
-        self.re_name = re.compile(r"(\d{4})-\[(.*?)]-\((.*?)\)-(.*)")
+        self.re_name = re.compile(r"(\d{4})-(.*?)-\((.*?)\)-(.*)")
         DaemonTimer(120, self.flush_all).start()
         logger.debug("WorkdirManager 初始化完成")
 
     def to_name(self, task: TodolistTaskModel) -> str:
-        return f"{task.id:04d}-[{task.status_string()}]-({task.work_time_occupied})-{self.title_to_filename(task.title)}".strip()
+        return f"{task.id:04d}-{task.status_string()}-({task.work_time_occupied})-{self.title_to_filename(task.title)}".strip()
 
     def to_task(self, workdir: str):
         """将目录名转换为任务

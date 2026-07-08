@@ -1063,6 +1063,8 @@ interval = 30
 28. [todolist.ui_floating_window] 可以在副屏上保存位置 #45
 29. [todolist.schedule] 修复启动时配置文件永远默认配置
 30. [todolist.schedule] 修复上下班脚本的逻辑
+31. [todolist.main] 修复Windows路径不支持[] 
+32. [monitor_teams] 在点击取消通知后立即再次检查
 
 ### 1.7
 1. 添加自动更新功能

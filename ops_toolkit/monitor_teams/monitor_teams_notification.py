@@ -32,6 +32,7 @@ class Screenshot:
 
 
 class NotificationMonitor:
+
     def __init__(self, app):
         self.app = app
         self.status_running = False
@@ -40,6 +41,7 @@ class NotificationMonitor:
         self.counter_checker = 0
         self.temp_screenshot = []
         self.queue_screenshots = queue.Queue(maxsize=2)
+        self.immediately = False
 
         # 默认的Teams图标坐标（需要根据实际情况校准）
         self.teams_icons = {
@@ -187,9 +189,11 @@ class NotificationMonitor:
             if isinstance(_ts, dict) or "USER_CANCELED" in str(_ts):
                 self.status_notify = False
                 logger.info("用户消除了通知")
+                self.immediately = True
                 break
 
     def check(self):
+        self.immediately = False
         self.counter_checker += 1
         if not self.is_teams_running():
             self.notify("Teams 未运行")
@@ -214,7 +218,8 @@ class NotificationMonitor:
             while self.status_running:
                 self.check()
                 self.counter_error = 0
-                time.sleep(self.app.config.teams.interval)
+                if not self.immediately:
+                    time.sleep(self.app.config.teams.interval)
             else:
                 self.stop()
                 logger.info(f"监控线程已经停止并退出, {self.status_running=}")
