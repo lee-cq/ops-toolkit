@@ -1016,6 +1016,10 @@ interval = 30
 
 
 ## CHANGELOG
+
+### 1.9
+1. 部分重构aliyun_sls，使其可以独立构建为exe 
+
 ### 1.8
 1. 添加aliyun-sls-sdk下载功能
 2. fix:添加aliyun-log-python-sdk依赖

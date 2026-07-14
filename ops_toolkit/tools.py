@@ -152,18 +152,6 @@ class StartLock:
         self.release()
 
 
-class GUIHandler(logging.Handler):
-    def __init__(self, queue_: queue.Queue):
-        super().__init__()
-        self.queue_ = queue_
-        self.setFormatter(logging.Formatter("%(asctime)s - [%(levelname)s] - %(message)s"))
-
-    def emit(self, record: logging.LogRecord):
-        if self.queue_.full():
-            self.queue_.get()
-        self.queue_.put(self.format(record))
-
-
 def toolkit_notify(title: str, message: str = "", tag: str = None, clear: bool = False, **kwargs):
     """
     使用Windows系统通知进行通知

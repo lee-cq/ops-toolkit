@@ -8,9 +8,8 @@ description = "翻译工具包"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "aliyun-log-python-sdk>=0.9.46",
-    "datetime",
-    "numpy>=2.4.4",
+    "aliyun-log-python-sdk>=0.9.47",
+    "numpy>=2.5.1",
     "opencv-python>=4.13.0.92",
     "pillow>=12.2.0", # 处理图片的库
     "psutil>=7.2.2",
@@ -18,10 +17,10 @@ dependencies = [
     "pynput>=1.8.2", # 快捷键监听
     "pyperclip>=1.10.0", # 剪切板读写
     "pystray>=0.19.5", # 系统托盘创建和管理
-    "requests>=2.34.1",
-    "sqlalchemy>=2.0.49", # 数据库读写
+    "requests>=2.34.2",
+    "sqlalchemy>=2.0.51", # 数据库读写
     "toml>=0.10.2", # toml读写
-    "typer>=0.25.1",
+    "typer>=0.26.8",
     "win11toast>=0.36.3", # 系统通知
 ]
 dynamic = ["version"]
@@ -32,6 +31,13 @@ version = { attr = "ops_toolkit.VERSION" }
 [tool.setuptools.packages.find]
 include = ["ops_toolkit*"]
 
+[project.optional-dependencies]
+dev = [
+    "ipython>=9.15.0",
+    "pytest>=9.1.1",
+    "pyinstaller"
+]
+
 #[tool.uv.workspace]
 #members = ["ops_toolkit/*"]
 
@@ -40,11 +46,6 @@ name = "huawei"
 url = "https://mirrors.huaweicloud.com/repository/pypi/simple"
 default = true
 
-[dependency-groups]
-dev = [
-    "ipython>=9.5.0",
-    "pytest>=8.4.2",
-]
 
 [tool.setuptools.package-data]
 "ops_toolkit.zhconv" = ["zhcdict.json"]

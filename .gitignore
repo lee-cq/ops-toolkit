@@ -144,3 +144,5 @@ dmypy.json
 
 # Generated data
 tests/data/*.json
+/builder/aliyun-sls-downloader/packages/ops_toolkit/
+/builder/aliyun-sls-downloader/packages/

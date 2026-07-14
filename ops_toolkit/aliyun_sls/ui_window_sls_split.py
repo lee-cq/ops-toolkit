@@ -21,15 +21,15 @@ from tkinter import messagebox
 
 from ops_toolkit import DEBUGGER
 from ops_toolkit.aliyun_sls.aliyun_sls_split import LogSplit, mapping_access_env
-from ops_toolkit.tools import GUIHandler
+from ops_toolkit.log import GUIHandler
 
 logger = logging.getLogger("ops_toolkit.sls_split.ui")
-default_workdir = Path(os.environ.get("USERPROFILE")).joinpath("Downloads", "aliyun_sls_download")
+default_workdir = Path(os.environ.get("USERPROFILE", "\\")).joinpath("Downloads", "aliyun_sls_download")
 
 
 class SlsSplitWindow:
 
-    def __init__(self, app, uri):
+    def __init__(self, app, uri=""):
         self.app = app
         self.uri = uri
 
@@ -83,14 +83,14 @@ class SlsSplitWindow:
             except queue.Empty:
                 time.sleep(0.1)
 
-    def show(self):
+    def show(self, window=None):
         """展示日志下载切割窗口"""
         # 如果窗口已存在，先销毁
         if self.window:
             self.window.destroy()
 
         # 创建新窗口
-        self.window = tk.Toplevel(self.app.root)
+        self.window = window or tk.Toplevel( self.app.root)
         self.window.title("Aliyun日志下载&分割")
         self.window.geometry("900x750")
         self.window.resizable(True, True)

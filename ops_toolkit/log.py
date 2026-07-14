@@ -1,8 +1,18 @@
 import logging
 import logging.config
+import queue
 
-from ops_toolkit import DEBUGGER
-from ops_toolkit.config import config
+
+class GUIHandler(logging.Handler):
+    def __init__(self, queue_: 'queue.Queue'):
+        super().__init__()
+        self.queue_ = queue_
+        self.setFormatter(logging.Formatter("%(asctime)s - [%(levelname)s] - %(message)s"))
+
+    def emit(self, record: logging.LogRecord):
+        if self.queue_.full():
+            self.queue_.get()
+        self.queue_.put(self.format(record))
 
 
 class DebugInfoFilter(logging.Filter):
@@ -21,81 +31,84 @@ class DebugInfoFilter(logging.Filter):
 
 def init_logger():
     """初始化日志配置"""
+    from ops_toolkit.config import config
+
     logging.config.dictConfig(
         {
-            'version':    1,
+            'version': 1,
             # 'disable_existing_loggers': False,
             'formatters': {
                 'translate_formatter': {
-                    'format':  '%(asctime)s - [%(process)d: %(thread)d] %(filename)s[%(lineno)d] - [%(levelname)s] - %(message)s',  # 包含时间、logname、等级、msg
+                    'format': '%(asctime)s - [%(process)d: %(thread)d] %(filename)s[%(lineno)d] - [%(levelname)s] - %(message)s',
+                    # 包含时间、logname、等级、msg
                     'datefmt': '%Y-%m-%d %H:%M:%S'  # 时间格式
                 },
-                'row_request':         {
-                    'format':  '[%(asctime)s] - %(message)s',
+                'row_request': {
+                    'format': '[%(asctime)s] - %(message)s',
                     'datefmt': '%Y-%m-%d %H:%M:%S'  # 时间格式
                 }
             },
-            'handlers':   {
-                'console_handler':         {
-                    'class':     'logging.StreamHandler',  # 控制台输出
+            'handlers': {
+                'console_handler': {
+                    'class': 'logging.StreamHandler',  # 控制台输出
                     'formatter': 'translate_formatter',
-                    'level':     'DEBUG'  # 日志级别（DEBUG/INFO/WARNING/ERROR/CRITICAL）
+                    'level': 'DEBUG'  # 日志级别（DEBUG/INFO/WARNING/ERROR/CRITICAL）
                 },
-                'file_handler':            {
-                    'class':     'logging.FileHandler',  # 文件输出
-                    'filename':  config.log_path,  # 日志文件名
+                'file_handler': {
+                    'class': 'logging.FileHandler',  # 文件输出
+                    'filename': config.log_path,  # 日志文件名
                     'formatter': 'translate_formatter',
-                    'level':     'INFO',  # 日志级别（DEBUG/INFO/WARNING/ERROR/CRITICAL）
-                    "encoding":  "utf-8"
+                    'level': 'INFO',  # 日志级别（DEBUG/INFO/WARNING/ERROR/CRITICAL）
+                    "encoding": "utf-8"
                 },
-                "file_debug_handler":      {
-                    'class':     'logging.FileHandler',
+                "file_debug_handler": {
+                    'class': 'logging.FileHandler',
                     'formatter': 'translate_formatter',
-                    'level':     'DEBUG',
-                    "encoding":  "utf-8",
-                    'filename':  f"{config.log_path.with_suffix('.debug.log')}"
+                    'level': 'DEBUG',
+                    "encoding": "utf-8",
+                    'filename': f"{config.log_path.with_suffix('.debug.log')}"
                 },
-                "row_request_handler":     {
-                    'class':     'logging.handlers.RotatingFileHandler',
+                "row_request_handler": {
+                    'class': 'logging.handlers.RotatingFileHandler',
                     'formatter': 'row_request',
-                    'level':     'DEBUG',
-                    'filename':  f"{config.log_path.with_suffix('.row_request.log')}",
+                    'level': 'DEBUG',
+                    'filename': f"{config.log_path.with_suffix('.row_request.log')}",
                 },
-                "keepalive_handler":       {
-                    'class':     'logging.FileHandler',
+                "keepalive_handler": {
+                    'class': 'logging.FileHandler',
                     'formatter': 'translate_formatter',
-                    'level':     'DEBUG',
-                    "encoding":  "utf-8",
-                    'filename':  f"{config.log_path.with_suffix('.keepalive.log')}"
+                    'level': 'DEBUG',
+                    "encoding": "utf-8",
+                    'filename': f"{config.log_path.with_suffix('.keepalive.log')}"
                 },
                 "hourly_reminder_handler": {
-                    'class':     'logging.FileHandler',
+                    'class': 'logging.FileHandler',
                     'formatter': 'translate_formatter',
-                    'level':     'DEBUG',
-                    "encoding":  "utf-8",
-                    'filename':  f"{config.log_path.with_suffix('.hourly_reminder.log')}"
+                    'level': 'DEBUG',
+                    "encoding": "utf-8",
+                    'filename': f"{config.log_path.with_suffix('.hourly_reminder.log')}"
                 }
             },
-            "filters":    {},
-            'loggers':    {
-                'ops_toolkit':                 {  # 指定translate日志器
-                    'handlers':  ['console_handler', 'file_handler', "file_debug_handler"],
-                    'level':     'DEBUG',
+            "filters": {},
+            'loggers': {
+                'ops_toolkit': {  # 指定translate日志器
+                    'handlers': ['console_handler', 'file_handler', "file_debug_handler"],
+                    'level': 'DEBUG',
                     'propagate': True  # 不向上传播日志
                 },
-                'ops_toolkit.row_request':     {
-                    'handlers':  ['row_request_handler', 'console_handler'],
-                    'level':     'DEBUG',
+                'ops_toolkit.row_request': {
+                    'handlers': ['row_request_handler', 'console_handler'],
+                    'level': 'DEBUG',
                     'propagate': False
                 },
-                'ops_toolkit.keepalive':       {
-                    'handlers':  ['keepalive_handler'],
-                    'level':     'DEBUG',
+                'ops_toolkit.keepalive': {
+                    'handlers': ['keepalive_handler'],
+                    'level': 'DEBUG',
                     'propagate': True,
                 },
                 'ops_toolkit.hourly_reminder': {
-                    'handlers':  ['hourly_reminder_handler'],
-                    'level':     'DEBUG',
+                    'handlers': ['hourly_reminder_handler'],
+                    'level': 'DEBUG',
                     'propagate': True,
                 }
             }

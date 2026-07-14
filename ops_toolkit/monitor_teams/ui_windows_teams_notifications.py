@@ -19,7 +19,7 @@ from PIL import ImageTk
 
 from ops_toolkit import DEBUGGER
 from ops_toolkit.monitor_teams.monitor_teams_notification import NotificationMonitor, Screenshot
-from ops_toolkit.tools import GUIHandler
+from ops_toolkit.log import GUIHandler
 
 help_message = """
 1. 配置坐标
