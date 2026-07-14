@@ -24,6 +24,7 @@ logger = logging.getLogger("ops_toolkit.update")
 
 SCRIPT = """
 @echo off
+chcp 65001
 set pid={pid}
 
 echo Try to close the process after waiting for 5 seconds ...

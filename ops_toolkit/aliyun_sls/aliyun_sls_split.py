@@ -197,7 +197,7 @@ class LogSplit:
         t_min = datetime.datetime.fromtimestamp(self.min_time).strftime("%Y%m%d-%H%M%S")
 
         for name in self.log_files.keys():
-            new_name = name + f"{t_min}_{t_max}.log"
+            new_name = name + f"_{t_min}_{t_max}.log"
             logger.info(f"重命名日志文件: {name} -> {new_name}")
             p = self.workdir.joinpath(name)
             p.rename(p.with_name(new_name))
