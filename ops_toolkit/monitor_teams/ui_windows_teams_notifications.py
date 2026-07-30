@@ -341,6 +341,7 @@ class TeamsNotificationsListenerWindow:
     def set_debug(self):
         if self.gui_handler.level == logging.DEBUG:
             self.gui_handler.setLevel(logging.INFO)
+            self.debug_button.config(text="显示INFO日志")
             _info_logs = self.logs_text.get(1.0, tk.END).splitlines()
             self.logs_text.delete(1.0, tk.END)
             [self.add_log(line) for line in _info_logs if " [INFO] " in line]

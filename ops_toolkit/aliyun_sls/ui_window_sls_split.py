@@ -47,6 +47,8 @@ class SlsSplitWindow:
         self.gui_logger = (
             "ops_toolkit.sls_split",
         )
+        self.var_debug = tk.StringVar(
+            value="显示INFO日志" if self.gui_handler.level == logging.DEBUG else "显示DEBUG日志")
         for _ln in self.gui_logger:
             logging.getLogger(_ln).addHandler(self.gui_handler)
 
@@ -247,12 +249,10 @@ class SlsSplitWindow:
         button_frame = ttk.Frame(parent_frame)
         button_frame.pack(fill="x", pady=(0, 10))
 
-        confirm_btn = ttk.Button(button_frame, text="🚀 开始处理",
-                                 command=callback, style="Accent.TButton")
+        confirm_btn = ttk.Button(button_frame, text="🚀 开始处理", command=callback, style="Accent.TButton")
         confirm_btn.pack(side="left", padx=(0, 10))
 
-        open_dir_btn = ttk.Button(button_frame, text="📂 打开目录",
-                                  command=self.open_logdir)
+        open_dir_btn = ttk.Button(button_frame, text="📂 打开目录", command=self.open_logdir)
         open_dir_btn.pack(side="left", padx=(0, 10))
 
         ttk.Separator(parent_frame, orient="horizontal").pack(fill="x", pady=5)
@@ -281,6 +281,27 @@ class SlsSplitWindow:
             command=lambda: [(_logs.config(state="normal"), _logs.delete(1.0, tk.END)) for _logs in self.logs_text_list]
         )
         clear_btn.pack(side="right", pady=(5, 0))
+
+
+        self.btn_debug = ttk.Button(
+            log_frame,
+            textvariable=self.var_debug,
+            command=self.set_debug)
+        self.btn_debug.pack(side="left")
+        logger.info(f"{self.var_debug.get()=}")
+
+
+    def set_debug(self):
+        logger.debug(f"GUI Log Level: {logging.getLevelName(self.gui_handler.level)} ")
+        if self.gui_handler.level == logging.DEBUG:
+            self.gui_handler.setLevel(logging.INFO)
+        else:
+            self.gui_handler.setLevel(logging.DEBUG)
+        logger.debug(f"HAVE SET LEVEL: {logging.getLevelName(self.gui_handler.level)} ")
+        self.var_debug.set("显示INFO日志" if self.gui_handler.level == logging.DEBUG else "显示DEBUG日志")
+        logger.info(f"{self.var_debug.get()=}")
+
+        self.window.update_idletasks()
 
     def parse_access_info(self):
         """解析Access Info表单中的信息"""
@@ -367,7 +388,7 @@ class SlsSplitWindow:
         Args:
             message: 要添加的日志消息
         """
-        _line_msg = f">>> 已处理 {self.log_split.total_line}" if self.log_split else ""
+        _line_msg = f">>> 处理中, 已处理 {self.log_split.total_line} 行 " if self.log_split else ""
         for logs_text in self.logs_text_list:
             if logs_text:
                 logs_text.config(state="normal")

@@ -9,12 +9,12 @@
 ✅ 指标的标签为配置文件中指定的kv
 ✅ 使用异步函数(httpx)批量批量执行任务
 ✅ 需要的指标:
-  url_http_status_code    - HTTP 状态码 (自定义: 525=TLS失败, 610=DNS解析失败，625=超时, 650=响应体不匹配)
-  url_http_expected_code  - 期望的状态码
-  url_http_response_time  - 响应时间(秒), 失败时为 -1
+  http_monitor_status_code    - HTTP 状态码 (自定义: 525=TLS失败, 610=DNS解析失败，625=超时, 650=响应体不匹配)
+  http_monitor_expected_code  - 期望的状态码
+  http_monitor_response_time  - 响应时间(秒), 失败时为 -1
 
 用法:
-  python3 http_monitor.py [--config config.toml]
+  python3 http_monitor.py [--config config.toml --create-config --test-config]
 
 =======
 ## config.toml
@@ -60,6 +60,7 @@ import tomllib
 from pathlib import Path
 from typing import Any
 from urllib.request import Request, urlopen
+
 # ---
 SCRIPT_DIR = Path(__file__).resolve().parent
 if SCRIPT_DIR.name.endswith(".pyz"):
@@ -69,10 +70,7 @@ sys.path.append(str(SCRIPT_DIR))
 sys.path.append(str(SCRIPT_DIR / "deps"))
 sys.path.append(str(SCRIPT_DIR / "lib"))
 
-
 import aiohttp
-
-
 
 # --- 自定义状态码 --------------------------------------------
 STATUS_DNS_ERROR = 610
@@ -103,8 +101,9 @@ logger.addHandler(_fh)
 def load_test_items(config_dir: Path | None = None) -> list[dict[str, Any]]:
     """扫描 config_dir 或脚本目录下的 test_item_*.toml, 返回所有 test_item 条目"""
     search_dir = config_dir or SCRIPT_DIR
-    pattern = str(search_dir / "test_item_*.toml")
+    pattern = str(search_dir.absolute() / "test_item_*.toml")
     files = sorted(glob.glob(pattern))
+    logger.info("扫描配置文件: %s", pattern)
     if not files:
         logger.warning("未找到配置文件: %s", pattern)
         return []
@@ -113,6 +112,7 @@ def load_test_items(config_dir: Path | None = None) -> list[dict[str, Any]]:
     for f in files:
         with open(f, "rb") as fh:
             data = tomllib.load(fh)
+        logger.info("加载测试配置: %s", f)
         for entry in data.get("test_item", []):
             item = {
                 "name": entry.get("name", "unknown"),
@@ -125,8 +125,10 @@ def load_test_items(config_dir: Path | None = None) -> list[dict[str, Any]]:
                 "expected_code": entry.get("expected_code", 200),
                 "_source": Path(f).name,
             }
+            logger.info("    > service=%s name=%s url=%s", item["service"], item["name"], item["url"])
             items.append(item)
     logger.info("已加载 %d 个检查项 (来自 %d 个配置文件)", len(items), len(files))
+    logger.info("=" * 50)
     return items
 
 
@@ -151,6 +153,8 @@ async def check_url(session: aiohttp.ClientSession, item: dict[str, Any]) -> dic
             "service": item["service"],
             "url": url,
             "from": socket.gethostname(),
+            "expected_code": expected_code,
+            "expected_body": expected_body,
         },
     }
 
@@ -188,7 +192,7 @@ async def check_url(session: aiohttp.ClientSession, item: dict[str, Any]) -> dic
     except aiohttp.ClientSSLError as exc:
         result["status_code"] = STATUS_SSL_ERROR
         result["response_time"] = -1
-        logger.debug("[%s] SSL 错误 (%ds)", item["name"], exc)
+        logger.debug("[%s] SSL 错误 : %s", item["name"], exc)
 
     except aiohttp.ClientConnectorError as exc:
         # 区分 TLS 错误与一般连接错误
@@ -230,9 +234,9 @@ def push_to_gateway(results: list[dict[str, Any]], pushgateway_url: str, job: st
     lines: list[str] = []
     for r in results:
         labels = r["labels"]
-        lines.append(format_metric("url_http_status_code", r["status_code"], labels))
-        lines.append(format_metric("url_http_expected_code", r["expected_code"], labels))
-        lines.append(format_metric("url_http_response_time", r["response_time"], labels))
+        lines.append(format_metric("http_monitor_status_code", r["status_code"], labels))
+        lines.append(format_metric("http_monitor_expected_code", r["expected_code"], labels))
+        lines.append(format_metric("http_monitor_response_time", r["response_time"], labels))
 
     metrics_text = "\n".join(lines) + "\n"
 
@@ -241,11 +245,15 @@ def push_to_gateway(results: list[dict[str, Any]], pushgateway_url: str, job: st
     for line in lines:
         logger.info("  %s", line)
 
+    import ssl
+    ssl._create_default_https_context = ssl._create_unverified_context
+
     # 推送
     pg_url = pushgateway_url.rstrip("/")
     endpoint = f"{pg_url}/metrics/job/{job}"
     try:
-        req = Request(endpoint, data=metrics_text.encode("utf-8"), method="POST", headers={"Content-Type": "text/plain; charset=utf-8"})
+        req = Request(endpoint, data=metrics_text.encode("utf-8"), method="POST",
+                      headers={"Content-Type": "text/plain; charset=utf-8"})
         with urlopen(req, timeout=10) as resp:
             status = resp.getcode()
             body = resp.read().decode("utf-8", errors="replace")
@@ -278,7 +286,8 @@ def create_config():
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--config", default="config.toml", help="配置文件目录 (默认脚本目录)")
-    parser.add_argument("--create-config", action="store_true")
+    parser.add_argument("--create-config", action="store_true", help="创建默认配置文件")
+    parser.add_argument("--test-config", '-t', action="store_true", help="测试项配置文件 (默认脚本目录)")
     args = parser.parse_args()
 
     if args.create_config:
@@ -305,6 +314,9 @@ def main() -> None:
     if not items:
         logger.error("无检查项, 退出")
         sys.exit(1)
+
+    if args.test_config:
+        sys.exit(0)
 
     # 2. 执行检查
     results = asyncio.run(run_checks(items))
