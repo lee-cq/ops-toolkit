@@ -27,6 +27,7 @@ UPDATE_LOG = """
 ### 1.9
 1. 部分重构aliyun_sls，使其可以独立构建为exe 
 2. aliyun_sls添加Helper,优化展示
+3. 添加邮件检查脚本
 
 ### 1.8
 1. 添加aliyun-sls-sdk下载功能
