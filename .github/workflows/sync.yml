@@ -11,27 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Add remote repository
         run: |
           git remote add upstream https://cnb.cool/leecq/ops-toolkit.git || true
-
-      - name: Fetch from upstream
-        run: |
           git fetch upstream main
-
-      - name: Merge upstream changes
-        run: |
           git merge upstream/main --allow-unrelated-histories || true
-
-      - name: Push changes
-        run: |
           git push origin main
+
