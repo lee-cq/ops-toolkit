@@ -1,3 +1,16 @@
+$:
+  vscode:
+    - runner:
+        cpus: 2
+      docker:
+        # build: images/Dev.Dockerfile
+        # 可选择是否同时定义 build 和 image
+        # 此时会优先使用 .ide/Dockerfile 构建镜像
+        # 如果 .ide/Dockerfile 构建失败，则使用 image 指定的镜像保证环境能启动成功
+        # image: cnbcool/default-dev-env:latest
+      services:
+        - vscode
+        - docker
 
 main:
   push:
