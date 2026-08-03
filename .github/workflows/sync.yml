@@ -1,10 +1,13 @@
 name: Sync from Remote
 
+# grant write permission to workflow's GITHUB_TOKEN
+permissions:
+  contents: write
+
 on:
   schedule:
-    # 每天 UTC 0:00 执行（北京时间 8:00）
     - cron: "2 */6 * * *"
-  workflow_dispatch: # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   sync:
@@ -13,12 +16,24 @@ jobs:
       - name: Checkout current repository
         uses: actions/checkout@v7
         with:
+          # ensure full history (needed for merge)
           fetch-depth: 0
+          # ensure the token is available to perform pushes
+          persist-credentials: true
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Add remote repository
+      - name: Add remote, merge upstream, and push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # add upstream (external remote)
           git remote add upstream https://cnb.cool/leecq/ops-toolkit.git || true
           git fetch upstream main
           git merge upstream/main --allow-unrelated-histories || true
-          git push origin main
 
+          # ensure origin uses authenticated URL so push uses the token
+          # GITHUB_REPOSITORY is available in the runner environment (owner/repo)
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/$GITHUB_REPOSITORY.git
+
+          # push merged changes to main
+          git push origin main
