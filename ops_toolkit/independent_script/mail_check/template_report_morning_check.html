@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morning Check巡检报告 - EMail Part</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        success: '#00B42A',
+                        danger: '#F53F3F',
+                        neutral: '#86909C',
+                        cardBg: '#F7F8FA'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .card-shadow {
+                box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen pb-16">
+    <div class="max-w-[1400px] mx-auto px-4 pt-8">
+        <!-- 头部标题 -->
+        <div class="mb-6">
+            <h1 class="text-[24px] font-bold text-gray-800 flex items-center gap-2">
+                <i class="fa fa-list-alt text-primary"></i>
+                国泰君安香港 - 早盘系统巡检报告
+            </h1>
+            <p class="text-neutral mt-1">邮件自动巡检结果汇总 | 支持多条件筛选检索</p>
+        </div>
+
+        <!-- 筛选控制面板 -->
+        <div class="bg-white rounded-lg card-shadow p-5 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="text-sm text-gray-600 block mb-1">步骤名称筛选</label>
+                <input id="filterStep" type="text" placeholder="输入步骤关键字，例如 Step06"
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary">
+            </div>
+            <div>
+                <label class="text-sm text-gray-600 block mb-1">检查项名称搜索</label>
+                <input id="filterName" type="text" placeholder="输入检查名称"
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary">
+            </div>
+            <div>
+                <label class="text-sm text-gray-600 block mb-1">运行状态筛选</label>
+                <select id="filterStatus"
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary">
+                    <option value="all">全部状态</option>
+                    <option value="true">仅成功 ✅</option>
+                    <option value="false">仅失败 ❌</option>
+                </select>
+            </div>
+            <div class="flex items-end gap-2 flex-wrap">
+                <button id="btnReset" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded transition">
+                    <i class="fa fa-refresh"></i> 重置筛选
+                </button>
+                <button id="btnExpandAll" class="px-4 py-2 bg-primary text-white hover:bg-primary/90 rounded transition">
+                    <i class="fa fa-plus-square"></i> 全部展开
+                </button>
+                <button id="btnCollapseAll" class="px-4 py-2 bg-slate-600 text-white hover:bg-slate-700 rounded transition">
+                    <i class="fa fa-minus-square"></i> 全部折叠
+                </button>
+            </div>
+        </div>
+
+        <!-- 统计信息 -->
+        <div id="statBar" class="mb-4 text-sm">
+            <span class="mr-6">总巡检分组：<span class="font-semibold" id="totalGroup">0</span></span>
+            <span class="mr-6">总检查项：<span class="font-semibold" id="totalItem">0</span></span>
+            <span class="mr-6 text-success">成功项：<span id="successItem">0</span></span>
+            <span class="text-danger">失败项：<span id="failItem">0</span></span>
+        </div>
+
+        <!-- 报告渲染容器 -->
+        <div id="reportContainer" class="space-y-4">
+        </div>
+    </div>
+
+    <script>
+        const rawReportData = __ROW_REPORTS_JSON__;
+
+        let reportData = rawReportData;
+        const container = document.getElementById('reportContainer');
+        const filterStepEl = document.getElementById('filterStep');
+        const filterNameEl = document.getElementById('filterName');
+        const filterStatusEl = document.getElementById('filterStatus');
+        const btnReset = document.getElementById('btnReset');
+        const btnExpandAll = document.getElementById('btnExpandAll');
+        const btnCollapseAll = document.getElementById('btnCollapseAll');
+
+        let groupIdSeq = 0;
+
+        // 渲染主入口
+        function renderReport() {
+            const kwStep = filterStepEl.value.trim().toLowerCase();
+            const kwName = filterNameEl.value.trim().toLowerCase();
+            const statusVal = filterStatusEl.value;
+
+            container.innerHTML = '';
+            groupIdSeq = 0;
+            let totalGroup = 0;
+            let totalItemCnt = 0;
+            let successCnt = 0;
+            let failCnt = 0;
+
+            Object.entries(reportData).forEach(([groupTitle, checkItems]) => {
+                if (kwStep && !groupTitle.toLowerCase().includes(kwStep)) return;
+
+                const filteredItems = checkItems.filter(row => {
+                    let matchName = true;
+                    let matchStatus = true;
+                    if (kwName && !row.name.toLowerCase().includes(kwName)) matchName = false;
+                    if (statusVal !== 'all' && String(row.status) !== statusVal) matchStatus = false;
+                    return matchName && matchStatus;
+                });
+
+                if (filteredItems.length === 0) return;
+
+                totalGroup++;
+                const groupDom = buildGroupDOM(groupTitle, filteredItems);
+                container.appendChild(groupDom);
+
+                filteredItems.forEach(item => {
+                    totalItemCnt++;
+                    if (item.status) successCnt++;
+                    else failCnt++;
+                });
+            });
+
+            document.getElementById('totalGroup').innerText = totalGroup;
+            document.getElementById('totalItem').innerText = totalItemCnt;
+            document.getElementById('successItem').innerText = successCnt;
+            document.getElementById('failItem').innerText = failCnt;
+        }
+
+        // 构建一组巡检DOM
+        function buildGroupDOM(groupTitle, itemList) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'bg-white rounded-lg card-shadow overflow-hidden report-group';
+            const groupUid = 'group-' + (++groupIdSeq);
+
+            // 计算该Step整体结果
+            const stepTotal = itemList.length;
+            const stepSuccess = itemList.filter(i => i.status).length;
+            const stepFail = stepTotal - stepSuccess;
+            const stepAllPass = stepFail === 0;
+
+            const stepBadge = stepAllPass
+                ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-success">
+                       <i class="fa fa-check-circle"></i> 全部通过 (${stepSuccess}/${stepTotal})
+                   </span>`
+                : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-danger">
+                       <i class="fa fa-times-circle"></i> 含失败 (成功${stepSuccess}/失败${stepFail})
+                   </span>`;
+
+            wrapper.innerHTML = `
+                <div class="group-header px-5 py-4 bg-cardBg cursor-pointer flex justify-between items-center">
+                    <h2 class="font-semibold text-gray-800 flex items-center gap-3">
+                        <i class="fa fa-folder-open text-primary group-icon"></i>
+                        <span>${escapeHtml(groupTitle)}</span>
+                        ${stepBadge}
+                        <span class="text-sm text-neutral">(${itemList.length}项)</span>
+                    </h2>
+                    <i class="fa fa-chevron-up text-gray-500 group-arrow transition-transform"></i>
+                </div>
+                <div class="group-body px-5 py-4 border-t">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm table-fixed">
+                            <thead>
+                                <tr class="border-b border-gray-200 text-left text-gray-600">
+                                    <th class="py-2 pr-4 w-[20%]">检查名称</th>
+                                    <th class="py-2 pr-3 w-[4%] min-w-[80px]">状态</th>
+                                    <th class="py-2 pr-4 w-[33%]">实际结果</th>
+                                    <th class="py-2 pr-4 w-[33%]">预期值</th>
+                                    <th class="py-2 w-[10%]">备注</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                ${itemList.map(row => buildRowHtml(row)).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            const header = wrapper.querySelector('.group-header');
+            const body = wrapper.querySelector('.group-body');
+            const iconFolder = wrapper.querySelector('.group-icon');
+            const arrow = wrapper.querySelector('.group-arrow');
+
+            header.addEventListener('click', () => {
+                if (body.style.display === 'none') {
+                    body.style.display = '';
+                    iconFolder.className = 'fa fa-folder-open text-primary group-icon';
+                    arrow.className = 'fa fa-chevron-up text-gray-500 group-arrow transition-transform';
+                } else {
+                    body.style.display = 'none';
+                    iconFolder.className = 'fa fa-folder text-primary group-icon';
+                    arrow.className = 'fa fa-chevron-down text-gray-500 group-arrow transition-transform';
+                }
+            });
+
+            return wrapper;
+        }
+
+        // 单行HTML
+        function buildRowHtml(item) {
+            const isPass = item.status;
+            const statusText = isPass
+                ? '<span class="text-success whitespace-nowrap"><i class="fa fa-check-circle"></i> 通过</span>'
+                : '<span class="text-danger whitespace-nowrap"><i class="fa fa-times-circle"></i> 失败</span>';
+
+            let actualStr = formatValue(item.actual);
+            let expectStr = formatValue(item.expected);
+            let msgStr = item.msg || '-';
+
+            return `
+                <tr class="${isPass ? '' : 'bg-red-50'}">
+                    <td class="py-3 pr-4 align-top w-[20%] break-words">${escapeHtml(item.name)}</td>
+                    <td class="py-3 pr-3 align-top w-[2%] min-w-[80px]">${statusText}</td>
+                    <td class="py-3 pr-4 align-top whitespace-pre-wrap break-all font-mono text-xs w-[34%]">${escapeHtml(actualStr)}</td>
+                    <td class="py-3 pr-4 align-top whitespace-pre-wrap break-all font-mono text-xs text-slate-600 w-[34%]">${escapeHtml(expectStr)}</td>
+                    <td class="py-3 align-top text-neutral w-[10%] break-words">${escapeHtml(msgStr)}</td>
+                </tr>
+            `;
+        }
+
+        // 格式化对象/数组为字符串
+        function formatValue(val) {
+            if (Array.isArray(val)) return JSON.stringify(val);
+            if (typeof val === 'object' && val !== null) return JSON.stringify(val);
+            return String(val);
+        }
+
+        // HTML转义防XSS
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
+        // 全部展开
+        function expandAll() {
+            document.querySelectorAll('.report-group .group-body').forEach(el => { el.style.display = ''; });
+            document.querySelectorAll('.group-icon').forEach(el => { el.className = 'fa fa-folder-open text-primary group-icon'; });
+            document.querySelectorAll('.group-arrow').forEach(el => { el.className = 'fa fa-chevron-up text-gray-500 group-arrow transition-transform'; });
+        }
+        // 全部折叠
+        function collapseAll() {
+            document.querySelectorAll('.report-group .group-body').forEach(el => { el.style.display = 'none'; });
+            document.querySelectorAll('.group-icon').forEach(el => { el.className = 'fa fa-folder text-primary group-icon'; });
+            document.querySelectorAll('.group-arrow').forEach(el => { el.className = 'fa fa-chevron-down text-gray-500 group-arrow transition-transform'; });
+        }
+
+        // 绑定事件
+        filterStepEl.addEventListener('input', renderReport);
+        filterNameEl.addEventListener('input', renderReport);
+        filterStatusEl.addEventListener('change', renderReport);
+
+        btnReset.addEventListener('click', () => {
+            filterStepEl.value = '';
+            filterNameEl.value = '';
+            filterStatusEl.value = 'all';
+            renderReport();
+        });
+        btnExpandAll.addEventListener('click', expandAll);
+        btnCollapseAll.addEventListener('click', collapseAll);
+
+        // 初始渲染
+        document.addEventListener('DOMContentLoaded', renderReport);
+    </script>
+</body>
+</html>
