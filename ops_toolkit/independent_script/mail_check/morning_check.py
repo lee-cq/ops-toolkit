@@ -298,7 +298,7 @@ class MorningCheck:
                 ]
         if send_email(
                 None,
-                f"[Try-Run] Morning Check Report [Mail Part] - {self.today}",
+                f"[Beta] Morning Check Report [Mail Part] - {self.today}",
                 "\n".join(_.report_step for _ in _rps) + "\n\n检查细节见附件",
                 atta=self.report_path.joinpath(f"morning_check_{self.today}.html"),
                 to=os.getenv("MORNING_CHECK_MAIL_TO", ""),
@@ -309,7 +309,27 @@ class MorningCheck:
             logger.info("Email Sent Failed.")
 
     def report_to_teams(self):
-        pass
+        from notificaton import send_teams_message
+        
+        _rps = [Step.from_reports(*_) for _ in
+                json.loads(
+                    self.report_path.joinpath(f"morning_check_{self.today}.json").read_text(encoding="utf-8")).items()
+                ]
+        title = f"[Beta] Morning Check Report [Mail Part] - {self.today}"
+        errs = "\n\n".join(_.report_step.replace("\n", "\n\n") for _ in _rps)
+        lab = f"\n\n完整报告请通过Support PC 访问 http://NTPRDASOA6:5001/morning_check_{self.today}.html\n\n请早班同事协助检查MorningCheck报告是否与人工检查一致"
+        logger.info(f"Message Review:\n{errs + lab}")
+        
+        url = os.getenv("MORNING_CHECK_TEAMS_WEBHOOK", "")
+        if not url:
+            logger.warning("Not Config Web Hook URL")
+            return
+        
+        send_teams_message(
+            url,
+            title,
+            errs + lab 
+        )
 
     def get_mail(self, subject, time_start, time_end, /, step: Step, msg="", **kwargs):
         folder = os.getenv("MORNING_CHECK_FOLDER", "InBox")
