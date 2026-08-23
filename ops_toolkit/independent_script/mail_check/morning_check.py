@@ -331,7 +331,8 @@ class MorningCheck:
             logger.info(f"✅找到邮件：{mail.subject} 发送时间：{mail.get_send_time().strftime('%Y-%m-%d %H:%M:%S')}")
             return mail
         else:
-            raise FileNotFoundError(f"❌未找到邮件：{subject} 在 {time_start} -- {time_end} 期间")
+            return None
+            # raise FileNotFoundError(f" ❌未找到邮件：{subject} 在 {time_start} -- {time_end} 期间")
 
     @staticmethod
     def findstr(pat, text, _s: Step = None, name="", less_len=1):
@@ -374,7 +375,16 @@ class MorningCheck:
                 _s: Step = func()
                 self.reports.append(_s)
             except Exception as e:
-                logger.error(func.__name__ + ": " + str(e))
+                logger.error(func.__name__ + ": " + str(e), exc_info=True)
+                _s = Step(0, 0, f"Check Error: {func.__name__}")
+                _s.add_report(
+                    "Error Msg",
+                    False,
+                    str(e),
+                    "",
+                    "程序错误，检查完整日志排查"
+                )
+
             finally:
                 if isinstance(_s, Step):
                     _s.to_reports(self.report_path.joinpath(f"morning_check_{self.today}.json"))
@@ -422,6 +432,8 @@ class MorningCheck:
             self.trade_date.current.strftime('%Y-%m-%d'),
             _s
         )
+        if mail is None:
+            return _s
 
         counts_ok = self.findstr("正常|忽略", self.docx_to_text(mail.get_attachment())).__len__()
         counts_err = self.findstr("异常|提醒", self.docx_to_text(mail.get_attachment())).__len__()
@@ -469,6 +481,8 @@ class MorningCheck:
             self.trade_date.current.strftime('%Y-%m-%d 06:32'),
             _s
         )
+        if mail is None:
+            return _s
 
         for mk, cg, stat in self.findstr(
                 r'<td>(HKG)</td><td>(\w*?)\W*?</td><td>(\w{2})</td></tr>', mail.get_html(),
@@ -513,6 +527,8 @@ class MorningCheck:
             mail_id="TTLA5",
             step=_s,
         )
+        if mail is None:
+            return _s
         # open("TP1 PROD-Health Check Notification-PROD.html", "w").write(mail.get_html())
         _gs = self.findstr(
             r'<tr><td>(BIX-\w+)</td><td>(.*?)</td><td>(\d+)</td><td>(TRUE|FALSE)</td><td>(TRUE|FALSE)</td><td>.*?</td><td>.*?</td></tr>',
@@ -543,6 +559,8 @@ class MorningCheck:
             mail_id="TTLA5",
             step=_s,
         )
+        if mail is None:
+            return _s
         _mds = self.findstr(
             r'<tr><td>(SERVER)</td><td>(LXPRDTTLA11.*?)</td><td>(\d+)</td><td>(\w+?)</td><td>(.*?)</td></tr>',
             mail.get_html(), _s, "TP1, MDS Check数据匹配完整性")
@@ -566,6 +584,8 @@ class MorningCheck:
             mail_id="TTLA5",
             step=_s,
         )
+        if mail is None:
+            return _s
         for bid in ["BIX-FCFIX2", "BIX-FIXIDM", "BIX-FCFIX"]:
             _g = self.findstr(
                 # "<tr><td>({bid})</td><td>LXPRDTTLA13.GTJA.COM.HK</td><td>14900</td><td>TRUE</td><td>FCFIX</td><td>HSR</td></tr>"
@@ -591,6 +611,8 @@ class MorningCheck:
             mail_id="TTLA5",
             step=_s
         )
+        if mail is None:
+            return _s
         market_info = [
             ("AUS", "CurrentDate/Logon/Resurrect"),
             ("BOND", "CurrentDate/None/Recurrect"),
@@ -651,6 +673,8 @@ class MorningCheck:
             mail_id="TTLA5",
             step=_s,
         )
+        if mail is None:
+            return _s
         _mq = self.findstr(
             r'<tr><td>\[(\d+\.\d+\.\d+\.\d+)]:5701</td><td>(\w+)</td></tr>',
             mail.get_html(), _s, "TP1 MQ Status - 数据匹配校验"
@@ -674,6 +698,8 @@ class MorningCheck:
             self.trade_date.current.strftime('%Y-%m-%d 06:32'),
             _s
         )
+        if mail is None:
+            return _s
 
         # =========Last Logon date time is current trading date =====================
         # <td>(OCG Dealer)</td><td>(\d{8})</td><td>(.{19}).*?</td></tr>
@@ -793,6 +819,9 @@ class MorningCheck:
             self.trade_date.current.strftime('%Y-%m-%d 09:02'),
             _s
         )
+        if mail is None:
+            return _s
+
         # ===== BSS Logon sending at time is updated to T09:01
         _gs = self.findstr(
             r'<td>(OCG Dealer)</td><td>(\d{8})</td><td>(.{19}).*?</td>', mail.get_html(),
@@ -847,7 +876,7 @@ class MorningCheck:
             _s.add_report(
                 "HKG order speech < 0.01 sec",
                 _p_sec < 0.01,
-                _p_str, "< 0.01",
+                str(_p_str), "< 0.01",
                 "邮件中可能无有效数据"
             )
             _s.add_report(
@@ -868,6 +897,9 @@ class MorningCheck:
             self.trade_date.current.strftime('%Y-%m-%d 09:17'),
             _s
         )
+        if mail is None:
+            return _s
+
         m_text = mail.get_html()  # .encode().decode(encoding="GBK")
 
         for s in ("上海行情", "深圳行情"):
@@ -893,6 +925,9 @@ class MorningCheck:
             self.trade_date.current.strftime('%Y-%m-%d 09:17'),
             _s
         )
+        if mail is None:
+            return _s
+
         _gs = self.findstr(f"<tr.*?><td.*?>({self.trade_date.last_date_cn.strftime('%Y%m%d')})</td>"
                            f"<td.*?>(实时数据处理|盘后数据采集)</td><td.*?>(.*?)</td><td.*?>(.*?)</td></tr>",
                            mail.get_html(),
@@ -913,6 +948,8 @@ class MorningCheck:
             self.trade_date.current.strftime('%Y-%m-%d 09:17'),
             _s
         )
+        if mail is None:
+            return _s
         for data in ("委托数据", "成交数据"):
             _gs = self.findstr(f"<tr.*?><td.*?>({self.trade_date.current.strftime('%Y%m%d')})</td>"
                                f"<td.*?>({data})</td><td.*?>(.*?)</td><td.*?>(.*?)</td></tr>", mail.get_html(),
