@@ -113,7 +113,7 @@ class UpdateVersion:
         """写入更新脚本"""
         _sp = SCRIPT.format(
             pyw_exe=Path(sys.executable).with_name("pythonw.exe"),
-            py_exe=sys.executable,
+            py_exe=Path(sys.executable).with_name("python.exe"),
             pid=os.getpid(),
             new_version=self.new_version_str,
             old_version=self.old_version_str,
