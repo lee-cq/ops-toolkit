@@ -277,6 +277,9 @@ class MorningCheck:
             ).replace(
                 "__ROW_REPORTS_JSON__",
                 self.report_path.joinpath(f"morning_check_{self.today}.json").read_text(encoding="utf-8"),
+            ).replace(
+                "__REPORT_DATE__",
+                self.today
             ),
             encoding="utf-8"
         )
