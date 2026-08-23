@@ -75,10 +75,12 @@ def _init_log(log_name):
 def handle_morning_check(args):
     """处理 morning-check 子命令"""
     time_list = args.times
-    send_report = args.report
+    report = args.report
+    send_email = args.email
+    send_teams = args.teams
     today = args.today or date.today().strftime("%Y-%m-%d")
     print(f"[morning-check] 时间列表: {time_list}")
-    print(f"[morning-check] 是否发送报告: {send_report}")
+    print(f"[morning-check] 是否发送报告: {report}")
     print(f'[morning-check] 检查日期: {today}')
     _init_log(log_path / f"morning-check/{today}.log")
     # 业务逻辑写这里
@@ -88,8 +90,12 @@ def handle_morning_check(args):
     _mc = MorningCheck(today=today, cache_db=SCRIPT_DIR / "cache_morning_check.db")
     for t in time_list:
         getattr(_mc, f"main_{t}")()
-    if send_report:
+    if report:
         _mc.report()
+    if send_email:
+        _mc.report_to_mail()
+    if send_teams:
+        _mc.report_to_teams()
 
 
 def handle_no_replay(args):
@@ -113,7 +119,10 @@ def main():
     parser_morning = subparsers.add_parser("morning-check", help="早上邮件检查")
     parser_morning.add_argument("times", nargs="+", help="时间参数，可选：0800 0818 0836 0901 0915")
     parser_morning.add_argument("-t", "--today", default=None, help="检查的日期")
-    parser_morning.add_argument("-r", "--report", action="store_true", help="发送报告")
+    parser_morning.add_argument("-r", "--report", action="store_true", help="生成报告")
+    parser_morning.add_argument("-e", "--email", action="store_true", help="发送报告到邮件")
+    parser_morning.add_argument("-m", "--teams", action="store_true", help="发送报告到teams")
+
     parser_morning.set_defaults(func=handle_morning_check)
 
     # 子命令 no-replay

@@ -304,6 +304,9 @@ class MorningCheck:
         else:
             logger.info("Email Sent Failed.")
 
+    def report_to_teams(self):
+        pass
+
     def get_mail(self, subject, time_start, time_end, /, step: Step, msg="", **kwargs):
         folder = os.getenv("MORNING_CHECK_FOLDER", "InBox")
         try:
