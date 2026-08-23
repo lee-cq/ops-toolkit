@@ -21,8 +21,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import IO
 
-from sqlalchemy.orm import join
-
 from mail_manager import MailManager, get_imap_from_env
 from utils import SCRIPT_DIR
 
@@ -613,15 +611,15 @@ class MorningCheck:
         ]
         open("tmp.html", 'w', encoding="utf-8").write(mail.get_html())
 
-        def _is_ok(_act: list[str], exp: str):
+        def _is_ok(_act: list[str], _exp: str):
             _rst = []
-            if "LastTradeDate" in exp:
+            if "LastTradeDate" in _exp:
                 _rst.append(_act[1] == self.trade_date.last_date_hk.strftime('%Y-%m-%d'))
-            elif "CurrentDate" in exp:
+            elif "CurrentDate" in _exp:
                 _rst.append(_act[1] == self.trade_date.current.strftime('%Y-%m-%d'))
-            if "Logon" in exp:
+            if "Logon" in _exp:
                 _rst.append(_act[4] == 'TRUE')
-            if "Resurrect" in exp:
+            if "Resurrect" in _exp:
                 _rst.append(_act[5] == 'TRUE')
             return all(_rst)
 
@@ -775,7 +773,7 @@ class MorningCheck:
 
     def check_1_21_daily_instrument_changed(self) -> Step:
         _s = Step(1, 21, "0836 Daily Instrument Changed (email received)")
-        mail = self.get_mail(
+        self.get_mail(
             "Daily Instrument Changed",
             self.trade_date.current.strftime('%Y-%m-%d 08:35'),
             self.trade_date.current.strftime('%Y-%m-%d 08:37'),
@@ -837,6 +835,7 @@ class MorningCheck:
         )
         if _gs:
             _gs = _gs[0]
+            _p_str = ''
             try:
                 _p_str = html.unescape(_gs[2]).replace(" ", "")
                 _p_sec = float(_p_str)
@@ -845,12 +844,14 @@ class MorningCheck:
             _s.add_report(
                 "HKG order speech < 0.01 sec",
                 _p_sec < 0.01,
-                _p_str, "< 0.01"
+                _p_str, "< 0.01",
+                "邮件中可能无有效数据"
             )
             _s.add_report(
                 "HKG order status is updated to 'QUEUED' or 'DEL'",
                 _gs[1] in ["QUEUED", "DEL", "0"],
-                _gs[1], 'in ["QUEUED", "DEL", "0"]'
+                _gs[1], 'in ["QUEUED", "DEL", "0"]',
+                '邮件中可能无有效数据'
             )
 
         return _s
@@ -890,7 +891,8 @@ class MorningCheck:
             _s
         )
         _gs = self.findstr(f"<tr.*?><td.*?>({self.trade_date.last_date_cn.strftime('%Y%m%d')})</td>"
-                           f"<td.*?>(实时数据处理|盘后数据采集)</td><td.*?>(.*?)</td><td.*?>(.*?)</td></tr>", mail.get_html(),
+                           f"<td.*?>(实时数据处理|盘后数据采集)</td><td.*?>(.*?)</td><td.*?>(.*?)</td></tr>",
+                           mail.get_html(),
                            _s, "任务执行 数据匹配", 17
                            )
         if _gs:
