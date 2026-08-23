@@ -14,12 +14,16 @@ import logging
 import re
 import zipfile
 import os
+import sys
 import xml.etree.ElementTree as Et
 
 from datetime import date, timedelta
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import IO
+
+sys.path.append(str(Path(__file__).parent))
+sys.path.append(str(Path(__file__).parent / "deps"))
 
 from mail_manager import MailManager, get_imap_from_env
 from utils import SCRIPT_DIR

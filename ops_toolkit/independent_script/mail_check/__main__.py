@@ -20,14 +20,14 @@ import logging
 import logging.config
 import sys
 from datetime import date
-
 from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent))
+sys.path.append(str(Path(__file__).parent / "deps"))
 
 from utils import SCRIPT_DIR
 
 logger = logging.getLogger(__name__)
-sys.path.append(str(Path(__file__).parent))
-sys.path.append(str(Path(__file__).parent / "deps"))
 
 logging.basicConfig(
     level=logging.DEBUG,

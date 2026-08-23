@@ -10,13 +10,13 @@ from datetime import datetime, date
 from dataclasses import dataclass
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).parent))
 sys.path.append(str(Path(__file__).parent / "deps"))
 
 from mail_manager import MailManager
 from utils import SCRIPT_DIR
 
+logger = logging.getLogger(__name__)
 DEBUG = False
 
 
