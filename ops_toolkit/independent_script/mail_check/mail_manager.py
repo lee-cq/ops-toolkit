@@ -433,7 +433,15 @@ class MailManager:
             folder="inbox",
             **kwargs,
     ) -> Mail | None:
-        """"""
+        """在给定条件约束下内找到最新的一封邮件，
+
+        :param subject:
+        :param time_start:
+        :param time_end:
+        :param folder:
+        :param kwargs:
+        :return: Mail
+        """
         _ms = {
             m.send_time.strftime("%Y-%m-%d %H:%M:%S") if isinstance(m.send_time, datetime) else str(m.send_time): m
             for m in self.search_email(subject, time_start, time_end, folder, **kwargs)
@@ -488,15 +496,15 @@ class MailManager:
     ) -> Iterator[Mail]:
         """从缓存数据库中查询邮件，如果没找到去imap中找
 
-        :param subject:
-        :param time_start:
-        :param time_end:
-        :param folder: 检索的目录
+        :param subject: 邮件标题
+        :param time_start: 搜索的起始时间
+        :param time_end: 搜索的结束时间
+        :param folder: 检索的目录 - 仅缓存邮件使用，默认在数据库中全局搜索
         :param is_desc: 是否倒序
-        :param where_sql: WEERE 查询的SQL原文，以OR AND 开头
+        :param where_sql: WEERE 查询的SQL原文，将原样拼接到查询后面，以OR AND 开头
         :param _recached:
 
-        :return:
+        :return: Iterator[Mail] 返回Mail对象的生成器
         """
         time_start, time_end = self.verify_query_time(time_start, time_end)
 

@@ -310,7 +310,7 @@ class MorningCheck:
 
     def report_to_teams(self):
         from notificaton import send_teams_message
-        
+
         _rps = [Step.from_reports(*_) for _ in
                 json.loads(
                     self.report_path.joinpath(f"morning_check_{self.today}.json").read_text(encoding="utf-8")).items()
@@ -319,16 +319,16 @@ class MorningCheck:
         errs = "\n\n".join(_.report_step.replace("\n", "\n\n") for _ in _rps)
         lab = f"\n\n完整报告请通过Support PC 访问 http://NTPRDASOA6:5001/morning_check_{self.today}.html\n\n请早班同事协助检查MorningCheck报告是否与人工检查一致"
         logger.info(f"Message Review:\n{errs + lab}")
-        
+
         url = os.getenv("MORNING_CHECK_TEAMS_WEBHOOK", "")
         if not url:
             logger.warning("Not Config Web Hook URL")
             return
-        
+
         send_teams_message(
             url,
             title,
-            errs + lab 
+            errs + lab
         )
 
     def get_mail(self, subject, time_start, time_end, /, step: Step, msg="", **kwargs):
@@ -854,8 +854,9 @@ class MorningCheck:
         if _gs:
             _s.add_report(
                 "BSS Logon sending at time is updated to T09:01:00",
-                _gs[0][2] == self.trade_date.current.strftime('%Y-%m-%dT09:01:00'),
-                _gs[0], self.trade_date.current.strftime('%Y-%m-%dT09:01:00')
+                _gs[0][2] == self.trade_date.current.strftime('%Y-%m-%dT09:01:00') or \
+                _gs[0][2] == self.trade_date.current.strftime('%Y-%m-%dT09:01:01'),
+                _gs[0], self.trade_date.current.strftime('%Y-%m-%dT09:01:00/01')
             )
 
         # ===== Statuses of HKG market ETS/GEM/MAIN/NASD are updated to 'OI' ======
