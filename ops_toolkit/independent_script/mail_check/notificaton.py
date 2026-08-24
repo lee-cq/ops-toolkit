@@ -55,7 +55,7 @@ def request(method, url, headers=None, body=None, ssl=False, timeout=5):
         return resp
 
 
-def send_teams(
+def send_teams_card(
         hook_url: str,
         msg
 ) -> bool:
@@ -93,14 +93,24 @@ def send_teams(
 
 
 def send_teams_notify_env(msg) -> bool:
-    return send_teams(
-        os.getenv("TEAMS_WEBHOOK_URL", ""),
-        msg
-    )
+    return send_teams_card(os.getenv("TEAMS_WEBHOOK_URL", ""), msg)
+
+def send_teams_message(hook_url: str, title: str, msg: str) -> bool:
+    try:
+        return request(
+            "POST",
+            hook_url,
+            body=json.dumps({
+                "title": title,
+                "msg": msg
+            }, ensure_ascii=False),
+            headers={"Content-Type": "application/json"},
+            ssl=False,
+        )
+    except Exception as err:
+        logger.error(err)
+        return False
 
 
 if __name__ == '__main__':
-    send_teams(
-        hook_url="https://default134c394b103d49b69875d3e03f5e1b.dd.environment.api.powerplatform.com:443/powerautmate/automations/direct/cu/20/workflows/fd426d405d2c4d4bb2afe3bf47dc0407/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=8Ov26y991q7u34Dq180HagtLROgVYVzKJRle059Gnew",
-        msg="test",
-    )
+    pass

@@ -713,7 +713,7 @@ class MorningCheck:
         return _s
 
     def check_1_18_daily_pushlog(self) -> Step:
-        _s = Step(1, 18, "06:30 HKG Trading Status is NO (Not Yet Open)")
+        _s = Step(1, 18, "08:18 Daily PushLog Checking OctoFront OCG sign on checked.")
         logger.info(_s)
 
         mail = self.get_mail(
