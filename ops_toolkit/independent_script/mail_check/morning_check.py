@@ -180,9 +180,6 @@ class Step:
     def __str__(self):
         return f"Part {self.part} Step {self.step:02d}: {self.name}"
 
-    def __del__(self):
-        self.to_reports()
-
     def add_report(self, name: str, status: bool, actual: str, expected: str, msg: str = ""):
         self.reports.append(
             CheckStatus(
@@ -416,7 +413,7 @@ class MorningCheck:
     def main_0800(self):
         self._main(
             self.check_1_06_esunny,
-            self.check_1_09_aml_sas,
+            self.check_1_09_fcca,
             self.check_1_10_0630_daily_push_log_hkg_status_no,
         )
 
@@ -469,7 +466,7 @@ class MorningCheck:
         )
         return _s
 
-    def check_1_09_aml_sas(self) -> Step:
+    def _check_1_09_aml_sas(self) -> Step:
         _s = Step(1, 9, "邮件检查：AML Full Batch & SAS-Name Check")
         logger.info(_s)
 
@@ -494,6 +491,40 @@ class MorningCheck:
         except FileNotFoundError:
             pass
         return _s
+
+    def check_1_09_fcca(self) -> Step:
+        if self.today < "2026-08-24":
+            return self._check_1_09_aml_sas()
+
+        _s = Step(1, 9, "邮件检查：Midnight FCCA’s email")
+        logger.info(_s)
+        self.get_mail(
+            f"NS (NSBC) Batch Job Status - SUCCESSFUL - Batchdate",
+            self.trade_date.current.strftime('%Y-%m-%d'),
+            self.trade_date.current.strftime('%Y-%m-%d'),
+            _s
+        )
+        self.get_mail(
+            f"NS (NSSC) Batch Job Status - SUCCESSFUL - Batchdate",
+            self.trade_date.current.strftime('%Y-%m-%d'),
+            self.trade_date.current.strftime('%Y-%m-%d'),
+            _s
+        )
+        self.get_mail(
+            f"NS (NSOR) Batch Job Status - SUCCESSFUL - Batchdate",
+            self.trade_date.current.strftime('%Y-%m-%d'),
+            self.trade_date.current.strftime('%Y-%m-%d'),
+            _s
+        )
+        self.get_mail(
+            f"NS (NSDS) Batch Job Status - SUCCESSFUL - Batchdate ",
+            self.trade_date.current.strftime('%Y-%m-%d'),
+            self.trade_date.current.strftime('%Y-%m-%d'),
+            _s
+        )
+
+        return _s
+
 
     def check_1_10_0630_daily_push_log_hkg_status_no(self) -> Step:
         _s = Step(1, 10, "06:30 HKG Trading Status is NO (Not Yet Open)")
@@ -919,8 +950,9 @@ class MorningCheck:
             # 金仕达V8异常交易系统[2026073009:15:02 ]运行日报
             f"金仕达V8异常交易系统[{self.trade_date.current.strftime('%Y%m%d09:15')}",
             self.trade_date.current.strftime('%Y-%m-%d 09:14'),
-            self.trade_date.current.strftime('%Y-%m-%d 09:17'),
-            _s
+            self.trade_date.current.strftime('%Y-%m-%d 11:00'),
+            body="09:15:00",
+            step=_s
         )
         if mail is None:
             return _s
@@ -948,7 +980,8 @@ class MorningCheck:
             f"金仕达V8异常交易系统[{self.trade_date.current.strftime('%Y%m%d09:15')}",
             self.trade_date.current.strftime('%Y-%m-%d 09:14'),
             self.trade_date.current.strftime('%Y-%m-%d 09:17'),
-            _s
+            body="09:15:00",
+            step=_s
         )
         if mail is None:
             return _s
@@ -971,7 +1004,8 @@ class MorningCheck:
             f"金仕达V8异常交易系统[{self.trade_date.current.strftime('%Y%m%d09:15')}",
             self.trade_date.current.strftime('%Y-%m-%d 09:14'),
             self.trade_date.current.strftime('%Y-%m-%d 09:17'),
-            _s
+            body="09:15:00",
+            step=_s
         )
         if mail is None:
             return _s

@@ -35,7 +35,7 @@ logger = logging.getLogger("mail_check.mail_manager")
 _IMAP_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 # mails 表中允许被 SQL 参数化查询的字段白名单，防止注入
-_MAIL_COLUMNS = {"uid", "mail_id", "folder", "subject", "sender", "recipients", "cc"}
+_MAIL_COLUMNS = {"uid", "mail_id", "folder", "subject", "sender", "recipients", "cc", "body", "attachments"}
 
 
 def _imap_date_str(dt: datetime) -> str:
