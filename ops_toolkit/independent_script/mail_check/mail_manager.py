@@ -6,7 +6,11 @@
 @Date-Time  : 2026/7/30
 
 
+TODO
+1.
+
 """
+
 import logging
 import imaplib
 import re
@@ -32,10 +36,32 @@ from typing import Optional, List, Union
 logger = logging.getLogger("mail_check.mail_manager")
 
 # IMAP SEARCH 协议要求英文月份缩写，避免依赖系统 locale（如 zh_CN 下 %b 输出“8月”导致查询失败）
-_IMAP_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+_IMAP_MONTHS = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+]
 
 # mails 表中允许被 SQL 参数化查询的字段白名单，防止注入
-_MAIL_COLUMNS = {"uid", "mail_id", "folder", "subject", "sender", "recipients", "cc", "body", "attachments"}
+_MAIL_COLUMNS = {
+    "uid",
+    "mail_id",
+    "folder",
+    "subject",
+    "sender",
+    "recipients",
+    "cc",
+    "body",
+}
 
 
 def _imap_date_str(dt: datetime) -> str:
@@ -80,7 +106,9 @@ def get_imap_from_env():
     try:
         _port = int(os.environ.get("IMAP_PORT", 143))
     except (TypeError, ValueError):
-        logger.warning(f"IMAP_PORT 环境变量非法: {os.environ.get('IMAP_PORT')!r}，使用默认值 143")
+        logger.warning(
+            f"IMAP_PORT 环境变量非法: {os.environ.get('IMAP_PORT')!r}，使用默认值 143"
+        )
         _port = 143
     return get_imap(
         os.environ.get("IMAP_HOST"),
@@ -203,9 +231,10 @@ class ImapFolder:
 
     >>> ImapFolder(b'(\\\\Noinferiors) "/" INBOX').display_name
     """
+
     # IMAP LIST 响应正则 RFC3501
     _RE_LIST_LINE = re.compile(
-        r'\((?P<flags>.*?)\)\s+'  # flags (...)
+        r"\((?P<flags>.*?)\)\s+"  # flags (...)
         r'"(?P<delim>.*?)"\s+'  # 分隔符永远带引号
         r'(?:"(?P<name_quoted>.*)"|(?P<name_atom>\S+))'  # 名字：引号包裹 或者 atom无引号
     )
@@ -230,7 +259,9 @@ class ImapFolder:
         self._flags = gd["flags"].split() if gd["flags"] else []
         self._delimiter = gd["delim"]
         # 优先取引号内，没有就取atom
-        self._imap_raw_name = gd["name_quoted"] if gd["name_quoted"] is not None else gd["name_atom"]
+        self._imap_raw_name = (
+            gd["name_quoted"] if gd["name_quoted"] is not None else gd["name_atom"]
+        )
 
     @classmethod
     def modified_utf7_decode(cls, s: str) -> str:
@@ -240,14 +271,14 @@ class ImapFolder:
         length = len(s)
         while i < length:
             c = s[i]
-            if c == '&':
-                end = s.find('-', i)
+            if c == "&":
+                end = s.find("-", i)
                 if end == -1:
                     out.append(s[i:])
                     break
-                b64 = s[i + 1:end].replace(',', '/')
+                b64 = s[i + 1 : end].replace(",", "/")
                 pad = (-len(b64)) % 4
-                b64 += '=' * pad
+                b64 += "=" * pad
                 bin_data = base64.b64decode(b64)
                 out.append(bin_data.decode("utf-16-be"))
                 i = end + 1
@@ -262,14 +293,14 @@ class ImapFolder:
         out = []
         for ch in s:
             cp = ord(ch)
-            if 0x20 <= cp <= 0x7e and ch != '&':
+            if 0x20 <= cp <= 0x7E and ch != "&":
                 out.append(ch)
             else:
-                out.append('&')
+                out.append("&")
                 b = ch.encode("utf-16-be")
-                b64 = base64.b64encode(b).decode("ascii").rstrip("=").replace('/', ',')
+                b64 = base64.b64encode(b).decode("ascii").rstrip("=").replace("/", ",")
                 out.append(b64)
-                out.append('-')
+                out.append("-")
         return "".join(out)
 
     @property
@@ -315,18 +346,18 @@ class ImapFolder:
 class MailManager:
 
     def __init__(
-            self,
-            imap: imaplib.IMAP4 | imaplib.IMAP4_SSL = None,
-            cache_db=None,
+        self,
+        imap: imaplib.IMAP4 | imaplib.IMAP4_SSL = None,
+        cache_db=None,
     ):
         self.sqlite_adapter()
         self.db_path = cache_db or "./cache_mail_manager.db"
-        self.db = sqlite3.connect(
-            self.db_path, detect_types=sqlite3.PARSE_DECLTYPES
-        )
+        self.db = sqlite3.connect(self.db_path, detect_types=sqlite3.PARSE_DECLTYPES)
         self.db.row_factory = sqlite3.Row
         self.init_db()
-        self.imap = imap or (get_imap_from_env() if os.environ.get("IMAP_HOST") else None)
+        self.imap = imap or (
+            get_imap_from_env() if os.environ.get("IMAP_HOST") else None
+        )
         logger.info(f"MailManager inited, cache_db = {self.db_path.__str__()}")
 
     @staticmethod
@@ -336,7 +367,10 @@ class MailManager:
         sqlite3.register_converter("JSON", json.loads)
 
         sqlite3.register_adapter(datetime, lambda d: d.strftime("%Y-%m-%d %H:%M:%S"))
-        sqlite3.register_converter("DATETIME", lambda d: datetime.strptime(d.decode()[:19], "%Y-%m-%d %H:%M:%S"))
+        sqlite3.register_converter(
+            "DATETIME",
+            lambda d: datetime.strptime(d.decode()[:19], "%Y-%m-%d %H:%M:%S"),
+        )
 
     def close(self):
         """释放 IMAP 与 SQLite 连接"""
@@ -352,6 +386,40 @@ class MailManager:
             except Exception:
                 pass
             self.db = None
+
+    @staticmethod
+    def verify_query_time(
+        time_start: datetime | str, time_end: datetime | str
+    ) -> tuple[datetime, datetime]:
+        """"""
+        if isinstance(time_start, str) and isinstance(time_end, str):
+            if len(time_start) != len(time_end) or len(time_start) not in (5, 10, 16):
+                raise ValueError(
+                    "time_start 和 time_end 长度必须相同, 且长度必须是 5(01:01) / 10(2026-01-01) / 16(2026-01-01 01:01)"
+                )
+            if len(time_start) > 9 and time_end < time_start:
+                raise ValueError("指定日期时，time_end必须大于time_start")
+            if len(time_start) == 5:
+                today = datetime.today().strftime("%Y-%m-%d ")
+                time_start = datetime.strptime(today + time_start, "%Y-%m-%d %H:%M")
+                time_end = datetime.strptime(today + time_end, "%Y-%m-%d %H:%M")
+                if time_start > time_end:
+                    time_start = time_start - timedelta(days=1)
+                return time_start, time_end
+            elif len(time_start) == 16:
+                time_start = datetime.strptime(time_start, "%Y-%m-%d %H:%M")
+                time_end = datetime.strptime(time_end, "%Y-%m-%d %H:%M")
+                return time_start, time_end
+            elif len(time_start) == 10:
+                time_start = datetime.strptime(time_start + " 00:00", "%Y-%m-%d %H:%M")
+                time_end = datetime.strptime(time_end + " 23:59", "%Y-%m-%d %H:%M")
+                return time_start, time_end
+
+        elif isinstance(time_start, datetime) and isinstance(time_end, datetime):
+            return time_start, time_end
+
+        # if not (isinstance(time_start, datetime) or isinstance(time_end, datetime)):
+        raise ValueError(f"类型错误：{type(time_start) = } {type(time_end) = }")
 
     def init_db(self):
         self.db.execute(
@@ -406,7 +474,7 @@ class MailManager:
             "INSERT INTO `mails` "
             "(uid, mail_id, folder, subject, send_time, sender, recipients, cc, body, attachments) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
-            "ON CONFLICT(uid) DO UPDATE SET "
+            "ON CONFLICT(mail_id) DO UPDATE SET "
             "body=excluded.body, attachments=excluded.attachments"
         )
         try:
@@ -414,24 +482,67 @@ class MailManager:
             self.db.commit()
         except Exception as _e:
             # 单条失败不影响其它邮件入库
-            logger.error(f"缓存邮件失败(uids={[_.uid for _ in mails]}): {_e}")
+            logger.warning(
+                f"批量缓存邮件失败，降级为逐条缓存(uids={[_.uid for _ in mails]}): {_e}"
+            )
+            for _r in _rows:
+                try:
+                    self.db.execute(_sql, _r)
+                except Exception as _e:
+                    logger.error(f"缓存邮件失败(uid={_r[0]}) subject={_r[3]}, : {_e}")
         logger.debug(f"缓存已提交 「{[mail.uid for mail in mails]}」")
 
-    @property
-    def cached_uids(self) -> set:
+    def cached_uids(self, need_body=False) -> set:
+        _w = "where body is not NULL" if need_body else ""
         return set(
             i["uid"]
-            for i in self.db.execute("SELECT uid FROM `mails`").fetchall()
+            for i in self.db.execute(f"SELECT uid FROM `mails` {_w}").fetchall()
         )
 
+    def create_sql_where(
+        self,
+        subject,
+        time_start: datetime | str,
+        time_end: datetime | str,
+        where_sql: str = "",
+        **kwargs,
+    ) -> str:
+        time_start, time_end = self.verify_query_time(time_start, time_end)
+
+        # 字段白名单校验，防止拼接非法列名
+        for _k in kwargs:
+            if _k not in _MAIL_COLUMNS:
+                raise ValueError(
+                    f"非法查询字段: {_k!r}，允许的字段: {sorted(_MAIL_COLUMNS)}"
+                )
+
+        # 参数化查询，杜绝 SQL 注入
+        _o = ""
+        _kw_params: list = []
+        for _k, _v in kwargs.items():
+            _o += f" AND `{_k}` LIKE ? "
+            _kw_params.append(f"%{_v}%")
+
+        # 秒级字符串比较；上界取开区间（< end+1s），保证结束时刻最后一分钟的邮件不被漏掉
+        _ts = time_start.strftime("%Y-%m-%d %H:%M:%S")
+        _te = time_end.strftime("%Y-%m-%d %H:%M:%S")
+        _params = [f"%{subject}%", _ts, _te, *_kw_params]
+
+        return (
+            f"WHERE subject LIKE ? "
+            f" AND send_time >= ? "
+            f" AND send_time < ? "
+            f" {_o} {where_sql}"
+        ), _params
+
     def search_email_newest(
-            self,
-            subject,
-            time_start: datetime | str,
-            time_end: datetime | str,
-            /,
-            folder="inbox",
-            **kwargs,
+        self,
+        subject,
+        time_start: datetime | str,
+        time_end: datetime | str,
+        /,
+        folder="inbox",
+        **kwargs,
     ) -> Mail | None:
         """在给定条件约束下内找到最新的一封邮件，
 
@@ -443,56 +554,29 @@ class MailManager:
         :return: Mail
         """
         _ms = {
-            m.send_time.strftime("%Y-%m-%d %H:%M:%S") if isinstance(m.send_time, datetime) else str(m.send_time): m
+            (
+                m.send_time.strftime("%Y-%m-%d %H:%M:%S")
+                if isinstance(m.send_time, datetime)
+                else str(m.send_time)
+            ): m
             for m in self.search_email(subject, time_start, time_end, folder, **kwargs)
         }
         if not _ms:
             return None
         return _ms[max(list(_ms.keys()))]
 
-    @staticmethod
-    def verify_query_time(time_start: datetime | str, time_end: datetime | str) -> tuple[datetime, datetime]:
-        """"""
-        if isinstance(time_start, str) and isinstance(time_end, str):
-            if len(time_start) != len(time_end) or len(time_start) not in (5, 10, 16):
-                raise ValueError(
-                    "time_start 和 time_end 长度必须相同, 且长度必须是 5(01:01) / 10(2026-01-01) / 16(2026-01-01 01:01)"
-                )
-            if len(time_start) > 9 and time_end < time_start:
-                raise ValueError("指定日期时，time_end必须大于time_start")
-            if len(time_start) == 5:
-                today = datetime.today().strftime("%Y-%m-%d ")
-                time_start = datetime.strptime(today + time_start, "%Y-%m-%d %H:%M")
-                time_end = datetime.strptime(today + time_end, "%Y-%m-%d %H:%M")
-                if time_start > time_end:
-                    time_start = time_start - timedelta(days=1)
-                return time_start, time_end
-            elif len(time_start) == 16:
-                time_start = datetime.strptime(time_start, "%Y-%m-%d %H:%M")
-                time_end = datetime.strptime(time_end, "%Y-%m-%d %H:%M")
-                return time_start, time_end
-            elif len(time_start) == 10:
-                time_start = datetime.strptime(time_start + " 00:00", "%Y-%m-%d %H:%M")
-                time_end = datetime.strptime(time_end + " 23:59", "%Y-%m-%d %H:%M")
-                return time_start, time_end
-
-        elif isinstance(time_start, datetime) and isinstance(time_end, datetime):
-            return time_start, time_end
-
-        # if not (isinstance(time_start, datetime) or isinstance(time_end, datetime)):
-        raise ValueError(f"类型错误：{type(time_start) = } {type(time_end) = }")
-
     def search_email(
-            self,
-            subject,
-            time_start: datetime | str,
-            time_end: datetime | str,
-            /,
-            folder="inbox",
-            where_sql: str = "",
-            is_desc: bool = True,
-            _recached=False,
-            **kwargs,
+        self,
+        subject,
+        time_start: datetime | str,
+        time_end: datetime | str,
+        /,
+        folder="inbox",
+        where_sql: str = "",
+        is_desc: bool = True,
+        _recached=False,
+        _fetchd_body=False,
+        **kwargs,
     ) -> Iterator[Mail]:
         """从缓存数据库中查询邮件，如果没找到去imap中找
 
@@ -506,55 +590,62 @@ class MailManager:
 
         :return: Iterator[Mail] 返回Mail对象的生成器
         """
-        time_start, time_end = self.verify_query_time(time_start, time_end)
-
-        # 字段白名单校验，防止拼接非法列名
-        for _k in kwargs:
-            if _k not in _MAIL_COLUMNS:
-                raise ValueError(f"非法查询字段: {_k!r}，允许的字段: {sorted(_MAIL_COLUMNS)}")
-
-        # 参数化查询，杜绝 SQL 注入
-        _o = ""
-        _kw_params: list = []
-        for _k, _v in kwargs.items():
-            _o += f" AND `{_k}` LIKE ? "
-            _kw_params.append(f"%{_v}%")
-
-        # 秒级字符串比较；上界取开区间（< end+1s），保证结束时刻最后一分钟的邮件不被漏掉
-        _ts = time_start.strftime("%Y-%m-%d %H:%M:%S")
-        _te = (time_end + timedelta(seconds=1)).strftime("%Y-%m-%d %H:%M:%S")
-        _params = [f"%{subject}%", _ts, _te, *_kw_params]
+        if "body" in kwargs.keys():
+            logger.info("查询条件中包含BODY, 检查并缓存BODY.")
+            _ws, _wa = self.create_sql_where(
+                subject,
+                time_start,
+                time_end,
+                where_sql,
+                **{k: v for k, v in kwargs if k != "body"},
+            )
+            _sql = (
+                "SELECT folder, GROUP_CONCAT(DISTINCT uid) AS uids from `mails` "
+                f"WHERE {_ws} and body is NULL "
+                "GROUP BY folder",
+            )
+            no_body = self.db.execute(_sql, _wa).fetchall()
+            for f, uids in no_body:
+                logger.debug(f"CACHE BODY: {f}: {uids}")
+                self.get_mail_by_uid(uids, with_body=True, folder=f)
 
         _d = "desc" if is_desc else "asc"
-        cur = self.db.execute(
-            f"SELECT uid, mail_id, folder, subject, send_time, sender, recipients, cc, body, attachments FROM `mails` "
-            f"WHERE subject LIKE ? "
-            f" AND send_time >= ? "
-            f" AND send_time < ? "
-            f" {_o} {where_sql}"
-            f" ORDER BY send_time {_d}",
-            _params,
+        _ws, _wa = self.create_sql_where(
+            subject, time_start, time_end, where_sql, **kwargs
         )
-        rows = cur.fetchall()
+        _sql = (
+            f"SELECT uid, mail_id, folder, subject, send_time, sender, recipients, cc, body, attachments FROM `mails` WHERE {_ws} "
+            f" ORDER BY send_time {_d}"
+        )
+        rows = self.db.execute(_sql, _wa).fetchall()
+        # rows = cur.fetchall()
         if rows:
             for _m in rows:
                 yield Mail(**_m, _manager=self)
         else:
             if not _recached:
                 logger.debug("Recache")
-                self.cache_message_info(time_start, time_end, folder)
-                yield from self.search_email(subject, time_start, time_end, folder=folder, _recached=True, **kwargs)
+                _c_b = True if "body" in kwargs.keys() else False
+                self.cache_message_info(time_start, time_end, folder, with_body=_c_b)
+                yield from self.search_email(
+                    subject,
+                    time_start,
+                    time_end,
+                    folder=folder,
+                    _recached=True,
+                    **kwargs,
+                )
             else:
                 # 缓存与 IMAP 均无匹配是正常场景，正常结束迭代
                 return
 
-    def list_folder(self, directory='""', pattern='*') -> Iterator[ImapFolder]:
+    def list_folder(self, directory='""', pattern="*") -> Iterator[ImapFolder]:
         """列出邮箱中的所有folder"""
         if self.imap is None:
             raise ConnectionError(f"IMAP 未初始化. ")
 
         _st, data = self.imap.list(directory, pattern)
-        if _st != 'OK':
+        if _st != "OK":
             logger.error(f"列出目录失败，{_st}, {data}")
             return
         for raw in data:
@@ -562,11 +653,11 @@ class MailManager:
             yield ImapFolder(raw)
 
     def cache_message_info(
-            self,
-            time_start: datetime | str,
-            time_end: datetime | str,
-            folder="INBOX",
-            with_body=False
+        self,
+        time_start: datetime | str,
+        time_end: datetime | str,
+        folder="INBOX",
+        with_body=False,
     ) -> None:
         """从服务缓存邮件
 
@@ -580,7 +671,7 @@ class MailManager:
         if self.imap is None:
             raise ConnectionError(f"IMAP 未初始化. ")
 
-        if folder == 'ALL':
+        if folder == "ALL":
             logger.info("遍历全部Folder查找邮件 ...")
             for _f in self.list_folder():
                 self.cache_message_info(time_start, time_end, _f.name, with_body)
@@ -596,23 +687,31 @@ class MailManager:
             f'(SINCE "{_imap_date_str(time_start)}" '
             f'BEFORE "{_imap_date_str(time_end + timedelta(days=1))}")'
         )  # SUBJECT "{subject}"
-        logger.debug(f"IMAP: SEARCH: {search_str}, folder={ImapFolder.modified_utf7_decode(folder)}")
+        logger.debug(
+            f"IMAP: SEARCH: {search_str}, folder={ImapFolder.modified_utf7_decode(folder)}"
+        )
         _st, uids = self.imap.uid("SEARCH", None, search_str)
-        all_uids = [_ for uid in uids for _ in uid.decode().split() if _ != ""] if _st == "OK" else []
+        all_uids = (
+            [_ for uid in uids for _ in uid.decode().split() if _ != ""]
+            if _st == "OK"
+            else []
+        )
 
         logger.info(f"IMAP: SEARCH FIND: {all_uids}")
         if not all_uids:
-            logger.error(f"IMAP:没查到邮件 {search_str}")
+            logger.warning(f"IMAP:没查到邮件 {search_str}")
             return
-        _cached = self.cached_uids
+        _cached = self.cached_uids(with_body)
         all_uids = list(set(all_uids) - _cached)  #
         logger.info(f"已缓存的ID: [{_cached & set(all_uids)}]")
         logger.info(f"从服务器拉取: [{all_uids}]")
 
-        for uids in [all_uids[i:i + 30] for i in range(0, len(all_uids), 30)]:
+        for uids in [all_uids[i : i + 30] for i in range(0, len(all_uids), 30)]:
             list(self.get_mail_by_uid(uids, with_body=with_body, folder=folder))
 
-    def get_mail_by_uid(self, uids: str | Iterable[str], with_body=False, folder="INBOX") -> Iterator[Mail]:
+    def get_mail_by_uid(
+        self, uids: str | Iterable[str], with_body=False, folder="INBOX"
+    ) -> Iterator[Mail]:
         """
 
         :param uids:
@@ -631,12 +730,16 @@ class MailManager:
             uids = uids.split(",")
         uids = sorted(list(set(uids)))
         logger.info(f"IMAP: FETCH: {uids} ({with_body=})")
-        uids = ','.join(uids)
+        uids = ",".join(uids)
 
         typ, msg_data = self.imap.uid(
             "FETCH",
             uids,
-            "(BODY[HEADER.FIELDS (MESSAGE-ID SUBJECT DATE FROM TO CC)])" if not with_body else "BODY[]",
+            (
+                "(BODY[HEADER.FIELDS (MESSAGE-ID SUBJECT DATE FROM TO CC)])"
+                if not with_body
+                else "BODY[]"
+            ),
         )
         if typ != "OK":
             logger.warning(f"FETCH Error: {typ} {msg_data} (uids={uids})")
@@ -696,6 +799,32 @@ class MailManager:
                 result.append(email_addr)
         return result
 
+    def get_inter_time(self, uid) -> datetime|None:
+        if self.imap is None:
+            logger.error(
+                f"IMAP 未初始化"
+            )
+            return None
+        else:
+            status, data = self.imap.uid("FETCH", uid, "INTERNALDATE")
+            if status != "OK":
+                logger.error(f"获取邮件时间失败：{uid}")
+                return None
+            else:
+                try:
+                    resp = data[0].decode()
+                    send_time = _to_local_naive(
+                        parsedate_to_datetime(
+                            resp.split('INTERNALDATE "')[1].split('"')[0]
+                        )
+                    )
+                    return send_time
+                except Exception as _e:
+                    logger.error(
+                        f"INTERNALDATE 解析失败, {_e}： {uid}"
+                    )
+        
+
     def parse_rfc822(self, raw_email: bytes) -> Mail:
         """解析RFC822邮件
 
@@ -716,14 +845,15 @@ class MailManager:
         })
         """
         msg = email.message_from_bytes(raw_email)
-
         email_id = self._decode_header_value(msg.get("Message-ID", ""))
 
         # 1. 主题
-        subject = (self._decode_header_value(msg.get("Subject", ""))
-                   .replace("\n", " ")
-                   .replace("\r", " ")
-                   .replace("\t", " "))
+        subject = (
+            self._decode_header_value(msg.get("Subject", ""))
+            .replace("\n", " ")
+            .replace("\r", " ")
+            .replace("\t", " ")
+        )
 
         # 2. 发件人
         from_raw = self._decode_header_value(msg.get("From", ""))
@@ -739,9 +869,8 @@ class MailManager:
         cc = self._split_address_list(msg.get("Cc", ""))
 
         # 4. 邮件发送时间（邮件头Date，发件客户端时间；不是INTERNALDATE）
-
         date_raw = msg.get("Date", "").split(" +")[0]
-        send_time = parsedate_to_datetime(date_raw) if 20 <= len(date_raw) <= 25 else None
+        send_time = _to_local_naive(parsedate_to_datetime(date_raw))
 
         # 5. 正文 text/plain + text/html
         body_text = ""
@@ -761,7 +890,7 @@ class MailManager:
             payload = part.get_payload(decode=True)
             if payload is None:
                 continue
-            payload = payload if isinstance(payload, bytes) else b''
+            payload = payload if isinstance(payload, bytes) else b""
             # 判断附件：存在文件名 → 附件
             if filename:
                 file_name_decoded = self._decode_header_value(filename)
@@ -821,9 +950,15 @@ def get_smtp(host, port, user, password, ssl=True) -> smtplib.SMTP | smtplib.SMT
 def get_smtp_from_env():
     use_ssl = os.getenv("SMTP_SSL", "").upper() in ["TRUE", "1", "T"]
     try:
-        _port = int(os.environ.get("SMTP_PORT", smtplib.SMTP_SSL_PORT if use_ssl else smtplib.SMTP_PORT))
+        _port = int(
+            os.environ.get(
+                "SMTP_PORT", smtplib.SMTP_SSL_PORT if use_ssl else smtplib.SMTP_PORT
+            )
+        )
     except (TypeError, ValueError):
-        logger.warning(f"SMTP_PORT 环境变量非法: {os.environ.get('SMTP_PORT')!r}，使用默认值 25 / 465")
+        logger.warning(
+            f"SMTP_PORT 环境变量非法: {os.environ.get('SMTP_PORT')!r}，使用默认值 25 / 465"
+        )
         _port = smtplib.SMTP_SSL_PORT if use_ssl else smtplib.SMTP_PORT
     return get_smtp(
         os.environ.get("SMTP_HOST"),
@@ -835,14 +970,14 @@ def get_smtp_from_env():
 
 
 def send_email(
-        smtp: smtplib.SMTP | smtplib.SMTP_SSL | None,
-        subject: str,
-        body: str,
-        to: Union[str, List[str]],
-        _from: str = None,
-        atta: Optional[List[str | Path]] | Path = None,
-        cc: Optional[Union[str, List[str]]] = None,
-        bcc: Optional[Union[str, List[str]]] = None,
+    smtp: smtplib.SMTP | smtplib.SMTP_SSL | None,
+    subject: str,
+    body: str,
+    to: Union[str, List[str]],
+    _from: str = None,
+    atta: Optional[List[str | Path]] | Path = None,
+    cc: Optional[Union[str, List[str]]] = None,
+    bcc: Optional[Union[str, List[str]]] = None,
 ) -> bool:
     """通过已建立连接的SMTP会话发送邮件，返回发送状态
     自动识别正文：包含 <html> / <body> 标签则作为HTML邮件，否则为纯文本邮件
@@ -908,7 +1043,9 @@ def send_email(
                 part.set_payload(file_path.read_bytes())
                 encoders.encode_base64(part)
                 filename = file_path.name
-                part.add_header("Content-Disposition", f'attachment; filename="{filename}"')
+                part.add_header(
+                    "Content-Disposition", f'attachment; filename="{filename}"'
+                )
                 msg.attach(part)
             except OSError:
                 continue
@@ -930,7 +1067,7 @@ if __name__ == "__main__":
     em = MailManager()
     # print(list(em.search_email("test", '2026-07-21', '2026-08-13', folder="INBOX")))
     # print(list(em.list_folder()))
-    em.cache_message_info('2026-07-21', '2026-08-17', folder="ALL")
+    em.cache_message_info("2026-07-21", "2026-08-17", folder="ALL")
     # for m in em.search_email("test", '2026-07-21', '2026-08-13', folder="INBOX"):
     #     print(m)
     #     print(m.get_html())

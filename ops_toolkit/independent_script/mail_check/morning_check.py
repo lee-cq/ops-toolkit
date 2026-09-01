@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 class TradeDate:
 
     def __init__(self, date_: date | str = None):
-        # 今天日期
+        # 默认今天日期
         _current = date_ or date.today()
         if not isinstance(_current, date):
             try:
@@ -601,7 +601,6 @@ class MorningCheck:
                     "BIX-FIXOVN": "通常邮件中是False, 08:30前在 SEC TTL的health Check中再次检查",
                 }.get(bid, "")
             )
-
         return _s
 
     def check_1_12_tp1_mds_status(self) -> Step:
@@ -1043,5 +1042,4 @@ if __name__ == '__main__':
     _mc.main_all()
     _mc.report()
     # _mc.check_1_14_tp1_fo_market_info()
-
     # _mc.report_to_mail()
