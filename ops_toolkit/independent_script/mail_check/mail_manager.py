@@ -529,11 +529,9 @@ class MailManager:
         _params = [f"%{subject}%", _ts, _te, *_kw_params]
 
         return (
-            f"WHERE subject LIKE ? "
-            f" AND send_time >= ? "
-            f" AND send_time < ? "
-            f" {_o} {where_sql}"
-        ), _params
+            f" subject LIKE ?  AND send_time >= ?  AND send_time < ?  {_o} {where_sql}",
+            _params,
+        )
 
     def search_email_newest(
         self,
@@ -596,14 +594,15 @@ class MailManager:
                 subject,
                 time_start,
                 time_end,
-                where_sql,
-                **{k: v for k, v in kwargs if k != "body"},
+                where_sql=where_sql,
+                **{k: v for k, v in kwargs.items() if k != "body"},
             )
             _sql = (
                 "SELECT folder, GROUP_CONCAT(DISTINCT uid) AS uids from `mails` "
                 f"WHERE {_ws} and body is NULL "
-                "GROUP BY folder",
+                "GROUP BY folder"
             )
+            logger.debug(f"SQL: {_sql}")
             no_body = self.db.execute(_sql, _wa).fetchall()
             for f, uids in no_body:
                 logger.debug(f"CACHE BODY: {f}: {uids}")
@@ -617,6 +616,7 @@ class MailManager:
             f"SELECT uid, mail_id, folder, subject, send_time, sender, recipients, cc, body, attachments FROM `mails` WHERE {_ws} "
             f" ORDER BY send_time {_d}"
         )
+        logger.debug(f"SQL: {_sql}")
         rows = self.db.execute(_sql, _wa).fetchall()
         # rows = cur.fetchall()
         if rows:
@@ -626,7 +626,7 @@ class MailManager:
             if not _recached:
                 logger.debug("Recache")
                 _c_b = True if "body" in kwargs.keys() else False
-                self.cache_message_info(time_start, time_end, folder, with_body=_c_b)
+                self.cache_message_info(time_start, time_end, folder)
                 yield from self.search_email(
                     subject,
                     time_start,
@@ -1067,9 +1067,15 @@ if __name__ == "__main__":
     em = MailManager()
     # print(list(em.search_email("test", '2026-07-21', '2026-08-13', folder="INBOX")))
     # print(list(em.list_folder()))
-    em.cache_message_info("2026-07-21", "2026-08-17", folder="ALL")
-    # for m in em.search_email("test", '2026-07-21', '2026-08-13', folder="INBOX"):
-    #     print(m)
-    #     print(m.get_html())
+    # em.cache_message_info("2026-09-01", "2026-09-01", folder="ALL")
+    for m in em.search_email(
+        "金仕达V8异常交易系统",
+        "2026-09-01 08:15",
+        "2026-09-01 10:20",
+        folder="ALL",
+        body="09:15",
+    ):
+        print(m.subject, m.sender, m.send_time, m.recipients)
+        print(m.get_html())
 
     # print(em.get_mail_by_uid("489", with_body=True).__next__())
