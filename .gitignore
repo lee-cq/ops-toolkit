@@ -147,3 +147,4 @@ dmypy.json
 tests/data/*.json
 /builder/**
 *.db
+ops_toolkit/independent_script/mail_check/no_reply_config.json

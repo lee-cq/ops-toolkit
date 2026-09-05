@@ -53,6 +53,8 @@
             width: 100%;
             border-collapse: collapse;
             min-width: 1100px;
+            /* 固定表格布局：列宽严格按 colgroup 定义，避免被内容撑开跳动 */
+            table-layout: fixed;
         }
         th {
             background-color: #f9fafb;
@@ -95,6 +97,15 @@
             text-overflow:ellipsis;
             white-space:nowrap;
         }
+        /* 主题列：按百分比宽度缩放 + 允许换行（长主题不再截断省略） */
+        .subject-wrap-cell {
+            width: 34%;
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+        /* 过滤说明(msg)：保持单行省略，避免过长撑高行 */
         .subject-cell {
             overflow:hidden;
             text-overflow:ellipsis;
@@ -162,6 +173,10 @@
             word-break:break-all;
             color:#1f2937;
         }
+        /* 收件人：多个时一行一个 */
+        .recipients-value .recipient-item {
+            line-height: 1.8;
+        }
         .body-block {
             margin-top:16px;
             padding-top:12px;
@@ -212,6 +227,17 @@
     </div>
     <div class="table-wrap">
         <table>
+            <!-- 列宽定义：
+                 发送时间/状态/发件人：固定宽度
+                 邮件主题：百分比缩放
+                 过滤说明(msg)：自适应剩余 -->
+            <colgroup>
+                <col style="width: 180px;">  <!-- 发送时间 固定 -->
+                <col style="width: 200px;">  <!-- 发件人 固定 -->
+                <col style="width: 34%;">    <!-- 邮件主题 百分比 -->
+                <col style="width: 110px;">  <!-- 状态 固定 -->
+                <col>                        <!-- 过滤说明(msg) 剩余 -->
+            </colgroup>
             <thead>
                 <tr>
                     <th>发送时间</th>
@@ -226,6 +252,7 @@
     </div>
 </div>
 
+
 <!-- 详情弹窗 -->
 <div class="modal-mask" id="modalMask">
     <div class="modal-box">
@@ -237,10 +264,12 @@
     </div>
 </div>
 
+
 <script>
 // ===================== 数据源占位，后续程序替换此处 ROW_REPORTS_JSON =====================
 const rawData = __ROW_REPORTS_JSON__;
 // =======================================================================================
+
 
 let currentList = [];
 const tableBody = document.getElementById('tableBody');
@@ -248,6 +277,7 @@ const searchInput = document.getElementById('searchInput');
 const modalMask = document.getElementById('modalMask');
 const modalBody = document.getElementById('modalBody');
 const btnClose = document.getElementById('btnClose');
+
 
 // 初始化
 function init(){
@@ -257,6 +287,7 @@ function init(){
     });
     renderTable(currentList);
 }
+
 
 // 渲染表格
 function renderTable(list){
@@ -271,8 +302,8 @@ function renderTable(list){
         let statusClass = item.status === 'NO_REPLY' ? 'status-no-reply' : 'status-skip';
         tr.innerHTML = `
             <td>${escapeHtml(item.send_time || '')}</td>
-            <td class="sender-cell" title="${escapeHtml(item.sender||'')}">${escapeHtml(item.sender || '')}</td>
-            <td class="subject-cell" title="${escapeHtml(item.subject||'')}">${escapeHtml(item.subject||'')}</td>
+            <td class="sender-cell" title="${escapeHtml(item.sender||'')}">${escapeHtml(item.sender||'')}</td>
+            <td class="subject-wrap-cell" title="${escapeHtml(item.subject||'')}">${escapeHtml(item.subject||'')}</td>
             <td><span class="${statusClass}">${escapeHtml(item.status||'')}</span></td>
             <td class="subject-cell" title="${escapeHtml(item.msg||'')}">${escapeHtml(item.msg||'')}</td>
         `;
@@ -282,6 +313,7 @@ function renderTable(list){
         tableBody.appendChild(tr);
     })
 }
+
 
 // 过滤逻辑
 searchInput.addEventListener('input', function(){
@@ -297,9 +329,10 @@ searchInput.addEventListener('input', function(){
     renderTable(filtered);
 })
 
+
 /**
  * 预处理文本：统一换行符，保留\t制表符
- * 将 \r\n / \r 全部转为 \n，交给 white‑space:pre‑wrap 渲染
+ * 将 \r\n / \r 全部转为 \n，交给 white-space:pre-wrap 渲染
  */
 function normalizeMailText(str){
     if(!str) return '';
@@ -308,11 +341,27 @@ function normalizeMailText(str){
         .replace(/\r/g, '\n');
 }
 
+
+/**
+ * 收件人格式化：多个收件人时，每个单独一行
+ * 按逗号 / 分号（含中英文）拆分
+ */
+function formatRecipients(str){
+    if(!str) return '';
+    const parts = String(str).split(/[,;，；]/).map(s=>s.trim()).filter(Boolean);
+    if(parts.length <= 1){
+        return escapeHtml(str);
+    }
+    return parts.map(p=>`<div class="recipient-item">${escapeHtml(p)}</div>`).join('');
+}
+
+
 // 弹窗展示详情
 function showDetail(item){
     // item.body 为后端返回原始纯文本字符串
     const rawBody = normalizeMailText(item.body || '');
     const plainBody = escapeHtml(rawBody);
+
 
     modalBody.innerHTML = `
         <div class="field-row">
@@ -329,12 +378,13 @@ function showDetail(item){
         </div>
         <div class="field-row">
             <span class="field-label">收件人：</span>
-            <span class="field-value">${escapeHtml(item.to||'')}</span>
+            <span class="field-value recipients-value">${formatRecipients(item.to||'')}</span>
         </div>
         <div class="field-row">
             <span class="field-label">抄送：</span>
             <span class="field-value">${escapeHtml(item.cc||'')}</span>
         </div>
+
 
         <div class="body-block">
             <div class="body-label-wrap">
@@ -346,6 +396,7 @@ ${plainBody}
             </div>
         </div>
     `;
+
 
     // 复制按钮
     const copyBtn = document.getElementById('copyBodyBtn');
@@ -359,8 +410,10 @@ ${plainBody}
         }
     };
 
+
     modalMask.style.display = 'flex';
 }
+
 
 // 关闭弹窗
 btnClose.addEventListener('click', ()=>{
@@ -372,6 +425,7 @@ modalMask.addEventListener('click', (e)=>{
     }
 })
 
+
 // HTML转义，防止XSS
 function escapeHtml(str){
     if(!str) return '';
@@ -382,6 +436,7 @@ function escapeHtml(str){
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
+
 
 window.onload = init;
 </script>

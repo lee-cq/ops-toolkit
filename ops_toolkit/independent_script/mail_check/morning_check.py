@@ -59,7 +59,9 @@ class TradeDate:
 
     def update_status(self):
         _year = self.current.strftime("%Y")
-        _fhs = json.loads(SCRIPT_DIR.joinpath(f"holiday_{_year}.json").read_text(encoding="utf-8"))
+        _fhs = json.loads(
+            SCRIPT_DIR.joinpath(f"holiday_{_year}.json").read_text(encoding="utf-8")
+        )
 
         if self.current.weekday() > 5:
             self.is_holiday_hk = True
@@ -69,8 +71,12 @@ class TradeDate:
             self.is_holiday_hk = _ds in _fhs["hk"]
             self.is_holiday_cn = _ds in _fhs["cn"]
 
-        self.last_date_hk = self.get_last_trade_date(self.current - timedelta(days=1), _fhs["hk"])
-        self.last_date_cn = self.get_last_trade_date(self.current - timedelta(days=1), _fhs["cn"])
+        self.last_date_hk = self.get_last_trade_date(
+            self.current - timedelta(days=1), _fhs["hk"]
+        )
+        self.last_date_cn = self.get_last_trade_date(
+            self.current - timedelta(days=1), _fhs["cn"]
+        )
 
     def get_last_trade_date(self, _date: date, holidays: list[str]):
         if _date.weekday() >= 5 or _date.strftime("%Y-%m-%d") in holidays:
@@ -185,14 +191,12 @@ class Step:
     def __str__(self):
         return f"Part {self.part} Step {self.step:02d}: {self.name}"
 
-    def add_report(self, name: str, status: bool, actual: str, expected: str, msg: str = ""):
+    def add_report(
+        self, name: str, status: bool, actual: str, expected: str, msg: str = ""
+    ):
         self.reports.append(
             CheckStatus(
-                name=name,
-                status=status,
-                actual=actual,
-                expected=expected,
-                msg=msg,
+                name=name, status=status, actual=actual, expected=expected, msg=msg
             )
         )
         if status:
@@ -543,7 +547,7 @@ class MorningCheck:
                 logger.error()
 
         # t_2 = TradeDate(self.trade_date.last_date_hk)
-        for sub in (
+        for sub in [
             # NS (NSWL-PRE) Batch Job Status -  SUCCESSFUL - Batchdate 2026090
             "TM (DATASYNC) Batch Job Status -  SUCCESSFUL",
             "TM (TMAG) Batch Job Status -  SUCCESSFUL",
@@ -556,7 +560,7 @@ class MorningCheck:
             "NS (NSWL) Batch Job Status -  SUCCESSFUL",
             "NS (NSWF) Batch Job Status -  SUCCESSFUL",
             "NS (NSSIC) Batch Job Status -  SUCCESSFUL",
-        ):
+        ]:
             _check_mail(sub)
 
         return _s

@@ -480,6 +480,7 @@ class MailManager:
         try:
             self.db.executemany(_sql, _rows)
             self.db.commit()
+            logger.info(f"CACHE Seccessful, {len(mails) = }")
         except Exception as _e:
             # 单条失败不影响其它邮件入库
             logger.warning(
@@ -606,7 +607,7 @@ class MailManager:
             no_body = self.db.execute(_sql, _wa).fetchall()
             for f, uids in no_body:
                 logger.debug(f"CACHE BODY: {f}: {uids}")
-                self.get_mail_by_uid(uids, with_body=True, folder=f)
+                list(self.get_mail_by_uid(uids, with_body=True, folder=f))
 
         _d = "desc" if is_desc else "asc"
         _ws, _wa = self.create_sql_where(
@@ -699,7 +700,7 @@ class MailManager:
 
         logger.info(f"IMAP: SEARCH FIND: {all_uids}")
         if not all_uids:
-            logger.warning(f"IMAP:没查到邮件 {search_str}")
+            logger.warning(f"IMAP:没查到邮件 {search_str} ({folder})")
             return
         _cached = self.cached_uids(with_body)
         all_uids = list(set(all_uids) - _cached)  #
@@ -750,18 +751,22 @@ class MailManager:
             for _ in range(0, len(msg_data), 2):  # TODO 兼容性
                 # recv_time = re.findall(
                 #     r' INTERNALDATE "(\d{2}-\w{3}-\d{4} \d{2}:\d{2}:\d{2} [+-]\d{4})"', msg_data[_][0].decode())[0]
-                uid = re.findall(r"UID (\d+)", msg_data[_ + 1].decode())[0]
-                rfc822 = msg_data[_][1]
-                logger.debug(f"IMAP： 获取到邮件： {uid = }")
+                try:
+                    uid = re.findall(r"UID (\d+)", msg_data[_ + 1].decode())[0]
+                    rfc822 = msg_data[_][1]
+                    logger.debug(f"IMAP： 获取到邮件： {uid = }")
 
-                mail = self.parse_rfc822(rfc822)
-                mail.uid = uid
-                mail.folder = folder
-                if not with_body:
-                    mail.attachments = None
-                    mail.body = None
-                mails.append(mail)
-                yield mail
+                    mail = self.parse_rfc822(rfc822)
+                    mail.uid = uid
+                    mail.folder = folder
+                    if not with_body:
+                        mail.attachments = None
+                        mail.body = None
+                    mails.append(mail)
+                    yield mail
+                except Exception as e:
+                    logger.error(f"IMAP: FETCH ERROR: {e}")
+                    continue
         except Exception as e:
             logger.error(f"IMAP: FETCH ERROR: {e}")
         finally:

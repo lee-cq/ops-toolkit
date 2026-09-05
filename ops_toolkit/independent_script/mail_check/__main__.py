@@ -98,7 +98,7 @@ def handle_morning_check(args):
         _mc.report_to_teams()
 
 
-def handle_no_replay(args):
+def handle_no_reply(args):
     """处理 no-replay 子命令"""
     send_report = args.report
     today = args.today or date.today().strftime("%Y-%m-%d")
@@ -125,11 +125,11 @@ def main():
 
     parser_morning.set_defaults(func=handle_morning_check)
 
-    # 子命令 no-replay
-    parser_noreplay = subparsers.add_parser("no-replay", help="无回复检查")
-    parser_noreplay.add_argument("-t", "--today", default=None, help="检查的日期")
-    parser_noreplay.add_argument("-r", "--report", action="store_true", help="发送报告")
-    parser_noreplay.set_defaults(func=handle_no_replay)
+    # 子命令 no-reply
+    parser_noreply = subparsers.add_parser("no-reply", help="无回复检查")
+    parser_noreply.add_argument("-t", "--today", default=None, help="检查的日期")
+    parser_noreply.add_argument("-r", "--report", action="store_true", help="发送报告")
+    parser_noreply.set_defaults(func=handle_no_reply)
 
     parsed_args = parser.parse_args()
     parsed_args.func(parsed_args)
